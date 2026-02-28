@@ -23,7 +23,7 @@ Thanks for your interest in improving CollectorsVault.
 
 - Keep changes consistent with existing project style.
 - Avoid unrelated refactors in feature/fix PRs.
-- Update docs when behavior, endpoints, or setup changes.
+- See [Documentation updates](#documentation-updates) for guidance on updating docs.
 
 ## Documentation updates
 
