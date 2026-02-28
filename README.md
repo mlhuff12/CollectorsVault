@@ -41,7 +41,33 @@ npm install
 npm start
 ```
 
-Client URL (default): `http://localhost:3002`
+Client URL (default): `http://localhost:3000`
+
+### 3) Run UI tests
+
+From `client`:
+
+```bash
+npm run test:ci
+```
+
+UI tests mock API service calls (`client/src/services/api.ts`) and do not hit the backend.
+
+## Debugging in VS Code
+
+This repository includes preconfigured VS Code debug files:
+
+- `.vscode/launch.json`
+- `.vscode/tasks.json`
+
+Use **Run and Debug** and choose one of:
+
+- `API: Launch .NET`
+- `Client: Start Dev Server`
+- `Client: Debug in Edge`
+- `Full Stack: API + Client`
+
+`Full Stack: API + Client` starts the API and client together and opens browser debugging.
 
 ## Persistence
 

@@ -9,8 +9,8 @@ client/build/
 client/.cache/
 
 # .NET build artifacts
-server/bin/
-server/obj/
+**/bin/
+**/obj/
 
 # IDE/editor
 .vscode/
