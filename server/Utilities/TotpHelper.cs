@@ -110,7 +110,10 @@ namespace CollectorsVault.Server.Utilities
             foreach (var c in base32)
             {
                 var index = Array.IndexOf(Base32Chars, c);
-                if (index < 0) continue;
+                if (index < 0)
+                {
+                    throw new FormatException($"Invalid Base32 character '{c}'.");
+                }
 
                 current = (current << 5) | index;
                 bitsLeft += 5;

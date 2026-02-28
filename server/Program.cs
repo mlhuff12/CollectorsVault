@@ -80,7 +80,7 @@ builder.Services.AddDbContext<VaultDbContext>(options =>
 builder.Services.AddScoped<IVaultService, VaultService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
-var jwtKey = builder.Configuration["Jwt:Key"] ?? "CollectorsVaultSuperSecretKeyForJWT!";
+var jwtKey = builder.Configuration["Jwt:Key"] ?? "CollectorsVaultSuperSecretKeyForJWT2024!!";
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "CollectorsVault";
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

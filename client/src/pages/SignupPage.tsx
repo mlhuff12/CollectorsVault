@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import QRCode from 'qrcode';
 import { signup } from '../services/api';
+import { getApiErrorMessage } from '../utils/errorUtils';
 
 const SignupPage: React.FC = () => {
     const history = useHistory();
@@ -26,8 +27,8 @@ const SignupPage: React.FC = () => {
             const data = await signup(username.trim());
             setTotpUri(data.totpUri);
             setTotpSecret(data.totpSecret);
-        } catch (err: any) {
-            setError(err?.response?.data || 'Signup failed. Username may already exist.');
+        } catch (err) {
+            setError(getApiErrorMessage(err, 'Signup failed. Username may already exist.'));
         } finally {
             setLoading(false);
         }

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { login } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { getApiErrorMessage } from '../utils/errorUtils';
 
 const LoginPage: React.FC = () => {
     const history = useHistory();
@@ -19,8 +20,8 @@ const LoginPage: React.FC = () => {
             const data = await login(username.trim(), totpCode.trim());
             setAuth(data.token, data.username);
             history.push('/');
-        } catch (err: any) {
-            setError(err?.response?.data || 'Invalid username or TOTP code.');
+        } catch (err) {
+            setError(getApiErrorMessage(err, 'Invalid username or TOTP code.'));
         } finally {
             setLoading(false);
         }

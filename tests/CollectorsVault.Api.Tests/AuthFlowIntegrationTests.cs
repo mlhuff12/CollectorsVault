@@ -162,10 +162,9 @@ namespace CollectorsVault.Api.Tests
 
             await client.PostAsJsonAsync("/api/auth/signup", new { Username = username });
 
-            var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new { Username = username, TotpCode = "000000" });
-            // This may or may not be unauthorized depending on the TOTP code
-            // Just verify it handles the request properly
-            Assert.True(loginResponse.StatusCode == HttpStatusCode.OK || loginResponse.StatusCode == HttpStatusCode.Unauthorized);
+            // "AAAAAA" is not a valid 6-digit TOTP code (contains letters)
+            var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new { Username = username, TotpCode = "AAAAAA" });
+            Assert.Equal(HttpStatusCode.Unauthorized, loginResponse.StatusCode);
         }
 
         [Fact]
