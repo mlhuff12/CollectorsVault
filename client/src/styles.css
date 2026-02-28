@@ -1,0 +1,226 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(180deg, #f5f8ff 0%, #eef2ff 100%);
+  color: #1f2937;
+}
+
+.vault-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 28px 20px 40px;
+}
+
+.vault-header {
+  margin-bottom: 20px;
+}
+
+.brand-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-logo {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 14px rgba(37, 99, 235, 0.35);
+}
+
+.vault-header h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.vault-header p {
+  margin-top: 8px;
+  color: #4b5563;
+}
+
+.vault-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.vault-nav-button {
+  border: 0;
+  border-radius: 10px;
+  background: #e5e7eb;
+  color: #1f2937;
+  padding: 10px 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.vault-nav-button.active {
+  background: #1d4ed8;
+  color: #ffffff;
+}
+
+.vault-card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.form-section h2,
+.items-section h2 {
+  margin-top: 0;
+}
+
+.home-form-controls {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 14px;
+}
+
+.home-form-controls label {
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+  color: #374151;
+}
+
+.form-select {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 0.95rem;
+  background: #ffffff;
+  max-width: 240px;
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 12px;
+}
+
+.form-row label {
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+  color: #374151;
+}
+
+.form-row input {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 0.95rem;
+}
+
+.primary-button {
+  border: 0;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #ffffff;
+  padding: 10px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.form-message {
+  margin-top: 12px;
+  color: #166534;
+}
+
+.form-error,
+.status-message.error {
+  color: #b91c1c;
+}
+
+.items-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.item-row {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.item-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.category-badge {
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.category-badge.book {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.category-badge.movie {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.category-badge.game {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.item-row small {
+  color: #6b7280;
+}
+
+.item-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.danger-icon-button {
+  border: 0;
+  border-radius: 10px;
+  background: #dc2626;
+  color: #ffffff;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.danger-icon-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.status-message {
+  color: #4b5563;
+}

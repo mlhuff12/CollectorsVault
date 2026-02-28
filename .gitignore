@@ -1,0 +1,27 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# React build artifacts
+client/build/
+client/.cache/
+
+# .NET build artifacts
+server/bin/
+server/obj/
+
+# IDE/editor
+.vscode/
+*.user
+*.suo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local data files
+server/Data/*.db
+server/Data/*.db-shm
+server/Data/*.db-wal
