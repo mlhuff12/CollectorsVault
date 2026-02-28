@@ -36,6 +36,7 @@ Thanks for your interest in improving CollectorsVault.
 - Run and report checks related to your change before opening a PR.
 - At minimum, include results for:
    - `dotnet build CollectorsVault.sln`
+   - `npm test` in `client` (when client code or behavior is affected)
    - `npm run build` in `client`
 - Include any manual test steps performed (for example: create, list, delete flows).
 
