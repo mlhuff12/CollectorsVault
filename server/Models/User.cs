@@ -5,10 +5,11 @@ namespace CollectorsVault.Server.Models
 {
     public class User
     {
-        public int Id { get; set; }
+        public long Id { get; set; }
         public string Username { get; set; } = string.Empty;
         public string TotpSecret { get; set; } = string.Empty;
-        public DateTime CreatedAt { get; set; }
+        public DateTime CreatedUtcDate { get; set; }
+        public DateTime LastModifiedUtcDate { get; set; }
         public ICollection<VaultItem> VaultItems { get; set; } = new List<VaultItem>();
     }
 }

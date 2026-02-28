@@ -17,28 +17,26 @@ namespace CollectorsVault.Server.Controllers
     public class VaultController : ControllerBase
     {
         private readonly IVaultService _vaultService;
+        private readonly IUserService _userService;
 
-        public VaultController(IVaultService vaultService)
+        public VaultController(IVaultService vaultService, IUserService userService)
         {
             _vaultService = vaultService;
-        }
-
-        private int GetUserId()
-        {
-            var claim = User.FindFirst("userId")?.Value;
-            if (!int.TryParse(claim, out var id) || id <= 0)
-                throw new System.UnauthorizedAccessException("Invalid user identity.");
-            return id;
+            _userService = userService;
         }
 
         /// <summary>
         /// Gets all vault items for the authenticated user.
         /// </summary>
         /// <returns>Collection of vault items.</returns>
+        /// <response code="200">Returns the collection of vault items.</response>
+        /// <response code="401">User is not authenticated.</response>
         [HttpGet]
+        [ProducesResponseType(typeof(IEnumerable<VaultItemResponse>), 200)]
+        [ProducesResponseType(401)]
         public async Task<ActionResult<IEnumerable<VaultItemResponse>>> GetVaultItems()
         {
-            var items = await _vaultService.GetVaultItemsAsync(GetUserId());
+            var items = await _vaultService.GetVaultItemsAsync(_userService.GetCurrentUserId());
             return Ok(items);
         }
 
@@ -47,10 +45,14 @@ namespace CollectorsVault.Server.Controllers
         /// </summary>
         /// <param name="request">Book payload.</param>
         /// <returns>Created book.</returns>
+        /// <response code="201">Book created successfully.</response>
+        /// <response code="401">User is not authenticated.</response>
         [HttpPost("books")]
+        [ProducesResponseType(typeof(Book), 201)]
+        [ProducesResponseType(401)]
         public async Task<ActionResult<Book>> AddBook(BookRequest request)
         {
-            var book = await _vaultService.AddBookAsync(request, GetUserId());
+            var book = await _vaultService.AddBookAsync(request, _userService.GetCurrentUserId());
             return CreatedAtAction(nameof(GetVaultItems), new { id = book.Id }, book);
         }
 
@@ -59,10 +61,14 @@ namespace CollectorsVault.Server.Controllers
         /// </summary>
         /// <param name="request">Movie payload.</param>
         /// <returns>Created movie.</returns>
+        /// <response code="201">Movie created successfully.</response>
+        /// <response code="401">User is not authenticated.</response>
         [HttpPost("movies")]
+        [ProducesResponseType(typeof(Movie), 201)]
+        [ProducesResponseType(401)]
         public async Task<ActionResult<Movie>> AddMovie(MovieRequest request)
         {
-            var movie = await _vaultService.AddMovieAsync(request, GetUserId());
+            var movie = await _vaultService.AddMovieAsync(request, _userService.GetCurrentUserId());
             return CreatedAtAction(nameof(GetVaultItems), new { id = movie.Id }, movie);
         }
 
@@ -71,10 +77,14 @@ namespace CollectorsVault.Server.Controllers
         /// </summary>
         /// <param name="request">Game payload.</param>
         /// <returns>Created game.</returns>
+        /// <response code="201">Game created successfully.</response>
+        /// <response code="401">User is not authenticated.</response>
         [HttpPost("games")]
+        [ProducesResponseType(typeof(Game), 201)]
+        [ProducesResponseType(401)]
         public async Task<ActionResult<Game>> AddGame(GameRequest request)
         {
-            var game = await _vaultService.AddGameAsync(request, GetUserId());
+            var game = await _vaultService.AddGameAsync(request, _userService.GetCurrentUserId());
             return CreatedAtAction(nameof(GetVaultItems), new { id = game.Id }, game);
         }
 
@@ -83,10 +93,16 @@ namespace CollectorsVault.Server.Controllers
         /// </summary>
         /// <param name="id">Item identifier.</param>
         /// <returns>No content on success, or not found if item does not exist or is not owned by user.</returns>
-        [HttpDelete("{id:int}")]
-        public async Task<IActionResult> DeleteVaultItem(int id)
+        /// <response code="204">Item deleted successfully.</response>
+        /// <response code="401">User is not authenticated.</response>
+        /// <response code="404">Item not found or not owned by the authenticated user.</response>
+        [HttpDelete("{id:long}")]
+        [ProducesResponseType(204)]
+        [ProducesResponseType(401)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> DeleteVaultItem(long id)
         {
-            var deleted = await _vaultService.DeleteVaultItemAsync(id, GetUserId());
+            var deleted = await _vaultService.DeleteVaultItemAsync(id, _userService.GetCurrentUserId());
             if (!deleted)
             {
                 return NotFound();

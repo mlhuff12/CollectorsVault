@@ -79,8 +79,15 @@ builder.Services.AddDbContext<VaultDbContext>(options =>
     options.UseSqlite(sqliteConnectionBuilder.ConnectionString));
 builder.Services.AddScoped<IVaultService, VaultService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IUserService, UserService>();
 
-var jwtKey = builder.Configuration["Jwt:Key"] ?? "CollectorsVaultSuperSecretKeyForJWT2024!!";
+var jwtKey = builder.Configuration["Jwt:Key"];
+if (string.IsNullOrWhiteSpace(jwtKey))
+{
+    jwtKey = "CollectorsVaultSuperSecretKeyForJWT2024!!";
+    Console.Error.WriteLine("[WARNING] Jwt:Key is not configured. Using insecure fallback key. Set Jwt:Key via dotnet user-secrets or environment variables before deploying to production.");
+}
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "CollectorsVault";
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

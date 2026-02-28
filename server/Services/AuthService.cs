@@ -9,21 +9,28 @@ using CollectorsVault.Server.Models;
 using CollectorsVault.Server.Utilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 
 namespace CollectorsVault.Server.Services
 {
+    /// <summary>
+    /// Implements authentication operations using TOTP verification and JWT token generation.
+    /// </summary>
     public class AuthService : IAuthService
     {
         private readonly VaultDbContext _context;
         private readonly IConfiguration _configuration;
+        private readonly ILogger<AuthService> _logger;
 
-        public AuthService(VaultDbContext context, IConfiguration configuration)
+        public AuthService(VaultDbContext context, IConfiguration configuration, ILogger<AuthService> logger)
         {
             _context = context;
             _configuration = configuration;
+            _logger = logger;
         }
 
+        /// <inheritdoc />
         public async Task<SignupResponse> SignupAsync(string username)
         {
             var exists = await _context.Users.AnyAsync(u => u.Username == username);
@@ -33,12 +40,14 @@ namespace CollectorsVault.Server.Services
             }
 
             var base32Secret = TotpHelper.GenerateSecret();
+            var now = DateTime.UtcNow;
 
             var user = new User
             {
                 Username = username,
                 TotpSecret = base32Secret,
-                CreatedAt = DateTime.UtcNow
+                CreatedUtcDate = now,
+                LastModifiedUtcDate = now
             };
 
             _context.Users.Add(user);
@@ -55,6 +64,7 @@ namespace CollectorsVault.Server.Services
             };
         }
 
+        /// <inheritdoc />
         public async Task<LoginResponse?> LoginAsync(string username, string totpCode)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
@@ -76,7 +86,8 @@ namespace CollectorsVault.Server.Services
             };
         }
 
-        public async Task<bool> DeleteUserAsync(int userId)
+        /// <inheritdoc />
+        public async Task<bool> DeleteUserAsync(long userId)
         {
             var user = await _context.Users.FindAsync(userId);
             if (user == null)
@@ -89,9 +100,17 @@ namespace CollectorsVault.Server.Services
             return true;
         }
 
+        /// <summary>
+        /// Generates a signed JWT bearer token for the given user, valid for 7 days.
+        /// </summary>
         private string GenerateJwtToken(User user)
         {
-            var jwtKey = _configuration["Jwt:Key"] ?? "CollectorsVaultSuperSecretKeyForJWT2024!!";
+            var jwtKey = _configuration["Jwt:Key"];
+            if (string.IsNullOrWhiteSpace(jwtKey))
+            {
+                jwtKey = "CollectorsVaultSuperSecretKeyForJWT2024!!";
+                _logger.LogWarning("Jwt:Key is not configured. Using insecure fallback key. Set Jwt:Key via dotnet user-secrets or environment variables before deploying to production.");
+            }
             var jwtIssuer = _configuration["Jwt:Issuer"] ?? "CollectorsVault";
 
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
