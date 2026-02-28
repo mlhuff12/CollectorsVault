@@ -22,6 +22,9 @@ server/obj/
 Thumbs.db
 
 # Local data files
+server/*.db
+server/*.db-shm
+server/*.db-wal
 server/Data/*.db
 server/Data/*.db-shm
 server/Data/*.db-wal
