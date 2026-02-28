@@ -1,4 +1,5 @@
 using CollectorsVault.Server.Data;
+using CollectorsVault.Server.Services;
 using Microsoft.Data.Sqlite;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -7,13 +8,23 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using System;
 using System.IO;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        options.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
+    }
+});
 
 var configuredConnectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? "Data Source=Data/collectorsvault.db";
@@ -40,6 +51,7 @@ if (!Path.IsPathRooted(sqliteConnectionBuilder.DataSource))
 
 builder.Services.AddDbContext<VaultDbContext>(options =>
     options.UseSqlite(sqliteConnectionBuilder.ConnectionString));
+builder.Services.AddScoped<IVaultService, VaultService>();
 
 builder.Services.AddCors(options =>
 {

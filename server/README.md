@@ -13,10 +13,24 @@ Base URL:
 
 - `http://localhost:5000`
 
+## Debug in VS Code
+
+From **Run and Debug**, use `API: Launch .NET`.
+
+- Builds `server/CollectorsVault.Api.csproj`
+- Launches API with debugger attached
+- Opens Swagger when the API is ready
+
 Swagger:
 
 - UI: `http://localhost:5000/swagger`
 - OpenAPI JSON: `http://localhost:5000/swagger/v1/swagger.json`
+
+## API Documentation
+
+- Swagger/OpenAPI is enabled in all environments.
+- XML documentation comments from controllers are included in Swagger output.
+- Open `http://localhost:5000/swagger` to browse and test endpoints.
 
 ## Persistence
 
@@ -93,3 +107,17 @@ Uses SQLite with file-based persistence.
 
 - CORS is enabled for development use.
 - Root path `/` redirects to Swagger UI.
+
+## Unit Tests (Moq, no database)
+
+API unit tests are in:
+
+- `tests/CollectorsVault.Api.Tests`
+
+Run tests:
+
+```bash
+dotnet test tests/CollectorsVault.Api.Tests/CollectorsVault.Api.Tests.csproj
+```
+
+Tests mock `IVaultService` with Moq and do not hit SQLite/database.

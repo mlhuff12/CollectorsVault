@@ -27,6 +27,40 @@ Production build:
 npm run build
 ```
 
+## UI Tests
+
+Run tests in watch mode:
+
+```bash
+npm test
+```
+
+Run tests once (CI-friendly):
+
+```bash
+npm run test:ci
+```
+
+### Mocking Strategy (No API Calls)
+
+- UI tests mock `src/services/api.ts` with `jest.mock(...)`.
+- Tests validate component behavior against mocked responses.
+- The real backend is **not required** and is never called during these tests.
+
+Current test coverage lives in:
+
+- `src/pages/VaultPage.test.tsx`
+- `src/setupTests.ts`
+
+## Debug in VS Code
+
+From **Run and Debug**, use:
+
+- `Client: Start Dev Server` to run the React app
+- `Client: Debug in Edge` to debug the app in browser
+
+For full-stack debugging, run `Full Stack: API + Client` from the workspace root launch profiles.
+
 ## API Dependency
 
 The frontend expects the API at:
