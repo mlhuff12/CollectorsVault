@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -12,6 +13,7 @@ namespace CollectorsVault.Server.Controllers
     /// </summary>
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class VaultController : ControllerBase
     {
         private readonly IVaultService _vaultService;
@@ -21,28 +23,23 @@ namespace CollectorsVault.Server.Controllers
             _vaultService = vaultService;
         }
 
+        private int GetUserId()
+        {
+            var claim = User.FindFirst("userId")?.Value;
+            if (!int.TryParse(claim, out var id) || id <= 0)
+                throw new System.UnauthorizedAccessException("Invalid user identity.");
+            return id;
+        }
+
         /// <summary>
-        /// Gets all vault items across all categories.
+        /// Gets all vault items for the authenticated user.
         /// </summary>
         /// <returns>Collection of vault items.</returns>
         [HttpGet]
         public async Task<ActionResult<IEnumerable<VaultItemResponse>>> GetVaultItems()
         {
-            var items = await _vaultService.GetVaultItemsAsync();
+            var items = await _vaultService.GetVaultItemsAsync(GetUserId());
             return Ok(items);
-        }
-
-        /// <summary>
-        /// Adds a generic vault item.
-        /// </summary>
-        /// <param name="item">Vault item payload.</param>
-        /// <returns>Created vault item.</returns>
-        [HttpPost]
-        public async Task<ActionResult<VaultItem>> AddVaultItem(VaultItem item)
-        {
-            var createdItem = await _vaultService.AddVaultItemAsync(item);
-
-            return CreatedAtAction(nameof(GetVaultItems), new { id = createdItem.Id }, createdItem);
         }
 
         /// <summary>
@@ -53,8 +50,7 @@ namespace CollectorsVault.Server.Controllers
         [HttpPost("books")]
         public async Task<ActionResult<Book>> AddBook(BookRequest request)
         {
-            var book = await _vaultService.AddBookAsync(request);
-
+            var book = await _vaultService.AddBookAsync(request, GetUserId());
             return CreatedAtAction(nameof(GetVaultItems), new { id = book.Id }, book);
         }
 
@@ -66,8 +62,7 @@ namespace CollectorsVault.Server.Controllers
         [HttpPost("movies")]
         public async Task<ActionResult<Movie>> AddMovie(MovieRequest request)
         {
-            var movie = await _vaultService.AddMovieAsync(request);
-
+            var movie = await _vaultService.AddMovieAsync(request, GetUserId());
             return CreatedAtAction(nameof(GetVaultItems), new { id = movie.Id }, movie);
         }
 
@@ -79,25 +74,23 @@ namespace CollectorsVault.Server.Controllers
         [HttpPost("games")]
         public async Task<ActionResult<Game>> AddGame(GameRequest request)
         {
-            var game = await _vaultService.AddGameAsync(request);
-
+            var game = await _vaultService.AddGameAsync(request, GetUserId());
             return CreatedAtAction(nameof(GetVaultItems), new { id = game.Id }, game);
         }
 
         /// <summary>
-        /// Deletes a vault item by identifier.
+        /// Deletes a vault item by identifier. Only deletes items owned by the authenticated user.
         /// </summary>
         /// <param name="id">Item identifier.</param>
-        /// <returns>No content on success, or not found if item does not exist.</returns>
+        /// <returns>No content on success, or not found if item does not exist or is not owned by user.</returns>
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteVaultItem(int id)
         {
-            var deleted = await _vaultService.DeleteVaultItemAsync(id);
+            var deleted = await _vaultService.DeleteVaultItemAsync(id, GetUserId());
             if (!deleted)
             {
                 return NotFound();
             }
-
             return NoContent();
         }
     }

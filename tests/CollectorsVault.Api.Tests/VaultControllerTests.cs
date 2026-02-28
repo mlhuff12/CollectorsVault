@@ -1,10 +1,12 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using CollectorsVault.Server.Contracts;
 using CollectorsVault.Server.Controllers;
 using CollectorsVault.Server.Models;
 using CollectorsVault.Server.Services;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Xunit;
@@ -13,6 +15,19 @@ namespace CollectorsVault.Api.Tests
 {
     public class VaultControllerTests
     {
+        private static VaultController CreateControllerWithUser(IVaultService service, int userId = 1)
+        {
+            var controller = new VaultController(service);
+            var claims = new[] { new Claim("userId", userId.ToString()) };
+            var identity = new ClaimsIdentity(claims, "TestAuth");
+            var principal = new ClaimsPrincipal(identity);
+            controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext { User = principal }
+            };
+            return controller;
+        }
+
         [Fact]
         public async Task GetVaultItems_ReturnsOkResult_WithItems()
         {
@@ -23,10 +38,10 @@ namespace CollectorsVault.Api.Tests
             };
 
             var serviceMock = new Mock<IVaultService>();
-            serviceMock.Setup(service => service.GetVaultItemsAsync())
+            serviceMock.Setup(service => service.GetVaultItemsAsync(1))
                 .ReturnsAsync(expected);
 
-            var controller = new VaultController(serviceMock.Object);
+            var controller = CreateControllerWithUser(serviceMock.Object, 1);
 
             var result = await controller.GetVaultItems();
 
@@ -58,10 +73,10 @@ namespace CollectorsVault.Api.Tests
             };
 
             var serviceMock = new Mock<IVaultService>();
-            serviceMock.Setup(service => service.AddBookAsync(request))
+            serviceMock.Setup(service => service.AddBookAsync(request, 1))
                 .ReturnsAsync(created);
 
-            var controller = new VaultController(serviceMock.Object);
+            var controller = CreateControllerWithUser(serviceMock.Object, 1);
 
             var result = await controller.AddBook(request);
 
@@ -75,10 +90,10 @@ namespace CollectorsVault.Api.Tests
         public async Task DeleteVaultItem_ReturnsNotFound_WhenItemDoesNotExist()
         {
             var serviceMock = new Mock<IVaultService>();
-            serviceMock.Setup(service => service.DeleteVaultItemAsync(99))
+            serviceMock.Setup(service => service.DeleteVaultItemAsync(99, 1))
                 .ReturnsAsync(false);
 
-            var controller = new VaultController(serviceMock.Object);
+            var controller = CreateControllerWithUser(serviceMock.Object, 1);
 
             var result = await controller.DeleteVaultItem(99);
 
@@ -89,10 +104,10 @@ namespace CollectorsVault.Api.Tests
         public async Task DeleteVaultItem_ReturnsNoContent_WhenItemExists()
         {
             var serviceMock = new Mock<IVaultService>();
-            serviceMock.Setup(service => service.DeleteVaultItemAsync(2))
+            serviceMock.Setup(service => service.DeleteVaultItemAsync(2, 1))
                 .ReturnsAsync(true);
 
-            var controller = new VaultController(serviceMock.Object);
+            var controller = CreateControllerWithUser(serviceMock.Object, 1);
 
             var result = await controller.DeleteVaultItem(2);
 

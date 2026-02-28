@@ -4,6 +4,7 @@ import ItemList from '../components/ItemList';
 import BookForm from '../components/BookForm';
 import MovieForm from '../components/MovieForm';
 import GameForm from '../components/GameForm';
+import { useAuth } from '../context/AuthContext';
 
 type VaultSection = 'home' | 'books' | 'movies' | 'games';
 type HomeFormType = 'book' | 'movie' | 'game';
@@ -11,6 +12,7 @@ type HomeFormType = 'book' | 'movie' | 'game';
 const VaultPage: React.FC = () => {
     const history = useHistory();
     const location = useLocation();
+    const { username, logout } = useAuth();
     const [homeFormType, setHomeFormType] = useState<HomeFormType>('book');
     const [refreshKey, setRefreshKey] = useState(0);
 
@@ -122,6 +124,12 @@ const VaultPage: React.FC = () => {
                     <div>
                         <h1>Collector&apos;s Vault</h1>
                         <p>Track your favorite books, movies, and games.</p>
+                    </div>
+                    <div className="header-actions">
+                        {username && <span className="header-username">{username}</span>}
+                        <button type="button" className="logout-button" onClick={logout}>
+                            Sign Out
+                        </button>
                     </div>
                 </div>
             </header>

@@ -18,9 +18,10 @@ namespace CollectorsVault.Server.Services
             _context = context;
         }
 
-        public async Task<IEnumerable<VaultItemResponse>> GetVaultItemsAsync()
+        public async Task<IEnumerable<VaultItemResponse>> GetVaultItemsAsync(int userId)
         {
             var books = await _context.Books
+                .Where(book => book.UserId == userId)
                 .Select(book => new VaultItemResponse
                 {
                     Id = book.Id,
@@ -32,6 +33,7 @@ namespace CollectorsVault.Server.Services
                 .ToListAsync();
 
             var movies = await _context.Movies
+                .Where(movie => movie.UserId == userId)
                 .Select(movie => new VaultItemResponse
                 {
                     Id = movie.Id,
@@ -43,6 +45,7 @@ namespace CollectorsVault.Server.Services
                 .ToListAsync();
 
             var games = await _context.Games
+                .Where(game => game.UserId == userId)
                 .Select(game => new VaultItemResponse
                 {
                     Id = game.Id,
@@ -60,15 +63,7 @@ namespace CollectorsVault.Server.Services
                 .ToList();
         }
 
-        public async Task<VaultItem> AddVaultItemAsync(VaultItem item)
-        {
-            item.DateAdded = DateTime.UtcNow;
-            _context.VaultItems.Add(item);
-            await _context.SaveChangesAsync();
-            return item;
-        }
-
-        public async Task<Book> AddBookAsync(BookRequest request)
+        public async Task<Book> AddBookAsync(BookRequest request, int userId)
         {
             var normalizedAuthors = (request.Authors ?? new List<string>())
                 .Where(author => !string.IsNullOrWhiteSpace(author))
@@ -83,7 +78,8 @@ namespace CollectorsVault.Server.Services
                 PublicationYear = request.Year ?? 0,
                 Genre = request.Genre?.Trim() ?? string.Empty,
                 Description = string.Empty,
-                DateAdded = DateTime.UtcNow
+                DateAdded = DateTime.UtcNow,
+                UserId = userId
             };
 
             _context.Books.Add(book);
@@ -91,7 +87,7 @@ namespace CollectorsVault.Server.Services
             return book;
         }
 
-        public async Task<Movie> AddMovieAsync(MovieRequest request)
+        public async Task<Movie> AddMovieAsync(MovieRequest request, int userId)
         {
             var movie = new Movie
             {
@@ -100,7 +96,8 @@ namespace CollectorsVault.Server.Services
                 ReleaseYear = request.ReleaseYear,
                 Genre = request.Genre,
                 Description = string.Empty,
-                DateAdded = DateTime.UtcNow
+                DateAdded = DateTime.UtcNow,
+                UserId = userId
             };
 
             _context.Movies.Add(movie);
@@ -108,7 +105,7 @@ namespace CollectorsVault.Server.Services
             return movie;
         }
 
-        public async Task<Game> AddGameAsync(GameRequest request)
+        public async Task<Game> AddGameAsync(GameRequest request, int userId)
         {
             DateTime.TryParse(request.ReleaseDate, out var parsedDate);
 
@@ -119,7 +116,8 @@ namespace CollectorsVault.Server.Services
                 ReleaseYear = parsedDate == default ? 0 : parsedDate.Year,
                 Genre = string.Empty,
                 Description = string.Empty,
-                DateAdded = DateTime.UtcNow
+                DateAdded = DateTime.UtcNow,
+                UserId = userId
             };
 
             _context.Games.Add(game);
@@ -127,9 +125,9 @@ namespace CollectorsVault.Server.Services
             return game;
         }
 
-        public async Task<bool> DeleteVaultItemAsync(int id)
+        public async Task<bool> DeleteVaultItemAsync(int id, int userId)
         {
-            var item = await _context.VaultItems.FirstOrDefaultAsync(entry => entry.Id == id);
+            var item = await _context.VaultItems.FirstOrDefaultAsync(entry => entry.Id == id && entry.UserId == userId);
             if (item == null)
             {
                 return false;
