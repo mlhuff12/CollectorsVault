@@ -64,6 +64,7 @@ namespace CollectorsVault.Api.Tests
                 PublishDate = "September 21, 1937",
                 PageCount = 310,
                 Description = "A fantasy novel about a hobbit.",
+                Subjects = new List<string> { "Fantasy", "Adventure" },
                 CoverSmall = "https://covers.openlibrary.org/b/id/123-S.jpg",
                 CoverMedium = "https://covers.openlibrary.org/b/id/123-M.jpg",
                 CoverLarge = "https://covers.openlibrary.org/b/id/123-L.jpg",
@@ -79,6 +80,7 @@ namespace CollectorsVault.Api.Tests
             Assert.Equal("September 21, 1937", book.PublishDate);
             Assert.Equal(310, book.PageCount);
             Assert.Equal("A fantasy novel about a hobbit.", book.Description);
+            Assert.Equal("Fantasy, Adventure", book.Subjects);
             Assert.Equal("https://covers.openlibrary.org/b/id/123-S.jpg", book.CoverSmall);
             Assert.Equal("https://covers.openlibrary.org/b/id/123-M.jpg", book.CoverMedium);
             Assert.Equal("https://covers.openlibrary.org/b/id/123-L.jpg", book.CoverLarge);

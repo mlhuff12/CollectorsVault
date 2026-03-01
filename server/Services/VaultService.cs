@@ -81,6 +81,9 @@ namespace CollectorsVault.Server.Services
                 PublishDate = request.PublishDate?.Trim() ?? string.Empty,
                 PageCount = request.PageCount,
                 Description = request.Description?.Trim() ?? string.Empty,
+                Subjects = string.Join(", ", (request.Subjects ?? new List<string>())
+                    .Where(s => !string.IsNullOrWhiteSpace(s))
+                    .Select(s => s.Trim())),
                 CoverSmall = request.CoverSmall?.Trim() ?? string.Empty,
                 CoverMedium = request.CoverMedium?.Trim() ?? string.Empty,
                 CoverLarge = request.CoverLarge?.Trim() ?? string.Empty,

@@ -85,6 +85,7 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
                 publishDate: lookupResult!.publishDate || undefined,
                 pageCount: lookupResult!.pageCount,
                 description: lookupResult!.description || undefined,
+                subjects: lookupResult!.subjects.length > 0 ? lookupResult!.subjects : undefined,
                 coverSmall: lookupResult!.coverSmall || undefined,
                 coverMedium: lookupResult!.coverMedium || undefined,
                 coverLarge: lookupResult!.coverLarge || undefined,

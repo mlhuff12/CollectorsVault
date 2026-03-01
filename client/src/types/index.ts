@@ -31,6 +31,7 @@ export interface Book {
     publishDate?: string;
     pageCount?: number;
     description?: string;
+    subjects?: string[];
     coverSmall?: string;
     coverMedium?: string;
     coverLarge?: string;

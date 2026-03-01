@@ -14,6 +14,7 @@ namespace CollectorsVault.Server.Contracts
         public string PublishDate { get; set; } = string.Empty;
         public int? PageCount { get; set; }
         public string Description { get; set; } = string.Empty;
+        public List<string> Subjects { get; set; } = new List<string>();
         public string CoverSmall { get; set; } = string.Empty;
         public string CoverMedium { get; set; } = string.Empty;
         public string CoverLarge { get; set; } = string.Empty;

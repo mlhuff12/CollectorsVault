@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace CollectorsVault.Server.Models
 {
     public class Book : VaultItem
@@ -13,5 +15,7 @@ namespace CollectorsVault.Server.Models
         public string CoverMedium { get; set; } = string.Empty;
         public string CoverLarge { get; set; } = string.Empty;
         public string BookUrl { get; set; } = string.Empty;
+        /// <summary>Comma-separated list of subject / genre tags from the lookup provider.</summary>
+        public string Subjects { get; set; } = string.Empty;
     }
 }
