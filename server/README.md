@@ -58,11 +58,12 @@ Swagger:
 
 ## Persistence
 
-Uses SQLite with file-based persistence.
+Uses SQLite with file-based persistence. Books, movies, and games are stored in separate tables (`Books`, `Movies`, `Games`) using the Table Per Type (TPT) inheritance strategy, with shared base fields kept in the `VaultItems` table.
 
 - Configured in `appsettings.json`
 - Default path: `Data/collectorsvault.db`
 - API startup logs the resolved DB path
+- Database tables: `Users`, `VaultItems`, `Books`, `Movies`, `Games`
 
 ## Endpoints
 

@@ -26,6 +26,10 @@ namespace CollectorsVault.Server.Data
                 .WithMany(u => u.VaultItems)
                 .HasForeignKey(v => v.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Book>().ToTable("Books");
+            modelBuilder.Entity<Movie>().ToTable("Movies");
+            modelBuilder.Entity<Game>().ToTable("Games");
         }
     }
 }

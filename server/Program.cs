@@ -141,7 +141,7 @@ using (var scope = app.Services.CreateScope())
 
     if (dbContext.Database.IsRelational())
     {
-        var requiredTables = new[] { "Users", "VaultItems" };
+        var requiredTables = new[] { "Users", "VaultItems", "Books", "Movies", "Games" };
         var missingTables = GetMissingTables(dbContext, requiredTables);
         if (missingTables.Count > 0)
         {
