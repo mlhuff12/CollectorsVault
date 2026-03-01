@@ -2,10 +2,16 @@ import React, { useState } from 'react';
 import { addGame } from '../services/api';
 import { Game } from '../types';
 
+/** Props accepted by {@link GameForm}. */
 interface GameFormProps {
+    /** Called after a game is successfully added, allowing the parent to refresh its list. */
     onItemAdded?: () => void;
 }
 
+/**
+ * GameForm renders a form for adding a new game to the authenticated user's vault.
+ * On submission it calls the API and notifies the parent via `onItemAdded`.
+ */
 const GameForm: React.FC<GameFormProps> = ({ onItemAdded }) => {
     const [title, setTitle] = useState('');
     const [platform, setPlatform] = useState('');

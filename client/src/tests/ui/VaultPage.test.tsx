@@ -1,10 +1,10 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import VaultPage from './VaultPage';
-import * as api from '../services/api';
+import VaultPage from '../../pages/VaultPage';
+import * as api from '../../services/api';
 
-jest.mock('../services/api', () => ({
+jest.mock('../../services/api', () => ({
     fetchItems: jest.fn(),
     addBook: jest.fn(),
     addMovie: jest.fn(),

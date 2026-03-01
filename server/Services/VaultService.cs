@@ -18,37 +18,40 @@ namespace CollectorsVault.Server.Services
             _context = context;
         }
 
-        public async Task<IEnumerable<VaultItemResponse>> GetVaultItemsAsync()
+        public async Task<IEnumerable<VaultItemResponse>> GetVaultItemsAsync(long userId)
         {
             var books = await _context.Books
+                .Where(book => book.UserId == userId)
                 .Select(book => new VaultItemResponse
                 {
                     Id = book.Id,
                     Title = book.Title,
                     Description = book.Description,
-                    DateAdded = book.DateAdded,
+                    CreatedUtcDate = book.CreatedUtcDate,
                     Category = "book"
                 })
                 .ToListAsync();
 
             var movies = await _context.Movies
+                .Where(movie => movie.UserId == userId)
                 .Select(movie => new VaultItemResponse
                 {
                     Id = movie.Id,
                     Title = movie.Title,
                     Description = movie.Description,
-                    DateAdded = movie.DateAdded,
+                    CreatedUtcDate = movie.CreatedUtcDate,
                     Category = "movie"
                 })
                 .ToListAsync();
 
             var games = await _context.Games
+                .Where(game => game.UserId == userId)
                 .Select(game => new VaultItemResponse
                 {
                     Id = game.Id,
                     Title = game.Title,
                     Description = game.Description,
-                    DateAdded = game.DateAdded,
+                    CreatedUtcDate = game.CreatedUtcDate,
                     Category = "game"
                 })
                 .ToListAsync();
@@ -56,19 +59,11 @@ namespace CollectorsVault.Server.Services
             return books
                 .Concat(movies)
                 .Concat(games)
-                .OrderByDescending(item => item.DateAdded)
+                .OrderByDescending(item => item.CreatedUtcDate)
                 .ToList();
         }
 
-        public async Task<VaultItem> AddVaultItemAsync(VaultItem item)
-        {
-            item.DateAdded = DateTime.UtcNow;
-            _context.VaultItems.Add(item);
-            await _context.SaveChangesAsync();
-            return item;
-        }
-
-        public async Task<Book> AddBookAsync(BookRequest request)
+        public async Task<Book> AddBookAsync(BookRequest request, long userId)
         {
             var normalizedAuthors = (request.Authors ?? new List<string>())
                 .Where(author => !string.IsNullOrWhiteSpace(author))
@@ -83,7 +78,9 @@ namespace CollectorsVault.Server.Services
                 PublicationYear = request.Year ?? 0,
                 Genre = request.Genre?.Trim() ?? string.Empty,
                 Description = string.Empty,
-                DateAdded = DateTime.UtcNow
+                CreatedUtcDate = DateTime.UtcNow,
+                LastModifiedUtcDate = DateTime.UtcNow,
+                UserId = userId
             };
 
             _context.Books.Add(book);
@@ -91,7 +88,7 @@ namespace CollectorsVault.Server.Services
             return book;
         }
 
-        public async Task<Movie> AddMovieAsync(MovieRequest request)
+        public async Task<Movie> AddMovieAsync(MovieRequest request, long userId)
         {
             var movie = new Movie
             {
@@ -100,7 +97,9 @@ namespace CollectorsVault.Server.Services
                 ReleaseYear = request.ReleaseYear,
                 Genre = request.Genre,
                 Description = string.Empty,
-                DateAdded = DateTime.UtcNow
+                CreatedUtcDate = DateTime.UtcNow,
+                LastModifiedUtcDate = DateTime.UtcNow,
+                UserId = userId
             };
 
             _context.Movies.Add(movie);
@@ -108,7 +107,7 @@ namespace CollectorsVault.Server.Services
             return movie;
         }
 
-        public async Task<Game> AddGameAsync(GameRequest request)
+        public async Task<Game> AddGameAsync(GameRequest request, long userId)
         {
             DateTime.TryParse(request.ReleaseDate, out var parsedDate);
 
@@ -119,7 +118,9 @@ namespace CollectorsVault.Server.Services
                 ReleaseYear = parsedDate == default ? 0 : parsedDate.Year,
                 Genre = string.Empty,
                 Description = string.Empty,
-                DateAdded = DateTime.UtcNow
+                CreatedUtcDate = DateTime.UtcNow,
+                LastModifiedUtcDate = DateTime.UtcNow,
+                UserId = userId
             };
 
             _context.Games.Add(game);
@@ -127,9 +128,9 @@ namespace CollectorsVault.Server.Services
             return game;
         }
 
-        public async Task<bool> DeleteVaultItemAsync(int id)
+        public async Task<bool> DeleteVaultItemAsync(long id, long userId)
         {
-            var item = await _context.VaultItems.FirstOrDefaultAsync(entry => entry.Id == id);
+            var item = await _context.VaultItems.FirstOrDefaultAsync(entry => entry.Id == id && entry.UserId == userId);
             if (item == null)
             {
                 return false;

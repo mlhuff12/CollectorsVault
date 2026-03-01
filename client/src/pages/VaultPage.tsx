@@ -4,13 +4,27 @@ import ItemList from '../components/ItemList';
 import BookForm from '../components/BookForm';
 import MovieForm from '../components/MovieForm';
 import GameForm from '../components/GameForm';
+import { useAuth } from '../context/AuthContext';
 
 type VaultSection = 'home' | 'books' | 'movies' | 'games';
 type HomeFormType = 'book' | 'movie' | 'game';
 
+/**
+ * VaultPage is the main authenticated view of the Collector's Vault application.
+ *
+ * It provides:
+ * - Navigation between Home, Books, Movies, and Games sections.
+ * - Forms for adding new collectible items (books, movies, games).
+ * - A list of existing items for the current user, with delete support.
+ * - A header showing the logged-in username and a Sign Out button.
+ *
+ * Access to this page is gated by {@link ProtectedRoute}; unauthenticated users
+ * are redirected to /login.
+ */
 const VaultPage: React.FC = () => {
     const history = useHistory();
     const location = useLocation();
+    const { username, logout } = useAuth();
     const [homeFormType, setHomeFormType] = useState<HomeFormType>('book');
     const [refreshKey, setRefreshKey] = useState(0);
 
@@ -122,6 +136,12 @@ const VaultPage: React.FC = () => {
                     <div>
                         <h1>Collector&apos;s Vault</h1>
                         <p>Track your favorite books, movies, and games.</p>
+                    </div>
+                    <div className="header-actions">
+                        {username && <span className="header-username">{username}</span>}
+                        <button type="button" className="logout-button" onClick={logout}>
+                            Sign Out
+                        </button>
                     </div>
                 </div>
             </header>

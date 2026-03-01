@@ -2,10 +2,16 @@ import React, { useState } from 'react';
 import { Movie } from '../types';
 import { addMovie } from '../services/api';
 
+/** Props accepted by {@link MovieForm}. */
 interface MovieFormProps {
+    /** Called after a movie is successfully added, allowing the parent to refresh its list. */
     onItemAdded?: () => void;
 }
 
+/**
+ * MovieForm renders a form for adding a new movie to the authenticated user's vault.
+ * On submission it calls the API and notifies the parent via `onItemAdded`.
+ */
 const MovieForm: React.FC<MovieFormProps> = ({ onItemAdded }) => {
     const [title, setTitle] = useState('');
     const [director, setDirector] = useState('');

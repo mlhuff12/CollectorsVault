@@ -13,20 +13,28 @@ namespace CollectorsVault.Api.Tests
 {
     public class VaultControllerTests
     {
+        private static VaultController CreateControllerWithUser(IVaultService service, long userId = 1)
+        {
+            var userServiceMock = new Mock<IUserService>();
+            userServiceMock.Setup(s => s.GetCurrentUserId()).Returns(userId);
+            var controller = new VaultController(service, userServiceMock.Object);
+            return controller;
+        }
+
         [Fact]
         public async Task GetVaultItems_ReturnsOkResult_WithItems()
         {
             var expected = new List<VaultItemResponse>
             {
-                new VaultItemResponse { Id = 1, Title = "Dune", Category = "book" },
-                new VaultItemResponse { Id = 2, Title = "Inception", Category = "movie" }
+                new VaultItemResponse { Id = 1L, Title = "Dune", Category = "book" },
+                new VaultItemResponse { Id = 2L, Title = "Inception", Category = "movie" }
             };
 
             var serviceMock = new Mock<IVaultService>();
-            serviceMock.Setup(service => service.GetVaultItemsAsync())
+            serviceMock.Setup(service => service.GetVaultItemsAsync(1L))
                 .ReturnsAsync(expected);
 
-            var controller = new VaultController(serviceMock.Object);
+            var controller = CreateControllerWithUser(serviceMock.Object, 1L);
 
             var result = await controller.GetVaultItems();
 
@@ -49,7 +57,7 @@ namespace CollectorsVault.Api.Tests
 
             var created = new Book
             {
-                Id = 10,
+                Id = 10L,
                 Title = "The Hobbit",
                 Author = "J.R.R. Tolkien",
                 ISBN = "978-0547928227",
@@ -58,29 +66,29 @@ namespace CollectorsVault.Api.Tests
             };
 
             var serviceMock = new Mock<IVaultService>();
-            serviceMock.Setup(service => service.AddBookAsync(request))
+            serviceMock.Setup(service => service.AddBookAsync(request, 1L))
                 .ReturnsAsync(created);
 
-            var controller = new VaultController(serviceMock.Object);
+            var controller = CreateControllerWithUser(serviceMock.Object, 1L);
 
             var result = await controller.AddBook(request);
 
             var createdResult = Assert.IsType<CreatedAtActionResult>(result.Result);
             Assert.Equal(nameof(VaultController.GetVaultItems), createdResult.ActionName);
             var payload = Assert.IsType<Book>(createdResult.Value);
-            Assert.Equal(10, payload.Id);
+            Assert.Equal(10L, payload.Id);
         }
 
         [Fact]
         public async Task DeleteVaultItem_ReturnsNotFound_WhenItemDoesNotExist()
         {
             var serviceMock = new Mock<IVaultService>();
-            serviceMock.Setup(service => service.DeleteVaultItemAsync(99))
+            serviceMock.Setup(service => service.DeleteVaultItemAsync(99L, 1L))
                 .ReturnsAsync(false);
 
-            var controller = new VaultController(serviceMock.Object);
+            var controller = CreateControllerWithUser(serviceMock.Object, 1L);
 
-            var result = await controller.DeleteVaultItem(99);
+            var result = await controller.DeleteVaultItem(99L);
 
             Assert.IsType<NotFoundResult>(result);
         }
@@ -89,12 +97,12 @@ namespace CollectorsVault.Api.Tests
         public async Task DeleteVaultItem_ReturnsNoContent_WhenItemExists()
         {
             var serviceMock = new Mock<IVaultService>();
-            serviceMock.Setup(service => service.DeleteVaultItemAsync(2))
+            serviceMock.Setup(service => service.DeleteVaultItemAsync(2L, 1L))
                 .ReturnsAsync(true);
 
-            var controller = new VaultController(serviceMock.Object);
+            var controller = CreateControllerWithUser(serviceMock.Object, 1L);
 
-            var result = await controller.DeleteVaultItem(2);
+            var result = await controller.DeleteVaultItem(2L);
 
             Assert.IsType<NoContentResult>(result);
         }

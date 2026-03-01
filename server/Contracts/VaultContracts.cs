@@ -29,10 +29,10 @@ namespace CollectorsVault.Server.Contracts
 
     public class VaultItemResponse
     {
-        public int Id { get; set; }
+        public long Id { get; set; }
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
-        public DateTime DateAdded { get; set; }
+        public DateTime CreatedUtcDate { get; set; }
         public string Category { get; set; } = string.Empty;
     }
 }

@@ -13,6 +13,30 @@ Base URL:
 
 - `http://localhost:5000`
 
+## Configuration & Secrets
+
+Sensitive values (`Jwt:Key` and optionally `ConnectionStrings:DefaultConnection`) are managed
+via [.NET User Secrets](https://learn.microsoft.com/en-us/aspnet/core/security/app-secrets)
+and are **never committed to the repository**.
+
+### First-time setup
+
+```bash
+cd server
+dotnet user-secrets set "Jwt:Key" "<your-strong-secret-key>"
+# Optional: override the default SQLite path
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Data Source=Data/collectorsvault.db"
+```
+
+See `secrets.json.example` for the expected structure. Share values with teammates via a
+password manager or secrets vault rather than in the repo.
+
+### How it works
+
+- `appsettings.json` contains non-sensitive defaults (logging, CORS, JWT issuer, DB path).
+- User Secrets (stored outside the repo in `%APPDATA%\Microsoft\UserSecrets\collectorsvault-server-secrets\secrets.json`) override `appsettings.json` at runtime in the `Development` environment.
+- The application falls back to a hard-coded development key when `Jwt:Key` is not configured, and **logs a warning** to alert you. Do not rely on this fallback in any shared or production environment.
+
 ## Debug in VS Code
 
 From **Run and Debug**, use `API: Launch .NET`.

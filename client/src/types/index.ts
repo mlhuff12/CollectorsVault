@@ -26,3 +26,20 @@ export interface Game {
     platform: string; // e.g., PC, Xbox, PlayStation
     releaseDate: string;
 }
+
+export interface AuthState {
+    token: string | null;
+    username: string | null;
+    isAuthenticated: boolean;
+}
+
+export interface SignupResponse {
+    username: string;
+    totpUri: string;
+    totpSecret: string;
+}
+
+export interface LoginResponse {
+    token: string;
+    username: string;
+}

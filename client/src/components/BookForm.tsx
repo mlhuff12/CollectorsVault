@@ -2,10 +2,16 @@ import React, { useState } from 'react';
 import { addBook } from '../services/api';
 import { Book } from '../types';
 
+/** Props accepted by {@link BookForm}. */
 interface BookFormProps {
+    /** Called after a book is successfully added, allowing the parent to refresh its list. */
     onItemAdded?: () => void;
 }
 
+/**
+ * BookForm renders a form for adding a new book to the authenticated user's vault.
+ * On submission it calls the API and notifies the parent via `onItemAdded`.
+ */
 const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
     const [title, setTitle] = useState('');
     const [authors, setAuthors] = useState('');
