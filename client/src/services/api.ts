@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Book, Game, Movie, VaultItem } from '../types';
+import { AdminUser, Book, Game, Movie, VaultItem } from '../types';
 
 const BASE_URL = process.env.REACT_APP_API_BASE_URL ?? 'http://localhost:5000';
 const API_URL = `${BASE_URL}/api/vault`;
@@ -39,7 +39,16 @@ export const signup = async (username: string): Promise<{ username: string; totp
     return response.data;
 };
 
-export const login = async (username: string, totpCode: string): Promise<{ token: string; username: string }> => {
+export const login = async (username: string, totpCode: string): Promise<{ token: string; username: string; isAdmin: boolean }> => {
     const response = await axios.post(`${AUTH_URL}/login`, { username, totpCode });
     return response.data;
+};
+
+export const fetchAllUsers = async (): Promise<AdminUser[]> => {
+    const response = await axios.get(`${BASE_URL}/api/admin/users`, { headers: getAuthHeader() });
+    return response.data;
+};
+
+export const deleteUserById = async (userId: number): Promise<void> => {
+    await axios.delete(`${BASE_URL}/api/admin/user/${userId}`, { headers: getAuthHeader() });
 };

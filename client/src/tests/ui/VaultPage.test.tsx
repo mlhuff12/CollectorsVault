@@ -9,14 +9,23 @@ jest.mock('../../services/api', () => ({
     addBook: jest.fn(),
     addMovie: jest.fn(),
     addGame: jest.fn(),
-    deleteItem: jest.fn()
+    deleteItem: jest.fn(),
+    fetchAllUsers: jest.fn()
+}));
+
+let mockIsAdmin = false;
+
+jest.mock('../../context/AuthContext', () => ({
+    useAuth: () => ({ username: 'testuser', logout: jest.fn(), isAdmin: mockIsAdmin })
 }));
 
 describe('VaultPage', () => {
     const mockFetchItems = api.fetchItems as jest.MockedFunction<typeof api.fetchItems>;
     const mockDeleteItem = api.deleteItem as jest.MockedFunction<typeof api.deleteItem>;
+    const mockFetchAllUsers = api.fetchAllUsers as jest.MockedFunction<typeof api.fetchAllUsers>;
 
     beforeEach(() => {
+        mockIsAdmin = false;
         jest.clearAllMocks();
         mockFetchItems.mockResolvedValue([
             { id: 1, title: 'Dune', description: 'Sci-fi classic', category: 'book' },
@@ -91,5 +100,34 @@ describe('VaultPage', () => {
         });
 
         expect(window.confirm).toHaveBeenCalled();
+    });
+
+    it('does not show admin tab for non-admin users', async () => {
+        mockIsAdmin = false;
+        renderVaultPage('/');
+
+        await screen.findByRole('heading', { name: "Collector's Vault Items" });
+
+        expect(screen.queryByRole('button', { name: 'Admin' })).not.toBeInTheDocument();
+    });
+
+    it('shows admin tab for admin users', async () => {
+        mockIsAdmin = true;
+        mockFetchAllUsers.mockResolvedValue([]);
+        renderVaultPage('/');
+
+        await screen.findByRole('heading', { name: "Collector's Vault Items" });
+
+        expect(screen.getByRole('button', { name: 'Admin' })).toBeInTheDocument();
+    });
+
+    it('renders admin section on /admin route for admin users', async () => {
+        mockIsAdmin = true;
+        mockFetchAllUsers.mockResolvedValue([
+            { id: 1, username: 'adminuser', isAdmin: true, bookCount: 0, movieCount: 0, gameCount: 0 }
+        ]);
+        renderVaultPage('/admin');
+
+        expect(await screen.findByRole('heading', { name: 'All Users' })).toBeInTheDocument();
     });
 });

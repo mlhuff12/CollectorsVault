@@ -81,6 +81,7 @@ builder.Services.AddDbContext<VaultDbContext>(options =>
     options.UseSqlite(sqliteConnectionBuilder.ConnectionString));
 builder.Services.AddScoped<IVaultService, VaultService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUserService, UserService>();
 
@@ -163,11 +164,11 @@ using (var scope = app.Services.CreateScope())
     }
 
     var adminUsername = builder.Configuration["AdminUser:Username"] ?? "mlhuff12@gmail.com";
-    var adminTotpSecret = builder.Configuration["AdminUser:TotpSecret"] ?? "CYCD6HM5Q57CGEDEEY6WRABKAERCR266I";
+    var adminSecret = builder.Configuration["AdminUser:Secret"] ?? "CYCD6HM5Q57CGEDEEY6WRABKAERCR266I";
 
     if (string.IsNullOrWhiteSpace(builder.Configuration["AdminUser:TotpSecret"]))
     {
-        app.Logger.LogWarning("[WARNING] AdminUser:TotpSecret is not configured. Using the default seeded secret. Set AdminUser:TotpSecret via dotnet user-secrets or environment variables before deploying to production.");
+        app.Logger.LogWarning("[WARNING] AdminUser:Secret is not configured. Using the default seeded secret. Set AdminUser:Secret via dotnet user-secrets or environment variables before deploying to production.");
     }
 
     if (!dbContext.Users.Any(u => u.Username == adminUsername))
@@ -176,7 +177,8 @@ using (var scope = app.Services.CreateScope())
         dbContext.Users.Add(new CollectorsVault.Server.Models.User
         {
             Username = adminUsername,
-            TotpSecret = adminTotpSecret,
+            Secret = adminSecret,
+            AdminInd = true,
             CreatedUtcDate = now,
             LastModifiedUtcDate = now
         });

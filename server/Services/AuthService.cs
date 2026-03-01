@@ -45,7 +45,7 @@ namespace CollectorsVault.Server.Services
             var user = new User
             {
                 Username = username,
-                TotpSecret = base32Secret,
+                Secret = base32Secret,
                 CreatedUtcDate = now,
                 LastModifiedUtcDate = now
             };
@@ -73,7 +73,7 @@ namespace CollectorsVault.Server.Services
                 return null;
             }
 
-            if (!TotpHelper.VerifyTotp(user.TotpSecret, totpCode))
+            if (!TotpHelper.VerifyTotp(user.Secret, totpCode))
             {
                 return null;
             }
@@ -82,7 +82,8 @@ namespace CollectorsVault.Server.Services
             return new LoginResponse
             {
                 Token = token,
-                Username = user.Username
+                Username = user.Username,
+                IsAdmin = user.AdminInd
             };
         }
 
@@ -120,7 +121,8 @@ namespace CollectorsVault.Server.Services
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.UniqueName, user.Username),
-                new Claim("userId", user.Id.ToString())
+                new Claim("userId", user.Id.ToString()),
+                new Claim("isAdmin", user.AdminInd.ToString().ToLower())
             };
 
             var token = new JwtSecurityToken(

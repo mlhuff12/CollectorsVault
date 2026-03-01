@@ -4,9 +4,10 @@ import ItemList from '../components/ItemList';
 import BookForm from '../components/BookForm';
 import MovieForm from '../components/MovieForm';
 import GameForm from '../components/GameForm';
+import AdminTab from '../components/AdminTab';
 import { useAuth } from '../context/AuthContext';
 
-type VaultSection = 'home' | 'books' | 'movies' | 'games';
+type VaultSection = 'home' | 'books' | 'movies' | 'games' | 'admin';
 type HomeFormType = 'book' | 'movie' | 'game';
 
 /**
@@ -17,6 +18,7 @@ type HomeFormType = 'book' | 'movie' | 'game';
  * - Forms for adding new collectible items (books, movies, games).
  * - A list of existing items for the current user, with delete support.
  * - A header showing the logged-in username and a Sign Out button.
+ * - An Admin tab (visible only to admin users) for user management.
  *
  * Access to this page is gated by {@link ProtectedRoute}; unauthenticated users
  * are redirected to /login.
@@ -24,7 +26,7 @@ type HomeFormType = 'book' | 'movie' | 'game';
 const VaultPage: React.FC = () => {
     const history = useHistory();
     const location = useLocation();
-    const { username, logout } = useAuth();
+    const { username, logout, isAdmin } = useAuth();
     const [homeFormType, setHomeFormType] = useState<HomeFormType>('book');
     const [refreshKey, setRefreshKey] = useState(0);
 
@@ -49,6 +51,10 @@ const VaultPage: React.FC = () => {
 
         if (location.pathname === '/games') {
             return 'games';
+        }
+
+        if (location.pathname === '/admin') {
+            return 'admin';
         }
 
         return 'home';
@@ -78,6 +84,14 @@ const VaultPage: React.FC = () => {
     };
 
     const renderSectionContent = () => {
+        if (activeSection === 'admin') {
+            return (
+                <div className="card shadow-sm mb-3 p-3">
+                    <AdminTab />
+                </div>
+            );
+        }
+
         if (activeSection === 'home') {
             return (
                 <>
@@ -176,6 +190,15 @@ const VaultPage: React.FC = () => {
                 >
                     Games
                 </button>
+                {isAdmin && (
+                    <button
+                        type="button"
+                        className={activeSection === 'admin' ? 'btn btn-primary' : 'btn btn-outline-secondary'}
+                        onClick={() => setSection('admin')}
+                    >
+                        Admin
+                    </button>
+                )}
             </nav>
 
             {renderSectionContent()}
