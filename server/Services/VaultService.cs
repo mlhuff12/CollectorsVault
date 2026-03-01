@@ -130,15 +130,31 @@ namespace CollectorsVault.Server.Services
 
         public async Task<bool> DeleteVaultItemAsync(long id, long userId)
         {
-            var item = await _context.VaultItems.FirstOrDefaultAsync(entry => entry.Id == id && entry.UserId == userId);
-            if (item == null)
+            var book = await _context.Books.FirstOrDefaultAsync(b => b.Id == id && b.UserId == userId);
+            if (book != null)
             {
-                return false;
+                _context.Books.Remove(book);
+                await _context.SaveChangesAsync();
+                return true;
             }
 
-            _context.VaultItems.Remove(item);
-            await _context.SaveChangesAsync();
-            return true;
+            var movie = await _context.Movies.FirstOrDefaultAsync(m => m.Id == id && m.UserId == userId);
+            if (movie != null)
+            {
+                _context.Movies.Remove(movie);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+
+            var game = await _context.Games.FirstOrDefaultAsync(g => g.Id == id && g.UserId == userId);
+            if (game != null)
+            {
+                _context.Games.Remove(game);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+
+            return false;
         }
     }
 }

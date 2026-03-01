@@ -8,7 +8,6 @@ namespace CollectorsVault.Server.Data
         public VaultDbContext(DbContextOptions<VaultDbContext> options) : base(options) { }
 
         public DbSet<User> Users { get; set; }
-        public DbSet<VaultItem> VaultItems { get; set; }
         public DbSet<Book> Books { get; set; }
         public DbSet<Movie> Movies { get; set; }
         public DbSet<Game> Games { get; set; }
@@ -18,18 +17,20 @@ namespace CollectorsVault.Server.Data
             base.OnModelCreating(modelBuilder);
 
             modelBuilder.Entity<User>()
+                .ToTable("User")
                 .HasIndex(u => u.Username)
                 .IsUnique();
 
             modelBuilder.Entity<VaultItem>()
+                .UseTpcMappingStrategy()
                 .HasOne(v => v.User)
                 .WithMany(u => u.VaultItems)
                 .HasForeignKey(v => v.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<Book>().ToTable("Books");
-            modelBuilder.Entity<Movie>().ToTable("Movies");
-            modelBuilder.Entity<Game>().ToTable("Games");
+            modelBuilder.Entity<Book>().ToTable("Book");
+            modelBuilder.Entity<Movie>().ToTable("Movie");
+            modelBuilder.Entity<Game>().ToTable("Game");
         }
     }
 }

@@ -58,12 +58,20 @@ Swagger:
 
 ## Persistence
 
-Uses SQLite with file-based persistence. Books, movies, and games are stored in separate tables (`Books`, `Movies`, `Games`) using the Table Per Type (TPT) inheritance strategy, with shared base fields kept in the `VaultItems` table.
+Uses SQLite with file-based persistence. Each concrete item type (Book, Movie, Game) is stored in its own dedicated table using the Table Per Concrete Type (TPC) inheritance strategy — there is no shared `VaultItem` table.
 
 - Configured in `appsettings.json`
 - Default path: `Data/collectorsvault.db`
 - API startup logs the resolved DB path
-- Database tables: `Users`, `VaultItems`, `Books`, `Movies`, `Games`
+- Database tables: `User`, `Book`, `Movie`, `Game`
+
+## Database Schema Standards
+
+When adding or modifying database schema, follow these conventions:
+
+- **Table names** must be **singular** (e.g., `User`, `Book`, `Movie`, `Game`).
+- **Boolean/bit column names** must use the `{columnName}Ind` suffix (e.g., `AdminInd`).
+- Configure table names explicitly with `.ToTable("TableName")` in `OnModelCreating`.
 
 ## Endpoints
 

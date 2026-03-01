@@ -2,7 +2,7 @@ using System;
 
 namespace CollectorsVault.Server.Models
 {
-    public class VaultItem
+    public abstract class VaultItem
     {
         public long Id { get; set; }
         public string Title { get; set; } = string.Empty;
