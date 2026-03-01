@@ -25,6 +25,9 @@ namespace CollectorsVault.Server.Contracts
         /// <summary>Total page count, if available.</summary>
         public int? PageCount { get; set; }
 
+        /// <summary>Short description or synopsis of the book.</summary>
+        public string Description { get; set; } = string.Empty;
+
         /// <summary>Subject / genre tags.</summary>
         public List<string> Subjects { get; set; } = new List<string>();
 

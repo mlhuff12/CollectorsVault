@@ -24,6 +24,7 @@ namespace CollectorsVault.Api.Tests
                 Title = "The Hobbit",
                 Isbn = "9780547928227",
                 Authors = new List<string> { "J.R.R. Tolkien" },
+                Description = "In a hole in the ground there lived a hobbit.",
                 CoverLarge = "https://covers.openlibrary.org/b/isbn/9780547928227-L.jpg"
             };
 
@@ -35,6 +36,7 @@ namespace CollectorsVault.Api.Tests
             var ok = Assert.IsType<OkObjectResult>(result.Result);
             var payload = Assert.IsType<BookLookupResult>(ok.Value);
             Assert.Equal("The Hobbit", payload.Title);
+            Assert.Equal("In a hole in the ground there lived a hobbit.", payload.Description);
             Assert.Equal("https://covers.openlibrary.org/b/isbn/9780547928227-L.jpg", payload.CoverLarge);
         }
 

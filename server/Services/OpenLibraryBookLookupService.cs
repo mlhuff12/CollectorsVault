@@ -11,8 +11,10 @@ namespace CollectorsVault.Server.Services
     /// <summary>
     /// <see cref="IBookLookupService"/> implementation backed by the Open Library API.
     /// <list type="bullet">
-    ///   <item>ISBN lookup uses <c>/api/books?jscmd=data</c> to return rich metadata including cover images.</item>
-    ///   <item>Title / author search uses <c>/search.json</c> and derives cover image URLs from the <c>cover_i</c> field.</item>
+    ///   <item>ISBN lookup uses <c>/api/books?jscmd=data</c> for rich metadata (covers, publishers, subjects), then
+    ///   fetches the linked Work record (<c>/works/{key}.json</c>) to add the book description — two HTTP requests total.</item>
+    ///   <item>Title / author search uses <c>/search.json</c> and derives cover image URLs from the <c>cover_i</c> field.
+    ///   Descriptions are not fetched for search results to avoid per-result extra requests.</item>
     /// </list>
     /// To switch to a different provider, implement <see cref="IBookLookupService"/> and update the DI registration in <c>Program.cs</c>.
     /// </summary>
@@ -44,7 +46,16 @@ namespace CollectorsVault.Server.Services
 
             // Response is a dict keyed by "ISBN:xxx" — grab the first (only) entry.
             foreach (var prop in root.EnumerateObject())
-                return ParseFromDataResponse(prop.Value, isbn);
+            {
+                var result = ParseFromDataResponse(prop.Value, isbn);
+
+                // Description is not included in /api/books; fetch it from the linked Work record.
+                var workKey = ExtractFirstWorkKey(prop.Value);
+                if (!string.IsNullOrEmpty(workKey))
+                    result.Description = await FetchWorkDescriptionAsync(workKey);
+
+                return result;
+            }
 
             return null;
         }
@@ -136,6 +147,7 @@ namespace CollectorsVault.Server.Services
         /// <summary>
         /// Parses a book from a single doc element in the <c>/search.json</c> response.
         /// Cover image URLs are derived from the <c>cover_i</c> field.
+        /// Description is not populated here to avoid per-result extra requests.
         /// </summary>
         private static BookLookupResult ParseFromSearchDoc(JsonElement el)
         {
@@ -179,6 +191,57 @@ namespace CollectorsVault.Server.Services
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Extracts the first work key (e.g. <c>/works/OL262059W</c>) from a <c>/api/books?jscmd=data</c> element.
+        /// </summary>
+        private static string? ExtractFirstWorkKey(JsonElement el)
+        {
+            if (!el.TryGetProperty("works", out var works))
+                return null;
+            foreach (var work in works.EnumerateArray())
+            {
+                if (work.TryGetProperty("key", out var key))
+                    return key.GetString();
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Fetches the description for a work from <c>/works/{key}.json</c>.
+        /// The description field may be a plain string or an object with a <c>value</c> property.
+        /// Returns an empty string when the work has no description or the request fails.
+        /// </summary>
+        private async Task<string> FetchWorkDescriptionAsync(string workKey)
+        {
+            // workKey is like "/works/OL262059W"
+            var response = await _httpClient.GetAsync($"{workKey}.json");
+            if (!response.IsSuccessStatusCode)
+                return string.Empty;
+
+            var json = await response.Content.ReadAsStringAsync();
+            try
+            {
+                using var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement;
+
+                if (!root.TryGetProperty("description", out var desc))
+                    return string.Empty;
+
+                // The field is either a plain string or {"type": "/type/text", "value": "..."}
+                if (desc.ValueKind == JsonValueKind.String)
+                    return desc.GetString() ?? string.Empty;
+
+                if (desc.ValueKind == JsonValueKind.Object && desc.TryGetProperty("value", out var value))
+                    return value.GetString() ?? string.Empty;
+            }
+            catch (JsonException)
+            {
+                // Malformed JSON from the Works endpoint — treat as no description
+            }
+
+            return string.Empty;
         }
     }
 }
