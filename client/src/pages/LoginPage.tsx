@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { login } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -7,10 +7,17 @@ import { getApiErrorMessage } from '../utils/errorUtils';
 const LoginPage: React.FC = () => {
     const history = useHistory();
     const { setAuth } = useAuth();
+    const isMountedRef = useRef(true);
     const [username, setUsername] = useState('');
     const [totpCode, setTotpCode] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -21,9 +28,13 @@ const LoginPage: React.FC = () => {
             setAuth(data.token, data.username);
             history.push('/');
         } catch (err) {
-            setError(getApiErrorMessage(err, 'Invalid username or TOTP code.'));
+            if (isMountedRef.current) {
+                setError(getApiErrorMessage(err, 'Invalid username or authenticator code.'));
+            }
         } finally {
-            setLoading(false);
+            if (isMountedRef.current) {
+                setLoading(false);
+            }
         }
     };
 

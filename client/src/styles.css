@@ -342,6 +342,15 @@ body {
   margin: 16px 0;
 }
 
+.totp-qr-image {
+  width: 220px;
+  height: 220px;
+  max-width: 100%;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
 .totp-secret {
   display: block;
   background: #f3f4f6;

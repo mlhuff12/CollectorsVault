@@ -11,6 +11,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -135,10 +136,78 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<VaultDbContext>();
     dbContext.Database.EnsureCreated();
+
+    var requiredTables = new[] { "Users", "VaultItems" };
+    var missingTables = GetMissingTables(dbContext, requiredTables);
+    if (missingTables.Count > 0)
+    {
+        app.Logger.LogWarning(
+            "SQLite database is incompatible. Missing required tables: {MissingTables}. Recreating schema.",
+            string.Join(", ", missingTables));
+
+        var dbPath = sqliteConnectionBuilder.DataSource;
+        if (!string.IsNullOrWhiteSpace(dbPath) && File.Exists(dbPath))
+        {
+            var backupPath = $"{dbPath}.backup-{DateTime.UtcNow:yyyyMMddHHmmss}";
+            File.Copy(dbPath, backupPath, overwrite: true);
+            app.Logger.LogWarning("Backed up incompatible SQLite database to: {BackupPath}", backupPath);
+        }
+
+        dbContext.Database.EnsureDeleted();
+        dbContext.Database.EnsureCreated();
+        app.Logger.LogInformation("SQLite schema recreated successfully.");
+    }
 }
 
 app.Logger.LogInformation("Using SQLite database at: {DatabasePath}", sqliteConnectionBuilder.DataSource);
 
 app.Run();
+
+static List<string> GetMissingTables(VaultDbContext dbContext, IEnumerable<string> requiredTables)
+{
+    var connection = dbContext.Database.GetDbConnection();
+    using var command = connection.CreateCommand();
+    if (command.Connection is null)
+    {
+        return new List<string>();
+    }
+
+    var openedByMethod = false;
+    if (command.Connection.State != System.Data.ConnectionState.Open)
+    {
+        command.Connection.Open();
+        openedByMethod = true;
+    }
+
+    try
+    {
+        var missingTables = new List<string>();
+        foreach (var tableName in requiredTables)
+        {
+            command.CommandText = "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = $name LIMIT 1;";
+            command.Parameters.Clear();
+
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = "$name";
+            parameter.Value = tableName;
+            command.Parameters.Add(parameter);
+
+            var exists = command.ExecuteScalar() is not null;
+            if (!exists)
+            {
+                missingTables.Add(tableName);
+            }
+        }
+
+        return missingTables;
+    }
+    finally
+    {
+        if (openedByMethod && command.Connection.State == System.Data.ConnectionState.Open)
+        {
+            command.Connection.Close();
+        }
+    }
+}
 
 public partial class Program { }

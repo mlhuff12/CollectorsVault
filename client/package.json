@@ -7,6 +7,10 @@
     "build": "set \"NODE_OPTIONS=--openssl-legacy-provider\" && react-scripts build",
     "test": "react-scripts test",
     "test:ci": "react-scripts test --watchAll=false",
+    "test:ui": "react-scripts test --watchAll=false --testPathPattern=src/tests/ui",
+    "test:unit": "react-scripts test --watchAll=false --testPathPattern=src/tests/unit --passWithNoTests",
+    "test:integration": "react-scripts test --watchAll=false --testPathPattern=src/tests/integration --passWithNoTests",
+    "test:all": "npm run test:ui && npm run test:unit && npm run test:integration",
     "eject": "react-scripts eject"
   },
   "dependencies": {

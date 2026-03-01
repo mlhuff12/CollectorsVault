@@ -59,7 +59,7 @@ namespace CollectorsVault.Server.Controllers
         /// <returns>JWT bearer token and username on success.</returns>
         /// <response code="200">Authentication successful. Returns JWT token.</response>
         /// <response code="400">Username or TOTP code is missing.</response>
-        /// <response code="401">Invalid username or TOTP code.</response>
+        /// <response code="401">Invalid username or authenticator code.</response>
         [HttpPost("login")]
         [ProducesResponseType(typeof(LoginResponse), 200)]
         [ProducesResponseType(400)]
@@ -74,7 +74,7 @@ namespace CollectorsVault.Server.Controllers
             var response = await _authService.LoginAsync(request.Username.Trim(), request.TotpCode.Trim());
             if (response == null)
             {
-                return Unauthorized("Invalid username or TOTP code.");
+                return Unauthorized("Invalid username or authenticator code.");
             }
 
             return Ok(response);

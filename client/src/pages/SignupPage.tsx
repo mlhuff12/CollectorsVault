@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import QRCode from 'qrcode';
 import { signup } from '../services/api';
@@ -11,17 +11,48 @@ const SignupPage: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [totpUri, setTotpUri] = useState<string | null>(null);
     const [totpSecret, setTotpSecret] = useState<string | null>(null);
-    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
+    const [qrCodeError, setQrCodeError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (totpUri && canvasRef.current) {
-            QRCode.toCanvas(canvasRef.current, totpUri, { width: 200 });
-        }
+        let isCancelled = false;
+
+        const generateQrCode = async () => {
+            if (!totpUri) {
+                setQrCodeDataUrl(null);
+                setQrCodeError(null);
+                return;
+            }
+
+            try {
+                const dataUrl = await QRCode.toDataURL(totpUri, {
+                    width: 220,
+                    margin: 2
+                });
+
+                if (!isCancelled) {
+                    setQrCodeDataUrl(dataUrl);
+                    setQrCodeError(null);
+                }
+            } catch {
+                if (!isCancelled) {
+                    setQrCodeDataUrl(null);
+                    setQrCodeError('Unable to generate QR code. Please use the manual secret below.');
+                }
+            }
+        };
+
+        generateQrCode();
+
+        return () => {
+            isCancelled = true;
+        };
     }, [totpUri]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
+        setQrCodeError(null);
         setLoading(true);
         try {
             const data = await signup(username.trim());
@@ -47,7 +78,13 @@ const SignupPage: React.FC = () => {
                     <h2>Set Up Authenticator</h2>
                     <p>Scan this QR code with your authenticator app (e.g. Google Authenticator):</p>
                     <div className="totp-qr">
-                        <canvas ref={canvasRef} aria-label="TOTP QR Code" />
+                        {qrCodeDataUrl ? (
+                            <img src={qrCodeDataUrl} alt="TOTP QR Code" className="totp-qr-image" />
+                        ) : (
+                            <div className="auth-error" role="alert">
+                                {qrCodeError ?? 'Generating QR code...'}
+                            </div>
+                        )}
                     </div>
                     <p>Or enter this secret manually:</p>
                     <code className="totp-secret">{totpSecret}</code>

@@ -28,3 +28,4 @@ server/*.db-wal
 server/Data/*.db
 server/Data/*.db-shm
 server/Data/*.db-wal
+server/secrets.json.dev.example
