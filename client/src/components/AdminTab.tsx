@@ -52,53 +52,60 @@ const AdminTab: React.FC = () => {
     };
 
     if (loading) {
-        return <div className="status-message">Loading...</div>;
+        return <div className="text-muted">Loading...</div>;
     }
 
     if (error) {
-        return <div className="status-message error">Error: {error}</div>;
+        return <div className="text-danger">Error: {error}</div>;
     }
 
     return (
-        <div className="items-section">
-            <h2>All Users</h2>
-            {users.length === 0 && <p className="status-message">No users found.</p>}
-            <table className="admin-users-table">
-                <thead>
-                    <tr>
-                        <th>Username</th>
-                        <th>Books</th>
-                        <th>Movies</th>
-                        <th>Games</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {users.map((user) => {
-                        const isSelf = user.username === username;
-                        return (
-                            <tr key={user.id}>
-                                <td>{user.username}{user.isAdmin && <span className="category-badge admin">admin</span>}</td>
-                                <td>{user.bookCount}</td>
-                                <td>{user.movieCount}</td>
-                                <td>{user.gameCount}</td>
-                                <td>
-                                    <button
-                                        type="button"
-                                        className="danger-icon-button"
-                                        onClick={() => handleDelete(user)}
-                                        disabled={isSelf || deletingId === user.id}
-                                        title={isSelf ? 'Cannot delete your own account' : deletingId === user.id ? 'Deleting user' : 'Delete user'}
-                                        aria-label={isSelf ? `Cannot delete ${user.username}` : deletingId === user.id ? `Deleting ${user.username}` : `Delete ${user.username}`}
-                                    >
-                                        {deletingId === user.id ? '…' : <FontAwesomeIcon icon={faTrashAlt} />}
-                                    </button>
-                                </td>
-                            </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
+        <div>
+            <h2 className="h5 mb-3">All Users</h2>
+            {users.length === 0 && <p className="text-muted">No users found.</p>}
+            <div className="table-responsive">
+                <table className="table table-hover align-middle mb-0">
+                    <thead className="table-light">
+                        <tr>
+                            <th>Username</th>
+                            <th>Books</th>
+                            <th>Movies</th>
+                            <th>Games</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {users.map((user) => {
+                            const isSelf = user.username === username;
+                            return (
+                                <tr key={user.id}>
+                                    <td>
+                                        {user.username}
+                                        {user.isAdmin && (
+                                            <span className="badge bg-warning text-dark ms-2">admin</span>
+                                        )}
+                                    </td>
+                                    <td>{user.bookCount}</td>
+                                    <td>{user.movieCount}</td>
+                                    <td>{user.gameCount}</td>
+                                    <td>
+                                        <button
+                                            type="button"
+                                            className="btn btn-danger btn-sm"
+                                            onClick={() => handleDelete(user)}
+                                            disabled={isSelf || deletingId === user.id}
+                                            title={isSelf ? 'Cannot delete your own account' : deletingId === user.id ? 'Deleting user' : 'Delete user'}
+                                            aria-label={isSelf ? `Cannot delete ${user.username}` : deletingId === user.id ? `Deleting ${user.username}` : `Delete ${user.username}`}
+                                        >
+                                            {deletingId === user.id ? '…' : <FontAwesomeIcon icon={faTrashAlt} />}
+                                        </button>
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 };

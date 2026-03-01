@@ -77,31 +77,31 @@ const SignupPage: React.FC = () => {
 
     if (totpUri && totpSecret) {
         return (
-            <div className="auth-page">
-                <div className="auth-card">
-                    <div className="brand-row">
+            <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light py-4">
+                <div className="card shadow p-4 auth-card-width">
+                    <div className="d-flex align-items-center gap-3 mb-3">
                         <div className="brand-logo" aria-hidden="true">CV</div>
                         <div>
-                            <h1>Collector&apos;s Vault</h1>
+                            <h1 className="h4 mb-0">Collector&apos;s Vault</h1>
                         </div>
                     </div>
-                    <h2>Set Up Authenticator</h2>
-                    <p>Scan this QR code with your authenticator app (e.g. Google Authenticator):</p>
-                    <div className="totp-qr">
+                    <h2 className="h5 mb-3">Set Up Authenticator</h2>
+                    <p className="text-muted">Scan this QR code with your authenticator app (e.g. Google Authenticator):</p>
+                    <div className="d-flex justify-content-center my-3">
                         {qrCodeDataUrl ? (
-                            <img src={qrCodeDataUrl} alt="TOTP QR Code" className="totp-qr-image" />
+                            <img src={qrCodeDataUrl} alt="TOTP QR Code" className="totp-qr-image border rounded" />
                         ) : (
-                            <div className="auth-error" role="alert">
+                            <div className="alert alert-danger" role="alert">
                                 {qrCodeError ?? 'Generating QR code...'}
                             </div>
                         )}
                     </div>
-                    <p>Or enter this secret manually:</p>
-                    <code className="totp-secret">{totpSecret}</code>
-                    <p>Once scanned, you can sign in with your username and the code from the app.</p>
+                    <p className="text-muted">Or enter this secret manually:</p>
+                    <code className="d-block bg-light rounded p-2 small text-break mb-3">{totpSecret}</code>
+                    <p className="text-muted small">Once scanned, you can sign in with your username and the code from the app.</p>
                     <button
                         type="button"
-                        className="primary-button"
+                        className="btn btn-primary w-100"
                         onClick={() => history.push('/login')}
                     >
                         Go to Sign In
@@ -112,37 +112,37 @@ const SignupPage: React.FC = () => {
     }
 
     return (
-        <div className="auth-page">
-            <div className="auth-card">
-                <div className="brand-row">
+        <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light py-4">
+            <div className="card shadow p-4 auth-card-width">
+                <div className="d-flex align-items-center gap-3 mb-3">
                     <div className="brand-logo" aria-hidden="true">CV</div>
                     <div>
-                        <h1>Collector&apos;s Vault</h1>
-                        <p>Track your favorite books, movies, and games.</p>
+                        <h1 className="h4 mb-0">Collector&apos;s Vault</h1>
+                        <p className="text-muted mb-0 small">Track your favorite books, movies, and games.</p>
                     </div>
                 </div>
-                <h2>Create Account</h2>
-                <form onSubmit={handleSubmit} className="auth-form">
-                    <div className="form-group">
-                        <label htmlFor="username">Username</label>
+                <h2 className="h5 mb-3">Create Account</h2>
+                <form onSubmit={handleSubmit}>
+                    <div className="mb-3">
+                        <label htmlFor="username" className="form-label">Username</label>
                         <input
                             id="username"
                             type="text"
-                            className="form-input"
+                            className="form-control"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
                             required
                             autoComplete="username"
                         />
                     </div>
-                    {error && <div className="auth-error">{error}</div>}
-                    <button type="submit" className="primary-button" disabled={loading}>
+                    {error && <div className="alert alert-danger py-2" role="alert">{error}</div>}
+                    <button type="submit" className="btn btn-primary w-100" disabled={loading}>
                         {loading ? 'Creating account...' : 'Create Account'}
                     </button>
                 </form>
-                <p className="auth-link">
+                <p className="text-center text-muted mt-3 mb-0 small">
                     Already have an account?{' '}
-                    <button type="button" className="link-button" onClick={() => history.push('/login')}>
+                    <button type="button" className="btn btn-link p-0 small" onClick={() => history.push('/login')}>
                         Sign in
                     </button>
                 </p>

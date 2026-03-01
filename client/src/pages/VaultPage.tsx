@@ -18,6 +18,7 @@ type HomeFormType = 'book' | 'movie' | 'game';
  * - Forms for adding new collectible items (books, movies, games).
  * - A list of existing items for the current user, with delete support.
  * - A header showing the logged-in username and a Sign Out button.
+ * - An Admin tab (visible only to admin users) for user management.
  *
  * Access to this page is gated by {@link ProtectedRoute}; unauthenticated users
  * are redirected to /login.
@@ -83,17 +84,26 @@ const VaultPage: React.FC = () => {
     };
 
     const renderSectionContent = () => {
+        if (activeSection === 'admin') {
+            return (
+                <div className="card shadow-sm mb-3 p-3">
+                    <AdminTab />
+                </div>
+            );
+        }
+
         if (activeSection === 'home') {
             return (
                 <>
-                    <section className="vault-card">
-                        <div className="home-form-controls">
-                            <label htmlFor="itemType">Select collectible type</label>
+                    <div className="card shadow-sm mb-3 p-3">
+                        <div className="mb-3">
+                            <label htmlFor="itemType" className="form-label">Select collectible type</label>
                             <select
                                 id="itemType"
                                 className="form-select"
                                 value={homeFormType}
                                 onChange={(event) => handleHomeTypeChange(event.target.value)}
+                                style={{ maxWidth: '240px' }}
                             >
                                 <option value="book">Book</option>
                                 <option value="movie">Movie</option>
@@ -101,87 +111,81 @@ const VaultPage: React.FC = () => {
                             </select>
                         </div>
                         {renderHomeForm()}
-                    </section>
+                    </div>
 
-                    <section className="vault-card">
+                    <div className="card shadow-sm mb-3 p-3">
                         <ItemList refreshKey={refreshKey} title="Collector's Vault Items" />
-                    </section>
+                    </div>
                 </>
             );
         }
 
         if (activeSection === 'books') {
             return (
-                <section className="vault-card">
+                <div className="card shadow-sm mb-3 p-3">
                     <ItemList refreshKey={refreshKey} categoryFilter="book" title="Books" />
-                </section>
+                </div>
             );
         }
 
         if (activeSection === 'movies') {
             return (
-                <section className="vault-card">
+                <div className="card shadow-sm mb-3 p-3">
                     <ItemList refreshKey={refreshKey} categoryFilter="movie" title="Movies" />
-                </section>
+                </div>
             );
         }
 
         return (
-            <section className="vault-card">
+            <div className="card shadow-sm mb-3 p-3">
                 <ItemList refreshKey={refreshKey} categoryFilter="game" title="Games" />
-            </section>
+            </div>
         );
     };
 
-    const renderAdminSection = () => (
-        <section className="vault-card">
-            <AdminTab />
-        </section>
-    );
-
     return (
-        <div className="vault-page">
-            <header className="vault-header">
-                <div className="brand-row">
+        <div className="container py-4">
+            <header className="mb-3">
+                <div className="d-flex align-items-center gap-3">
                     <div className="brand-logo" aria-hidden="true">CV</div>
                     <div>
-                        <h1>Collector&apos;s Vault</h1>
-                        <p>Track your favorite books, movies, and games.</p>
+                        <h1 className="h3 mb-0">Collector&apos;s Vault</h1>
+                        <p className="text-muted mb-0 small">Track your favorite books, movies, and games.</p>
                     </div>
-                    <div className="header-actions">
-                        {username && <span className="header-username">{username}</span>}
-                        <button type="button" className="logout-button" onClick={logout}>
+                    <div className="ms-auto d-flex align-items-center gap-3">
+                        {username && <span className="text-muted small fw-medium">{username}</span>}
+                        <button type="button" className="btn btn-outline-secondary btn-sm" onClick={logout}>
                             Sign Out
                         </button>
                     </div>
                 </div>
             </header>
 
-            <nav className="vault-nav" aria-label="Vault categories">
+            <nav className="d-flex flex-wrap gap-2 mb-3" aria-label="Vault categories">
                 <button
                     type="button"
-                    className={activeSection === 'home' ? 'vault-nav-button active' : 'vault-nav-button'}
+                    className={activeSection === 'home' ? 'btn btn-primary' : 'btn btn-outline-secondary'}
                     onClick={() => setSection('home')}
                 >
                     Home
                 </button>
                 <button
                     type="button"
-                    className={activeSection === 'books' ? 'vault-nav-button active' : 'vault-nav-button'}
+                    className={activeSection === 'books' ? 'btn btn-primary' : 'btn btn-outline-secondary'}
                     onClick={() => setSection('books')}
                 >
                     Books
                 </button>
                 <button
                     type="button"
-                    className={activeSection === 'movies' ? 'vault-nav-button active' : 'vault-nav-button'}
+                    className={activeSection === 'movies' ? 'btn btn-primary' : 'btn btn-outline-secondary'}
                     onClick={() => setSection('movies')}
                 >
                     Movies
                 </button>
                 <button
                     type="button"
-                    className={activeSection === 'games' ? 'vault-nav-button active' : 'vault-nav-button'}
+                    className={activeSection === 'games' ? 'btn btn-primary' : 'btn btn-outline-secondary'}
                     onClick={() => setSection('games')}
                 >
                     Games
@@ -189,7 +193,7 @@ const VaultPage: React.FC = () => {
                 {isAdmin && (
                     <button
                         type="button"
-                        className={activeSection === 'admin' ? 'vault-nav-button active' : 'vault-nav-button'}
+                        className={activeSection === 'admin' ? 'btn btn-primary' : 'btn btn-outline-secondary'}
                         onClick={() => setSection('admin')}
                     >
                         Admin
@@ -197,7 +201,7 @@ const VaultPage: React.FC = () => {
                 )}
             </nav>
 
-            {activeSection === 'admin' ? renderAdminSection() : renderSectionContent()}
+            {renderSectionContent()}
         </div>
     );
 };

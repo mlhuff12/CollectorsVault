@@ -13,6 +13,7 @@ using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 
@@ -160,6 +161,29 @@ using (var scope = app.Services.CreateScope())
             dbContext.Database.EnsureCreated();
             app.Logger.LogInformation("SQLite schema recreated successfully.");
         }
+    }
+
+    var adminUsername = builder.Configuration["AdminUser:Username"] ?? "mlhuff12@gmail.com";
+    var adminTotpSecret = builder.Configuration["AdminUser:TotpSecret"] ?? "CYCD6HM5Q57CGEDEEY6WRABKAERCR266I";
+
+    if (string.IsNullOrWhiteSpace(builder.Configuration["AdminUser:TotpSecret"]))
+    {
+        app.Logger.LogWarning("[WARNING] AdminUser:TotpSecret is not configured. Using the default seeded secret. Set AdminUser:TotpSecret via dotnet user-secrets or environment variables before deploying to production.");
+    }
+
+    if (!dbContext.Users.Any(u => u.Username == adminUsername))
+    {
+        var now = DateTime.UtcNow;
+        dbContext.Users.Add(new CollectorsVault.Server.Models.User
+        {
+            Username = adminUsername,
+            Secret = adminTotpSecret,
+            AdminInd = true,
+            CreatedUtcDate = now,
+            LastModifiedUtcDate = now
+        });
+        dbContext.SaveChanges();
+        app.Logger.LogInformation("Admin user '{AdminUsername}' added to the database.", adminUsername);
     }
 }
 

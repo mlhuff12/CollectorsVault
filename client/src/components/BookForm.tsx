@@ -55,38 +55,39 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
     };
 
     return (
-        <div className="form-section">
-            <h2>Add a New Book</h2>
+        <div>
+            <h2 className="h5 mb-3">Add a New Book</h2>
             <form onSubmit={handleSubmit}>
-                <div className="form-row">
-                    <label>Title:</label>
-                    <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} required />
+                <div className="mb-3">
+                    <label className="form-label">Title:</label>
+                    <input type="text" className="form-control" value={title} onChange={(e) => setTitle(e.target.value)} required />
                 </div>
-                <div className="form-row">
-                    <label>Authors (comma-separated):</label>
+                <div className="mb-3">
+                    <label className="form-label">Authors (comma-separated):</label>
                     <input
                         type="text"
+                        className="form-control"
                         value={authors}
                         onChange={(e) => setAuthors(e.target.value)}
                         placeholder="Author One, Author Two"
                         required
                     />
                 </div>
-                <div className="form-row">
-                    <label>ISBN (optional):</label>
-                    <input type="text" value={isbn} onChange={(e) => setIsbn(e.target.value)} />
+                <div className="mb-3">
+                    <label className="form-label">ISBN (optional):</label>
+                    <input type="text" className="form-control" value={isbn} onChange={(e) => setIsbn(e.target.value)} />
                 </div>
-                <div className="form-row">
-                    <label>Year (optional):</label>
-                    <input type="number" value={year} onChange={(e) => setYear(e.target.value)} />
+                <div className="mb-3">
+                    <label className="form-label">Year (optional):</label>
+                    <input type="number" className="form-control" value={year} onChange={(e) => setYear(e.target.value)} />
                 </div>
-                <div className="form-row">
-                    <label>Genre (optional):</label>
-                    <input type="text" value={genre} onChange={(e) => setGenre(e.target.value)} />
+                <div className="mb-3">
+                    <label className="form-label">Genre (optional):</label>
+                    <input type="text" className="form-control" value={genre} onChange={(e) => setGenre(e.target.value)} />
                 </div>
-                <button className="primary-button" type="submit">Add Book</button>
+                <button className="btn btn-primary" type="submit">Add Book</button>
             </form>
-            {message && <p className="form-message">{message}</p>}
+            {message && <p className="mt-2 text-success">{message}</p>}
         </div>
     );
 };
