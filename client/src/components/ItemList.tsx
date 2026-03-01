@@ -65,29 +65,29 @@ const ItemList: React.FC<ItemListProps> = ({ refreshKey = 0, title = "Collector'
     };
 
     if (loading) {
-        return <div className="status-message">Loading...</div>;
+        return <div className="text-muted">Loading...</div>;
     }
 
     if (error) {
-        return <div className="status-message error">Error: {error}</div>;
+        return <div className="text-danger">Error: {error}</div>;
     }
 
     return (
-        <div className="items-section">
-            <h2>{title}</h2>
-            {visibleItems.length === 0 && <p className="status-message">No items found in this category yet.</p>}
-            <ul className="items-list">
+        <div>
+            <h2 className="h5 mb-3">{title}</h2>
+            {visibleItems.length === 0 && <p className="text-muted">No items found in this category yet.</p>}
+            <ul className="list-group list-group-flush">
                 {visibleItems.map(item => (
-                    <li key={`${item.category}-${item.id}`} className="item-row">
-                        <div className="item-title-group">
+                    <li key={`${item.category}-${item.id}`} className="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <div className="d-flex align-items-center gap-2">
                             <span>{item.title}</span>
-                            <span className={`category-badge ${item.category}`}>{item.category}</span>
+                            <span className={`badge category-badge ${item.category}`}>{item.category}</span>
                         </div>
-                        <div className="item-actions">
-                            {item.dateAdded && <small>Added {new Date(item.dateAdded).toLocaleDateString()}</small>}
+                        <div className="d-flex align-items-center gap-2">
+                            {item.dateAdded && <small className="text-muted">Added {new Date(item.dateAdded).toLocaleDateString()}</small>}
                             <button
                                 type="button"
-                                className="danger-icon-button"
+                                className="btn btn-danger btn-sm"
                                 onClick={() => handleDelete(item)}
                                 disabled={deletingId === item.id}
                                 title={deletingId === item.id ? 'Deleting item' : 'Delete item'}
