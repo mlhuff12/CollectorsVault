@@ -18,6 +18,11 @@ namespace CollectorsVault.Server.Contracts
         public string Director { get; set; } = string.Empty;
         public int ReleaseYear { get; set; }
         public string Genre { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string CoverUrl { get; set; } = string.Empty;
+        public string Rating { get; set; } = string.Empty;
+        public string Runtime { get; set; } = string.Empty;
+        public string Cast { get; set; } = string.Empty;
     }
 
     public class GameRequest
@@ -25,6 +30,11 @@ namespace CollectorsVault.Server.Contracts
         public string Title { get; set; } = string.Empty;
         public string Platform { get; set; } = string.Empty;
         public string ReleaseDate { get; set; } = string.Empty;
+        public string Genre { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string CoverUrl { get; set; } = string.Empty;
+        public string Developer { get; set; } = string.Empty;
+        public string Publisher { get; set; } = string.Empty;
     }
 
     public class VaultItemResponse

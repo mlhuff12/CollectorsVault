@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { AdminUser, Book, Game, Movie, VaultItem } from '../types';
+import { AdminUser, Book, BookLookupResult, Game, GameLookupResult, Movie, MovieLookupResult, VaultItem } from '../types';
 
 const BASE_URL = process.env.REACT_APP_API_BASE_URL ?? 'http://localhost:5000';
 const API_URL = `${BASE_URL}/api/vault`;
@@ -32,6 +32,21 @@ export const addGame = async (game: Game): Promise<Game> => {
 
 export const deleteItem = async (id: number): Promise<void> => {
     await axios.delete(`${API_URL}/${id}`, { headers: getAuthHeader() });
+};
+
+export const lookupBookByIsbn = async (isbn: string): Promise<BookLookupResult> => {
+    const response = await axios.get(`${BASE_URL}/api/booklookup/isbn/${encodeURIComponent(isbn)}`, { headers: getAuthHeader() });
+    return response.data;
+};
+
+export const lookupMovieByUpc = async (upc: string): Promise<MovieLookupResult> => {
+    const response = await axios.get(`${BASE_URL}/api/movielookup/upc/${encodeURIComponent(upc)}`, { headers: getAuthHeader() });
+    return response.data;
+};
+
+export const lookupGameByUpc = async (upc: string): Promise<GameLookupResult> => {
+    const response = await axios.get(`${BASE_URL}/api/gamelookup/upc/${encodeURIComponent(upc)}`, { headers: getAuthHeader() });
+    return response.data;
 };
 
 export const signup = async (username: string): Promise<{ username: string; totpUri: string; totpSecret: string }> => {

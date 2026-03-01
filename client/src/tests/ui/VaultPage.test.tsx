@@ -10,7 +10,10 @@ jest.mock('../../services/api', () => ({
     addMovie: jest.fn(),
     addGame: jest.fn(),
     deleteItem: jest.fn(),
-    fetchAllUsers: jest.fn()
+    fetchAllUsers: jest.fn(),
+    lookupBookByIsbn: jest.fn(),
+    lookupMovieByUpc: jest.fn(),
+    lookupGameByUpc: jest.fn()
 }));
 
 let mockIsAdmin = false;

@@ -19,12 +19,62 @@ export interface Movie {
     director: string;
     releaseYear: number;
     genre: string;
+    description?: string;
+    coverUrl?: string;
+    rating?: string;
+    runtime?: string;
+    cast?: string;
 }
 
 export interface Game {
     title: string;
-    platform: string; // e.g., PC, Xbox, PlayStation
+    platform: string;
     releaseDate: string;
+    genre?: string;
+    description?: string;
+    coverUrl?: string;
+    developer?: string;
+    publisher?: string;
+}
+
+export interface BookLookupResult {
+    title: string;
+    authors: string[];
+    isbn: string;
+    publisher: string;
+    publishDate: string;
+    pageCount?: number;
+    description: string;
+    subjects: string[];
+    coverSmall: string;
+    coverMedium: string;
+    coverLarge: string;
+    providerUrl: string;
+}
+
+export interface MovieLookupResult {
+    title: string;
+    director: string;
+    releaseYear: number;
+    genre: string;
+    description: string;
+    coverUrl: string;
+    rating: string;
+    runtime: string;
+    cast: string;
+    imdbId: string;
+}
+
+export interface GameLookupResult {
+    title: string;
+    platform: string;
+    releaseYear: number;
+    genre: string;
+    description: string;
+    coverUrl: string;
+    developer: string;
+    publisher: string;
+    igdbId?: number;
 }
 
 export interface AuthState {

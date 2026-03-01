@@ -4,7 +4,8 @@ import GameForm from '../../components/GameForm';
 import * as api from '../../services/api';
 
 jest.mock('../../services/api', () => ({
-    addGame: jest.fn()
+    addGame: jest.fn(),
+    lookupGameByUpc: jest.fn()
 }));
 
 describe('GameForm', () => {

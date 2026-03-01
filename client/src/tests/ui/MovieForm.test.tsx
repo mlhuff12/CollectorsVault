@@ -4,7 +4,8 @@ import MovieForm from '../../components/MovieForm';
 import * as api from '../../services/api';
 
 jest.mock('../../services/api', () => ({
-    addMovie: jest.fn()
+    addMovie: jest.fn(),
+    lookupMovieByUpc: jest.fn()
 }));
 
 describe('MovieForm', () => {

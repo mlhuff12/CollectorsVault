@@ -4,7 +4,8 @@ import BookForm from '../../components/BookForm';
 import * as api from '../../services/api';
 
 jest.mock('../../services/api', () => ({
-    addBook: jest.fn()
+    addBook: jest.fn(),
+    lookupBookByIsbn: jest.fn()
 }));
 
 describe('BookForm', () => {
