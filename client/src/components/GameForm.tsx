@@ -40,37 +40,40 @@ const GameForm: React.FC<GameFormProps> = ({ onItemAdded }) => {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="form-section">
-            <h2>Add a Game</h2>
-            {error && <p className="form-error">{error}</p>}
-            <div className="form-row">
-                <label>Title:</label>
+        <form onSubmit={handleSubmit}>
+            <h2 className="h5 mb-3">Add a Game</h2>
+            {error && <p className="text-danger">{error}</p>}
+            <div className="mb-3">
+                <label className="form-label">Title:</label>
                 <input
                     type="text"
+                    className="form-control"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     required
                 />
             </div>
-            <div className="form-row">
-                <label>Platform:</label>
+            <div className="mb-3">
+                <label className="form-label">Platform:</label>
                 <input
                     type="text"
+                    className="form-control"
                     value={platform}
                     onChange={(e) => setPlatform(e.target.value)}
                     required
                 />
             </div>
-            <div className="form-row">
-                <label>Release Date:</label>
+            <div className="mb-3">
+                <label className="form-label">Release Date:</label>
                 <input
                     type="date"
+                    className="form-control"
                     value={releaseDate}
                     onChange={(e) => setReleaseDate(e.target.value)}
                     required
                 />
             </div>
-            <button className="primary-button" type="submit">Add Game</button>
+            <button className="btn btn-primary" type="submit">Add Game</button>
         </form>
     );
 };

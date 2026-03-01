@@ -48,46 +48,50 @@ const MovieForm: React.FC<MovieFormProps> = ({ onItemAdded }) => {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="form-section">
-            <h2>Add a Movie</h2>
-            {error && <p className="form-error">{error}</p>}
-            <div className="form-row">
-                <label>Title:</label>
+        <form onSubmit={handleSubmit}>
+            <h2 className="h5 mb-3">Add a Movie</h2>
+            {error && <p className="text-danger">{error}</p>}
+            <div className="mb-3">
+                <label className="form-label">Title:</label>
                 <input
                     type="text"
+                    className="form-control"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     required
                 />
             </div>
-            <div className="form-row">
-                <label>Director:</label>
+            <div className="mb-3">
+                <label className="form-label">Director:</label>
                 <input
                     type="text"
+                    className="form-control"
                     value={director}
                     onChange={(e) => setDirector(e.target.value)}
                     required
                 />
             </div>
-            <div className="form-row">
-                <label>Release Year:</label>
+            <div className="mb-3">
+                <label className="form-label">Release Year:</label>
                 <input
                     type="number"
+                    className="form-control"
                     value={releaseYear}
                     onChange={(e) => setReleaseYear(e.target.value)}
                     required
                 />
             </div>
-            <div className="form-row">
-                <label>Genre:</label>
+            <div className="mb-3">
+                <label className="form-label">Genre:</label>
                 <input
                     type="text"
+                    className="form-control"
                     value={genre}
                     onChange={(e) => setGenre(e.target.value)}
                     required
                 />
             </div>
-            <button className="primary-button" type="submit">Add Movie</button>
+            <button className="btn btn-primary" type="submit">Add Movie</button>
         </form>
     );
 };
