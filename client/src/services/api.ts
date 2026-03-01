@@ -21,6 +21,11 @@ export const addBook = async (book: Book): Promise<Book> => {
     return response.data;
 };
 
+export const lookupBookByIsbn = async (isbn: string): Promise<BookLookupResult> => {
+    const response = await axios.get(`${BOOK_LOOKUP_URL}/isbn/${encodeURIComponent(isbn)}`, { headers: getAuthHeader() });
+    return response.data;
+};
+
 export const addMovie = async (movie: Movie): Promise<Movie> => {
     const response = await axios.post(`${API_URL}/movies`, movie, { headers: getAuthHeader() });
     return response.data;

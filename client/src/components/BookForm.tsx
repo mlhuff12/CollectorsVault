@@ -14,9 +14,9 @@ interface BookFormProps {
  * BookForm renders a form for adding a new book to the authenticated user's vault.
  *
  * The user may either:
- * 1. Enter an ISBN and click "Lookup" (or scan a barcode) to auto-populate all fields
- *    from an external book metadata service. After a successful lookup the fields become
- *    read-only and the medium cover image is displayed.
+ * 1. Enter an ISBN and click "Lookup" (or scan a barcode with 📷) to auto-populate all
+ *    fields from an external book metadata service. After a successful lookup the fields
+ *    become read-only and the medium cover image is displayed.
  * 2. Fill in all fields manually (no lookup), in which case every field is editable.
  *
  * On submission the form calls the API and notifies the parent via `onItemAdded`.
