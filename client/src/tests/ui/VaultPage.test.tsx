@@ -4,6 +4,18 @@ import { MemoryRouter } from 'react-router-dom';
 import VaultPage from '../../pages/VaultPage';
 import * as api from '../../services/api';
 
+jest.mock('html5-qrcode', () => ({
+    Html5Qrcode: function() {
+        return {
+            start: () => Promise.resolve(),
+            stop: () => Promise.resolve()
+        };
+    },
+    Html5QrcodeSupportedFormats: {
+        EAN_13: 'EAN_13', EAN_8: 'EAN_8', UPC_A: 'UPC_A', UPC_E: 'UPC_E', CODE_128: 'CODE_128'
+    }
+}));
+
 jest.mock('../../services/api', () => ({
     fetchItems: jest.fn(),
     addBook: jest.fn(),

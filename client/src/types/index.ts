@@ -6,37 +6,6 @@ export interface VaultItem {
     category: 'book' | 'movie' | 'game';
 }
 
-export interface Book {
-    title: string;
-    authors: string[];
-    isbn?: string;
-    year?: number;
-    genre?: string;
-}
-
-export interface Movie {
-    title: string;
-    director: string;
-    releaseYear: number;
-    genre: string;
-    description?: string;
-    coverUrl?: string;
-    rating?: string;
-    runtime?: string;
-    cast?: string;
-}
-
-export interface Game {
-    title: string;
-    platform: string;
-    releaseDate: string;
-    genre?: string;
-    description?: string;
-    coverUrl?: string;
-    developer?: string;
-    publisher?: string;
-}
-
 export interface BookLookupResult {
     title: string;
     authors: string[];
@@ -75,6 +44,46 @@ export interface GameLookupResult {
     developer: string;
     publisher: string;
     igdbId?: number;
+}
+
+export interface Book {
+    title: string;
+    authors: string[];
+    isbn?: string;
+    year?: number;
+    genre?: string;
+    publisher?: string;
+    publishDate?: string;
+    pageCount?: number;
+    description?: string;
+    subjects?: string[];
+    coverSmall?: string;
+    coverMedium?: string;
+    coverLarge?: string;
+    bookUrl?: string;
+}
+
+export interface Movie {
+    title: string;
+    director: string;
+    releaseYear: number;
+    genre: string;
+    description?: string;
+    coverUrl?: string;
+    rating?: string;
+    runtime?: string;
+    cast?: string;
+}
+
+export interface Game {
+    title: string;
+    platform: string;
+    releaseDate: string;
+    genre?: string;
+    description?: string;
+    coverUrl?: string;
+    developer?: string;
+    publisher?: string;
 }
 
 export interface AuthState {
