@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Book, Game, Movie, VaultItem } from '../types';
+import { AdminUser, Book, Game, Movie, VaultItem } from '../types';
 
 const BASE_URL = process.env.REACT_APP_API_BASE_URL ?? 'http://localhost:5000';
 const API_URL = `${BASE_URL}/api/vault`;
@@ -44,7 +44,7 @@ export const login = async (username: string, totpCode: string): Promise<{ token
     return response.data;
 };
 
-export const fetchAllUsers = async (): Promise<import('../types').AdminUser[]> => {
+export const fetchAllUsers = async (): Promise<AdminUser[]> => {
     const response = await axios.get(`${BASE_URL}/api/admin/users`, { headers: getAuthHeader() });
     return response.data;
 };
