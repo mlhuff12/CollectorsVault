@@ -84,6 +84,10 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddHttpClient<IBookLookupService, OpenLibraryBookLookupService>(client =>
+{
+    client.BaseAddress = new Uri("https://openlibrary.org");
+});
 
 var jwtKey = builder.Configuration["Jwt:Key"];
 if (string.IsNullOrWhiteSpace(jwtKey))
