@@ -4,6 +4,7 @@ import { AdminUser, Book, BookLookupResult, Game, GameLookupResult, Movie, Movie
 const BASE_URL = process.env.REACT_APP_API_BASE_URL ?? 'http://localhost:5000';
 const API_URL = `${BASE_URL}/api/vault`;
 const AUTH_URL = `${BASE_URL}/api/auth`;
+const BOOK_LOOKUP_URL = `${BASE_URL}/api/booklookup`;
 
 const getAuthHeader = () => {
     const token = localStorage.getItem('cv_token');
@@ -17,6 +18,11 @@ export const fetchItems = async (): Promise<VaultItem[]> => {
 
 export const addBook = async (book: Book): Promise<Book> => {
     const response = await axios.post(`${API_URL}/books`, book, { headers: getAuthHeader() });
+    return response.data;
+};
+
+export const lookupBookByIsbn = async (isbn: string): Promise<BookLookupResult> => {
+    const response = await axios.get(`${BOOK_LOOKUP_URL}/isbn/${encodeURIComponent(isbn)}`, { headers: getAuthHeader() });
     return response.data;
 };
 
