@@ -31,7 +31,7 @@ const LoginPage: React.FC = () => {
         setLoading(true);
         try {
             const data = await login(username.trim(), totpCode.trim());
-            setAuth(data.token, data.username);
+            setAuth(data.token, data.username, data.isAdmin);
             history.push('/');
         } catch (err) {
             if (isMountedRef.current) {

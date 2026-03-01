@@ -42,4 +42,14 @@ export interface SignupResponse {
 export interface LoginResponse {
     token: string;
     username: string;
+    isAdmin: boolean;
+}
+
+export interface AdminUser {
+    id: number;
+    username: string;
+    isAdmin: boolean;
+    bookCount: number;
+    movieCount: number;
+    gameCount: number;
 }

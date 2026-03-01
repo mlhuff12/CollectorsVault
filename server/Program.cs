@@ -80,6 +80,7 @@ builder.Services.AddDbContext<VaultDbContext>(options =>
     options.UseSqlite(sqliteConnectionBuilder.ConnectionString));
 builder.Services.AddScoped<IVaultService, VaultService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUserService, UserService>();
 

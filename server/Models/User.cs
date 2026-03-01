@@ -7,7 +7,8 @@ namespace CollectorsVault.Server.Models
     {
         public long Id { get; set; }
         public string Username { get; set; } = string.Empty;
-        public string TotpSecret { get; set; } = string.Empty;
+        public string Secret { get; set; } = string.Empty;
+        public bool AdminInd { get; set; } = false;
         public DateTime CreatedUtcDate { get; set; }
         public DateTime LastModifiedUtcDate { get; set; }
         public ICollection<VaultItem> VaultItems { get; set; } = new List<VaultItem>();

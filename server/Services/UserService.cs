@@ -24,5 +24,12 @@ namespace CollectorsVault.Server.Services
                 throw new System.UnauthorizedAccessException("User ID must be greater than zero.");
             return id;
         }
+
+        /// <inheritdoc />
+        public bool GetCurrentUserIsAdmin()
+        {
+            var claim = _httpContextAccessor.HttpContext?.User?.FindFirst("isAdmin")?.Value;
+            return claim == "true";
+        }
     }
 }

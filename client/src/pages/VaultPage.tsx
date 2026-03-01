@@ -4,9 +4,10 @@ import ItemList from '../components/ItemList';
 import BookForm from '../components/BookForm';
 import MovieForm from '../components/MovieForm';
 import GameForm from '../components/GameForm';
+import AdminTab from '../components/AdminTab';
 import { useAuth } from '../context/AuthContext';
 
-type VaultSection = 'home' | 'books' | 'movies' | 'games';
+type VaultSection = 'home' | 'books' | 'movies' | 'games' | 'admin';
 type HomeFormType = 'book' | 'movie' | 'game';
 
 /**
@@ -24,7 +25,7 @@ type HomeFormType = 'book' | 'movie' | 'game';
 const VaultPage: React.FC = () => {
     const history = useHistory();
     const location = useLocation();
-    const { username, logout } = useAuth();
+    const { username, logout, isAdmin } = useAuth();
     const [homeFormType, setHomeFormType] = useState<HomeFormType>('book');
     const [refreshKey, setRefreshKey] = useState(0);
 
@@ -49,6 +50,10 @@ const VaultPage: React.FC = () => {
 
         if (location.pathname === '/games') {
             return 'games';
+        }
+
+        if (location.pathname === '/admin') {
+            return 'admin';
         }
 
         return 'home';
@@ -128,6 +133,12 @@ const VaultPage: React.FC = () => {
         );
     };
 
+    const renderAdminSection = () => (
+        <section className="vault-card">
+            <AdminTab />
+        </section>
+    );
+
     return (
         <div className="vault-page">
             <header className="vault-header">
@@ -175,9 +186,18 @@ const VaultPage: React.FC = () => {
                 >
                     Games
                 </button>
+                {isAdmin && (
+                    <button
+                        type="button"
+                        className={activeSection === 'admin' ? 'vault-nav-button active' : 'vault-nav-button'}
+                        onClick={() => setSection('admin')}
+                    >
+                        Admin
+                    </button>
+                )}
             </nav>
 
-            {renderSectionContent()}
+            {activeSection === 'admin' ? renderAdminSection() : renderSectionContent()}
         </div>
     );
 };

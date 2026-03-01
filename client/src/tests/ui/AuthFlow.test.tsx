@@ -36,7 +36,7 @@ describe('Auth UI flow', () => {
     });
 
     it('logs in with mocked API call and redirects to home', async () => {
-        mockLogin.mockResolvedValue({ token: 'fake-token', username: 'michelle' });
+        mockLogin.mockResolvedValue({ token: 'fake-token', username: 'michelle', isAdmin: false });
 
         const history = createMemoryHistory({ initialEntries: ['/login'] });
 
@@ -60,7 +60,7 @@ describe('Auth UI flow', () => {
             expect(mockLogin).toHaveBeenCalledWith('michelle', '123456');
         });
 
-        expect(mockSetAuth).toHaveBeenCalledWith('fake-token', 'michelle');
+        expect(mockSetAuth).toHaveBeenCalledWith('fake-token', 'michelle', false);
         expect(history.location.pathname).toBe('/');
     });
 

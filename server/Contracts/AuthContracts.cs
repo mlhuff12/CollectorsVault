@@ -55,5 +55,8 @@ namespace CollectorsVault.Server.Contracts
 
         /// <summary>The authenticated user's username.</summary>
         public string Username { get; set; } = string.Empty;
+
+        /// <summary>Whether the authenticated user has admin privileges.</summary>
+        public bool IsAdmin { get; set; } = false;
     }
 }

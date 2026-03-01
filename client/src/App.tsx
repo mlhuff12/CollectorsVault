@@ -38,6 +38,7 @@ const AppRoutes: React.FC = () => {
             <ProtectedRoute exact path="/books" component={VaultPage} />
             <ProtectedRoute exact path="/movies" component={VaultPage} />
             <ProtectedRoute exact path="/games" component={VaultPage} />
+            <ProtectedRoute exact path="/admin" component={VaultPage} />
             <Redirect to="/" />
         </Switch>
     );

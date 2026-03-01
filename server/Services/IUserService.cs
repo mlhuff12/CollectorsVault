@@ -13,5 +13,11 @@ namespace CollectorsVault.Server.Services
         /// Thrown when the userId claim is missing or invalid.
         /// </exception>
         long GetCurrentUserId();
+
+        /// <summary>
+        /// Returns whether the currently authenticated user has admin privileges.
+        /// </summary>
+        /// <returns><c>true</c> if the user is an admin; <c>false</c> otherwise.</returns>
+        bool GetCurrentUserIsAdmin();
     }
 }

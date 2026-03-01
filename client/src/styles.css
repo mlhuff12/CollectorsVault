@@ -351,6 +351,35 @@ body {
   background: #ffffff;
 }
 
+.category-badge.admin {
+  background: #fef3c7;
+  color: #92400e;
+  margin-left: 6px;
+}
+
+.admin-users-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+
+.admin-users-table th,
+.admin-users-table td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.admin-users-table th {
+  font-weight: 600;
+  color: #374151;
+  background: #f9fafb;
+}
+
+.admin-users-table tr:last-child td {
+  border-bottom: 0;
+}
+
 .totp-secret {
   display: block;
   background: #f3f4f6;

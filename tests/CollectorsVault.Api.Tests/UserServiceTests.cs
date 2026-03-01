@@ -62,5 +62,41 @@ namespace CollectorsVault.Api.Tests
             var ex = Assert.Throws<System.UnauthorizedAccessException>(() => service.GetCurrentUserId());
             Assert.Contains("greater than zero", ex.Message, System.StringComparison.OrdinalIgnoreCase);
         }
+
+        [Fact]
+        public void GetCurrentUserIsAdmin_ReturnsTrue_WhenClaimIsTrue()
+        {
+            var claims = new[] { new Claim("userId", "1"), new Claim("isAdmin", "true") };
+            var identity = new ClaimsIdentity(claims, "TestAuth");
+            var principal = new ClaimsPrincipal(identity);
+            var httpContext = new DefaultHttpContext { User = principal };
+            var httpContextAccessorMock = new Mock<IHttpContextAccessor>();
+            httpContextAccessorMock.Setup(a => a.HttpContext).Returns(httpContext);
+            var service = new UserService(httpContextAccessorMock.Object);
+
+            Assert.True(service.GetCurrentUserIsAdmin());
+        }
+
+        [Fact]
+        public void GetCurrentUserIsAdmin_ReturnsFalse_WhenClaimIsFalse()
+        {
+            var claims = new[] { new Claim("userId", "1"), new Claim("isAdmin", "false") };
+            var identity = new ClaimsIdentity(claims, "TestAuth");
+            var principal = new ClaimsPrincipal(identity);
+            var httpContext = new DefaultHttpContext { User = principal };
+            var httpContextAccessorMock = new Mock<IHttpContextAccessor>();
+            httpContextAccessorMock.Setup(a => a.HttpContext).Returns(httpContext);
+            var service = new UserService(httpContextAccessorMock.Object);
+
+            Assert.False(service.GetCurrentUserIsAdmin());
+        }
+
+        [Fact]
+        public void GetCurrentUserIsAdmin_ReturnsFalse_WhenClaimIsMissing()
+        {
+            // Only userId claim, no isAdmin claim
+            var service = CreateService("1");
+            Assert.False(service.GetCurrentUserIsAdmin());
+        }
     }
 }
