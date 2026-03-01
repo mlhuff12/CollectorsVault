@@ -21,7 +21,7 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
     const [isbn, setIsbn] = useState('');
     const [year, setYear] = useState('');
     const [genre, setGenre] = useState('');
-    const [message, setMessage] = useState('');
+    const [errorMessage, setErrorMessage] = useState('');
     const [showScanner, setShowScanner] = useState(false);
     const [scanLoading, setScanLoading] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
@@ -35,7 +35,7 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
             .filter((authorName) => authorName.length > 0);
 
         if (parsedAuthors.length === 0) {
-            setMessage('Please add at least one author.');
+            setErrorMessage('Please add at least one author.');
             return;
         }
 
@@ -49,7 +49,7 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
 
         try {
             await addBook(newBook);
-            setMessage('');
+            setErrorMessage('');
             setTitle('');
             setAuthors('');
             setIsbn('');
@@ -59,14 +59,14 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
             setToastType('success');
             onItemAdded?.();
         } catch (error) {
-            setMessage('Failed to add book. Please try again.');
+            setErrorMessage('Failed to add book. Please try again.');
         }
     };
 
     const handleBarcodeScan = useCallback(async (barcode: string) => {
         setShowScanner(false);
         setScanLoading(true);
-        setMessage('');
+        setErrorMessage('');
         try {
             const result = await lookupBookByIsbn(barcode);
             setTitle(result.title || '');
@@ -80,7 +80,7 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
                 setGenre(result.subjects[0]);
             }
         } catch {
-            setMessage('Could not find book for this barcode. Fill in manually.');
+            setErrorMessage('Could not find book for this barcode. Fill in manually.');
             setIsbn(barcode);
         } finally {
             setScanLoading(false);
@@ -141,7 +141,7 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
                 </div>
                 <button className="btn btn-primary" type="submit">Add Book</button>
             </form>
-            {message && <p className="mt-2 text-success">{message}</p>}
+            {errorMessage && <p className="mt-2 text-danger">{errorMessage}</p>}
             <Toast
                 message={toastMessage}
                 type={toastType}

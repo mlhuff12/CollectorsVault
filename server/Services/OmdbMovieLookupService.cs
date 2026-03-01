@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -46,10 +47,7 @@ namespace CollectorsVault.Server.Services
 
             // Step 2: search OMDb by the resolved title
             var results = await SearchByTitleAsync(title);
-            foreach (var result in results)
-                return result; // return best match
-
-            return null;
+            return results.FirstOrDefault();
         }
 
         /// <inheritdoc/>
