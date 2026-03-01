@@ -10,6 +10,14 @@ namespace CollectorsVault.Server.Contracts
         public string ISBN { get; set; } = string.Empty;
         public int? Year { get; set; }
         public string Genre { get; set; } = string.Empty;
+        public string Publisher { get; set; } = string.Empty;
+        public string PublishDate { get; set; } = string.Empty;
+        public int? PageCount { get; set; }
+        public string Description { get; set; } = string.Empty;
+        public string CoverSmall { get; set; } = string.Empty;
+        public string CoverMedium { get; set; } = string.Empty;
+        public string CoverLarge { get; set; } = string.Empty;
+        public string BookUrl { get; set; } = string.Empty;
     }
 
     public class MovieRequest

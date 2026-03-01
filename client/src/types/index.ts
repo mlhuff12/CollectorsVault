@@ -6,12 +6,35 @@ export interface VaultItem {
     category: 'book' | 'movie' | 'game';
 }
 
+export interface BookLookupResult {
+    title: string;
+    authors: string[];
+    isbn: string;
+    publisher: string;
+    publishDate: string;
+    pageCount?: number;
+    description: string;
+    subjects: string[];
+    coverSmall: string;
+    coverMedium: string;
+    coverLarge: string;
+    providerUrl: string;
+}
+
 export interface Book {
     title: string;
     authors: string[];
     isbn?: string;
     year?: number;
     genre?: string;
+    publisher?: string;
+    publishDate?: string;
+    pageCount?: number;
+    description?: string;
+    coverSmall?: string;
+    coverMedium?: string;
+    coverLarge?: string;
+    bookUrl?: string;
 }
 
 export interface Movie {
