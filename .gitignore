@@ -8,6 +8,12 @@ yarn-error.log*
 client/build/
 client/.cache/
 
+# Local environment overrides (never commit secrets)
+client/.env.local
+client/.env.development.local
+client/.env.test.local
+client/.env.production.local
+
 # .NET build artifacts
 **/bin/
 **/obj/
@@ -28,4 +34,3 @@ server/*.db-wal
 server/Data/*.db
 server/Data/*.db-shm
 server/Data/*.db-wal
-server/secrets.json.dev.example

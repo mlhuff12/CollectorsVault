@@ -4,12 +4,21 @@ import { faTrashAlt } from '@fortawesome/free-solid-svg-icons';
 import { VaultItem } from '../types';
 import { deleteItem, fetchItems } from '../services/api';
 
+/** Props accepted by {@link ItemList}. */
 interface ItemListProps {
+    /** Incremented by the parent to trigger a data refresh. */
     refreshKey?: number;
+    /** Heading displayed above the list. */
     title?: string;
+    /** When provided, only items of this category are shown. */
     categoryFilter?: VaultItem['category'];
 }
 
+/**
+ * ItemList fetches and displays the authenticated user's vault items.
+ * Each item can be deleted via the trash icon button.
+ * Re-fetches whenever `refreshKey` changes.
+ */
 const ItemList: React.FC<ItemListProps> = ({ refreshKey = 0, title = "Collector's Vault Items", categoryFilter }) => {
     const [items, setItems] = useState<VaultItem[]>([]);
     const [loading, setLoading] = useState<boolean>(true);

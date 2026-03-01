@@ -1,8 +1,9 @@
 import axios from 'axios';
 import { Book, Game, Movie, VaultItem } from '../types';
 
-const API_URL = 'http://localhost:5000/api/vault';
-const AUTH_URL = 'http://localhost:5000/api/auth';
+const BASE_URL = process.env.REACT_APP_API_BASE_URL ?? 'http://localhost:5000';
+const API_URL = `${BASE_URL}/api/vault`;
+const AUTH_URL = `${BASE_URL}/api/auth`;
 
 const getAuthHeader = () => {
     const token = localStorage.getItem('cv_token');

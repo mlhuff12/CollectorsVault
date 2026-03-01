@@ -5,7 +5,18 @@ import VaultPage from './pages/VaultPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 
-const ProtectedRoute: React.FC<{ path: string; exact?: boolean; component: React.ComponentType }> = ({ component: Component, ...rest }) => {
+/** Props accepted by {@link ProtectedRoute}. */
+interface ProtectedRouteProps {
+    path: string;
+    exact?: boolean;
+    component: React.ComponentType;
+}
+
+/**
+ * ProtectedRoute wraps a {@link Route} and redirects unauthenticated users
+ * to /login. Authenticated users are rendered the given component normally.
+ */
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ component: Component, ...rest }) => {
     const { isAuthenticated } = useAuth();
     return (
         <Route
@@ -17,6 +28,7 @@ const ProtectedRoute: React.FC<{ path: string; exact?: boolean; component: React
     );
 };
 
+/** Declares the application's client-side routes. */
 const AppRoutes: React.FC = () => {
     return (
         <Switch>
@@ -31,6 +43,7 @@ const AppRoutes: React.FC = () => {
     );
 };
 
+/** Root application component. Wraps the app in {@link AuthProvider} and a {@link Router}. */
 const App: React.FC = () => {
     return (
         <AuthProvider>

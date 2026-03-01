@@ -31,9 +31,11 @@ namespace CollectorsVault.Server.Controllers
         /// <returns>Collection of vault items.</returns>
         /// <response code="200">Returns the collection of vault items.</response>
         /// <response code="401">User is not authenticated.</response>
+        /// <response code="403">User is authenticated but not authorized.</response>
         [HttpGet]
         [ProducesResponseType(typeof(IEnumerable<VaultItemResponse>), 200)]
         [ProducesResponseType(401)]
+        [ProducesResponseType(403)]
         public async Task<ActionResult<IEnumerable<VaultItemResponse>>> GetVaultItems()
         {
             var items = await _vaultService.GetVaultItemsAsync(_userService.GetCurrentUserId());
@@ -47,9 +49,11 @@ namespace CollectorsVault.Server.Controllers
         /// <returns>Created book.</returns>
         /// <response code="201">Book created successfully.</response>
         /// <response code="401">User is not authenticated.</response>
+        /// <response code="403">User is authenticated but not authorized.</response>
         [HttpPost("books")]
         [ProducesResponseType(typeof(Book), 201)]
         [ProducesResponseType(401)]
+        [ProducesResponseType(403)]
         public async Task<ActionResult<Book>> AddBook(BookRequest request)
         {
             var book = await _vaultService.AddBookAsync(request, _userService.GetCurrentUserId());
@@ -63,9 +67,11 @@ namespace CollectorsVault.Server.Controllers
         /// <returns>Created movie.</returns>
         /// <response code="201">Movie created successfully.</response>
         /// <response code="401">User is not authenticated.</response>
+        /// <response code="403">User is authenticated but not authorized.</response>
         [HttpPost("movies")]
         [ProducesResponseType(typeof(Movie), 201)]
         [ProducesResponseType(401)]
+        [ProducesResponseType(403)]
         public async Task<ActionResult<Movie>> AddMovie(MovieRequest request)
         {
             var movie = await _vaultService.AddMovieAsync(request, _userService.GetCurrentUserId());
@@ -79,9 +85,11 @@ namespace CollectorsVault.Server.Controllers
         /// <returns>Created game.</returns>
         /// <response code="201">Game created successfully.</response>
         /// <response code="401">User is not authenticated.</response>
+        /// <response code="403">User is authenticated but not authorized.</response>
         [HttpPost("games")]
         [ProducesResponseType(typeof(Game), 201)]
         [ProducesResponseType(401)]
+        [ProducesResponseType(403)]
         public async Task<ActionResult<Game>> AddGame(GameRequest request)
         {
             var game = await _vaultService.AddGameAsync(request, _userService.GetCurrentUserId());
@@ -95,10 +103,12 @@ namespace CollectorsVault.Server.Controllers
         /// <returns>No content on success, or not found if item does not exist or is not owned by user.</returns>
         /// <response code="204">Item deleted successfully.</response>
         /// <response code="401">User is not authenticated.</response>
+        /// <response code="403">User is authenticated but not authorized.</response>
         /// <response code="404">Item not found or not owned by the authenticated user.</response>
         [HttpDelete("{id:long}")]
         [ProducesResponseType(204)]
         [ProducesResponseType(401)]
+        [ProducesResponseType(403)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> DeleteVaultItem(long id)
         {

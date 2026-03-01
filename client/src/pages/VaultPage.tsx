@@ -9,6 +9,18 @@ import { useAuth } from '../context/AuthContext';
 type VaultSection = 'home' | 'books' | 'movies' | 'games';
 type HomeFormType = 'book' | 'movie' | 'game';
 
+/**
+ * VaultPage is the main authenticated view of the Collector's Vault application.
+ *
+ * It provides:
+ * - Navigation between Home, Books, Movies, and Games sections.
+ * - Forms for adding new collectible items (books, movies, games).
+ * - A list of existing items for the current user, with delete support.
+ * - A header showing the logged-in username and a Sign Out button.
+ *
+ * Access to this page is gated by {@link ProtectedRoute}; unauthenticated users
+ * are redirected to /login.
+ */
 const VaultPage: React.FC = () => {
     const history = useHistory();
     const location = useLocation();

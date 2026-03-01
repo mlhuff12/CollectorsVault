@@ -86,11 +86,13 @@ namespace CollectorsVault.Server.Controllers
         /// <returns>No content on success.</returns>
         /// <response code="204">User and all associated items deleted successfully.</response>
         /// <response code="401">User is not authenticated.</response>
+        /// <response code="403">User is authenticated but not authorized.</response>
         /// <response code="404">User not found.</response>
         [HttpDelete("user")]
         [Authorize]
         [ProducesResponseType(204)]
         [ProducesResponseType(401)]
+        [ProducesResponseType(403)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> DeleteUser()
         {

@@ -137,25 +137,28 @@ using (var scope = app.Services.CreateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<VaultDbContext>();
     dbContext.Database.EnsureCreated();
 
-    var requiredTables = new[] { "Users", "VaultItems" };
-    var missingTables = GetMissingTables(dbContext, requiredTables);
-    if (missingTables.Count > 0)
+    if (dbContext.Database.IsRelational())
     {
-        app.Logger.LogWarning(
-            "SQLite database is incompatible. Missing required tables: {MissingTables}. Recreating schema.",
-            string.Join(", ", missingTables));
-
-        var dbPath = sqliteConnectionBuilder.DataSource;
-        if (!string.IsNullOrWhiteSpace(dbPath) && File.Exists(dbPath))
+        var requiredTables = new[] { "Users", "VaultItems" };
+        var missingTables = GetMissingTables(dbContext, requiredTables);
+        if (missingTables.Count > 0)
         {
-            var backupPath = $"{dbPath}.backup-{DateTime.UtcNow:yyyyMMddHHmmss}";
-            File.Copy(dbPath, backupPath, overwrite: true);
-            app.Logger.LogWarning("Backed up incompatible SQLite database to: {BackupPath}", backupPath);
-        }
+            app.Logger.LogWarning(
+                "SQLite database is incompatible. Missing required tables: {MissingTables}. Recreating schema.",
+                string.Join(", ", missingTables));
 
-        dbContext.Database.EnsureDeleted();
-        dbContext.Database.EnsureCreated();
-        app.Logger.LogInformation("SQLite schema recreated successfully.");
+            var dbPath = sqliteConnectionBuilder.DataSource;
+            if (!string.IsNullOrWhiteSpace(dbPath) && File.Exists(dbPath))
+            {
+                var backupPath = $"{dbPath}.backup-{DateTime.UtcNow:yyyyMMddHHmmss}";
+                File.Copy(dbPath, backupPath, overwrite: true);
+                app.Logger.LogWarning("Backed up incompatible SQLite database to: {BackupPath}", backupPath);
+            }
+
+            dbContext.Database.EnsureDeleted();
+            dbContext.Database.EnsureCreated();
+            app.Logger.LogInformation("SQLite schema recreated successfully.");
+        }
     }
 }
 

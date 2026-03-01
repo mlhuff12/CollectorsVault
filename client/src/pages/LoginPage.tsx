@@ -4,6 +4,12 @@ import { login } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { getApiErrorMessage } from '../utils/errorUtils';
 
+/**
+ * LoginPage handles user authentication via username and a 6-digit TOTP code.
+ *
+ * On successful login the JWT token and username are persisted to localStorage
+ * via {@link useAuth}, and the user is redirected to the main vault page.
+ */
 const LoginPage: React.FC = () => {
     const history = useHistory();
     const { setAuth } = useAuth();

@@ -4,6 +4,16 @@ import QRCode from 'qrcode';
 import { signup } from '../services/api';
 import { getApiErrorMessage } from '../utils/errorUtils';
 
+/**
+ * SignupPage allows a new user to create an account.
+ *
+ * Flow:
+ * 1. User enters a username and submits the form.
+ * 2. The server returns a TOTP URI and Base32 secret.
+ * 3. A QR code is rendered so the user can scan it with an authenticator app
+ *    (e.g. Google Authenticator, Authy).
+ * 4. The user is directed to the login page once setup is complete.
+ */
 const SignupPage: React.FC = () => {
     const history = useHistory();
     const [username, setUsername] = useState('');
