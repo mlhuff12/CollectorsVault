@@ -191,7 +191,7 @@ describe('BookForm', () => {
         mockLookupBookByIsbn.mockRejectedValue(new Error('Not found'));
 
         render(<BookForm />);
-        fireEvent.change(screen.getByLabelText('ISBN'), { target: { value: '0000000000' } });
+        fireEvent.change(screen.getByLabelText('ISBN:'), { target: { value: '0000000000' } });
         fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
 
         expect(await screen.findByText(/Book not found for the given ISBN/i)).toBeInTheDocument();
