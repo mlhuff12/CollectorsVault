@@ -5,7 +5,7 @@
       "name": "API: Launch .NET",
       "type": "node-terminal",
       "request": "launch",
-      "command": "cd \"${workspaceFolder}/server\" && ASPNETCORE_ENVIRONMENT=Development dotnet run --project \"${workspaceFolder}/server/CollectorsVault.Api.csproj\"",
+      "command": "cd \"${workspaceFolder}/server\" && dotnet run --urls http://0.0.0.0:5000 --project \"${workspaceFolder}/server/CollectorsVault.Api.csproj\"",
       "serverReadyAction": {
         "action": "openExternally",
         "pattern": "Now listening on:\\s+(https?://\\S+)",
@@ -22,7 +22,7 @@
       "name": "Client: Start Dev Server",
       "type": "node-terminal",
       "request": "launch",
-      "command": "cd \"${workspaceFolder}/client\" && FAST_REFRESH=false NODE_OPTIONS=--openssl-legacy-provider npm start"
+      "command": "cd \"${workspaceFolder}/client\" && FAST_REFRESH=false NODE_OPTIONS=--openssl-legacy-provider HOST=0.0.0.0 npm start"
     },
     {
       "name": "Client: Debug in Chrome",
