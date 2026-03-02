@@ -21,6 +21,9 @@ npm install
 npm start
 ```
 
+> **Note:** The dev server starts on `https://localhost:3000` (HTTPS is enabled by default
+> to allow the barcode/camera scanner to work on mobile devices).
+
 Production build:
 
 ```bash
@@ -57,7 +60,7 @@ Current test coverage lives in:
 From **Run and Debug**, use:
 
 - `Client: Start Dev Server` to run the React app
-- `Client: Debug in Edge` to debug the app in browser
+- `Client: Debug in Chrome` to debug the app in browser (opens `https://localhost:3000`)
 
 For full-stack debugging, run `Full Stack: API + Client` from the workspace root launch profiles.
 
@@ -65,7 +68,7 @@ For full-stack debugging, run `Full Stack: API + Client` from the workspace root
 
 The frontend expects the API at:
 
-- `http://localhost:5000/api/vault`
+- `https://localhost:5001/api/vault`
 
 Make sure the server is running before using the app.
 

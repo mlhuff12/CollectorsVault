@@ -28,9 +28,9 @@ From `server`:
 dotnet run
 ```
 
-API base URL: `http://localhost:5000`
+API base URL: `https://localhost:5001`
 
-Swagger UI: `http://localhost:5000/swagger`
+Swagger UI: `https://localhost:5001/swagger`
 
 ### 2) Run the client
 
@@ -41,7 +41,7 @@ npm install
 npm start
 ```
 
-Client URL (default): `http://localhost:3000`
+Client URL (default): `https://localhost:3000`
 
 ### 3) Run UI tests
 

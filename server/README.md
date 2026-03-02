@@ -9,9 +9,10 @@ dotnet restore
 dotnet run
 ```
 
-Base URL:
+Base URLs:
 
-- `http://localhost:5000`
+- `https://localhost:5001` (HTTPS — used by the client and required for camera access)
+- `http://localhost:5000` (HTTP — redirects to HTTPS)
 
 ## Configuration & Secrets
 
@@ -26,6 +27,15 @@ cd server
 dotnet user-secrets set "Jwt:Key" "<your-strong-secret-key>"
 # Optional: override the default SQLite path
 dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Data Source=Data/collectorsvault.db"
+```
+
+### HTTPS dev certificate
+
+The API serves HTTPS on `https://localhost:5001`. Trust the .NET development certificate
+once per machine so browsers do not show certificate warnings:
+
+```bash
+dotnet dev-certs https --trust
 ```
 
 See `secrets.json.example` for the expected structure. Share values with teammates via a
@@ -47,14 +57,14 @@ From **Run and Debug**, use `API: Launch .NET`.
 
 Swagger:
 
-- UI: `http://localhost:5000/swagger`
-- OpenAPI JSON: `http://localhost:5000/swagger/v1/swagger.json`
+- UI: `https://localhost:5001/swagger`
+- OpenAPI JSON: `https://localhost:5001/swagger/v1/swagger.json`
 
 ## API Documentation
 
 - Swagger/OpenAPI is enabled in all environments.
 - XML documentation comments from controllers are included in Swagger output.
-- Open `http://localhost:5000/swagger` to browse and test endpoints.
+- Open `https://localhost:5001/swagger` to browse and test endpoints.
 
 ## Persistence
 
@@ -83,7 +93,7 @@ When adding or modifying database schema, follow these conventions:
 
 ## Testing With Swagger
 
-1. Open `http://localhost:5000/swagger`
+1. Open `https://localhost:5001/swagger`
 2. Expand an endpoint.
 3. Click **Try it out**.
 4. Paste a sample request body.

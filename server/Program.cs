@@ -152,6 +152,7 @@ app.UseSwaggerUI(options =>
     options.RoutePrefix = "swagger";
 });
 
+app.UseHttpsRedirection();
 app.UseCors("ClientPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
