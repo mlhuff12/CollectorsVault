@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 
 /** Props accepted by {@link BarcodeScanner}. */
@@ -15,10 +15,16 @@ const SCANNER_ELEMENT_ID = 'cv-barcode-scanner';
  * BarcodeScanner opens the device camera and continuously scans for UPC/EAN barcodes.
  * It uses the html5-qrcode library and is designed for mobile browsers.
  * Calls `onScan` with the decoded barcode value, then stops scanning.
+ *
+ * If the camera cannot be started (e.g. the site is not served over HTTPS, or camera
+ * permission was denied), the component falls back to a manual text-input so the user
+ * can still type/paste the barcode number.
  */
 const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
     const scannerRef = useRef<Html5Qrcode | null>(null);
     const hasScannedRef = useRef(false);
+    const [status, setStatus] = useState<'starting' | 'scanning' | 'error'>('starting');
+    const [manualCode, setManualCode] = useState('');
 
     const stopScanner = useCallback(async () => {
         if (scannerRef.current) {
@@ -66,8 +72,11 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
             () => {
                 // scan failure is expected between frames — ignore
             }
-        ).catch((err) => {
+        ).then(() => {
+            setStatus('scanning');
+        }).catch((err) => {
             console.error('BarcodeScanner: failed to start camera', err);
+            setStatus('error');
         });
 
         return () => {
@@ -75,8 +84,16 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
         };
     }, [onScan, onClose, stopScanner]);
 
+    const submitManualCode = () => {
+        const code = manualCode.trim();
+        if (code) {
+            onScan(code);
+            onClose();
+        }
+    };
+
     return (
-        <div className="mt-3">
+        <div className="mt-3 border rounded p-2">
             <div className="d-flex justify-content-between align-items-center mb-2">
                 <span className="small text-muted">Point the camera at a barcode</span>
                 <button
@@ -87,10 +104,49 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
                     Cancel
                 </button>
             </div>
+            {status === 'starting' && (
+                <div className="text-center py-2 text-muted small">
+                    <span
+                        className="spinner-border spinner-border-sm me-2"
+                        role="status"
+                        aria-label="starting camera"
+                    />
+                    Starting camera…
+                </div>
+            )}
+            {/* The camera view div must always be in the DOM so html5-qrcode can attach to it */}
             <div
                 id={SCANNER_ELEMENT_ID}
                 style={{ width: '100%', maxWidth: '400px', borderRadius: '8px', overflow: 'hidden' }}
             />
+            {status === 'error' && (
+                <div className="mt-2">
+                    <p className="text-warning small mb-2">
+                        Camera could not be opened. Make sure the site is served over HTTPS and
+                        camera permission is granted, or enter the barcode manually:
+                    </p>
+                    <div className="input-group input-group-sm">
+                        <input
+                            type="text"
+                            className="form-control"
+                            placeholder="Enter barcode number"
+                            value={manualCode}
+                            onChange={(e) => setManualCode(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); submitManualCode(); } }}
+                            autoFocus
+                            aria-label="Barcode number"
+                        />
+                        <button
+                            type="button"
+                            className="btn btn-primary"
+                            onClick={submitManualCode}
+                            disabled={!manualCode.trim()}
+                        >
+                            Use
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
