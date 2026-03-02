@@ -89,6 +89,26 @@ builder.Services.AddHttpClient<IBookLookupService, OpenLibraryBookLookupService>
     client.BaseAddress = new Uri("https://openlibrary.org");
 });
 
+builder.Services.AddHttpClient("Omdb", client =>
+{
+    client.BaseAddress = new Uri("http://www.omdbapi.com");
+});
+builder.Services.AddHttpClient("UpcItemDb", client =>
+{
+    client.BaseAddress = new Uri("https://api.upcitemdb.com");
+});
+builder.Services.AddScoped<IMovieLookupService, OmdbMovieLookupService>();
+
+builder.Services.AddHttpClient("Igdb", client =>
+{
+    client.BaseAddress = new Uri("https://api.igdb.com");
+});
+builder.Services.AddHttpClient("Twitch", client =>
+{
+    client.BaseAddress = new Uri("https://id.twitch.tv");
+});
+builder.Services.AddScoped<IGameLookupService, IgdbGameLookupService>();
+
 var jwtKey = builder.Configuration["Jwt:Key"];
 if (string.IsNullOrWhiteSpace(jwtKey))
 {

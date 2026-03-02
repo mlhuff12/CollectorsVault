@@ -103,10 +103,14 @@ namespace CollectorsVault.Server.Services
             var movie = new Movie
             {
                 Title = request.Title,
-                Director = request.Director,
+                Director = request.Director?.Trim() ?? string.Empty,
                 ReleaseYear = request.ReleaseYear,
-                Genre = request.Genre,
-                Description = string.Empty,
+                Genre = request.Genre?.Trim() ?? string.Empty,
+                Description = request.Description?.Trim() ?? string.Empty,
+                CoverUrl = request.CoverUrl?.Trim() ?? string.Empty,
+                Rating = request.Rating?.Trim() ?? string.Empty,
+                Runtime = request.Runtime?.Trim() ?? string.Empty,
+                Cast = request.Cast?.Trim() ?? string.Empty,
                 CreatedUtcDate = DateTime.UtcNow,
                 LastModifiedUtcDate = DateTime.UtcNow,
                 UserId = userId
@@ -124,10 +128,13 @@ namespace CollectorsVault.Server.Services
             var game = new Game
             {
                 Title = request.Title,
-                Platform = request.Platform,
+                Platform = request.Platform?.Trim() ?? string.Empty,
                 ReleaseYear = parsedDate == default ? 0 : parsedDate.Year,
-                Genre = string.Empty,
-                Description = string.Empty,
+                Genre = request.Genre?.Trim() ?? string.Empty,
+                Description = request.Description?.Trim() ?? string.Empty,
+                CoverUrl = request.CoverUrl?.Trim() ?? string.Empty,
+                Developer = request.Developer?.Trim() ?? string.Empty,
+                Publisher = request.Publisher?.Trim() ?? string.Empty,
                 CreatedUtcDate = DateTime.UtcNow,
                 LastModifiedUtcDate = DateTime.UtcNow,
                 UserId = userId

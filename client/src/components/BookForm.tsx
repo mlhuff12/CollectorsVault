@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { addBook, lookupBookByIsbn } from '../services/api';
 import { Book, BookLookupResult } from '../types';
+import BarcodeScanner from './BarcodeScanner';
+import Toast from './Toast';
 
 /** Props accepted by {@link BookForm}. */
 interface BookFormProps {
@@ -12,9 +14,9 @@ interface BookFormProps {
  * BookForm renders a form for adding a new book to the authenticated user's vault.
  *
  * The user may either:
- * 1. Enter an ISBN and click "Lookup" to auto-populate all fields from an external
- *    book metadata service. After a successful lookup the fields become read-only and
- *    the medium cover image is displayed.
+ * 1. Enter an ISBN and click "Lookup" (or scan a barcode with 📷) to auto-populate all
+ *    fields from an external book metadata service. After a successful lookup the fields
+ *    become read-only and the medium cover image is displayed.
  * 2. Fill in all fields manually (no lookup), in which case every field is editable.
  *
  * On submission the form calls the API and notifies the parent via `onItemAdded`.
@@ -24,6 +26,7 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
     const [lookupResult, setLookupResult] = useState<BookLookupResult | null>(null);
     const [lookupError, setLookupError] = useState('');
     const [isLooking, setIsLooking] = useState(false);
+    const [showScanner, setShowScanner] = useState(false);
 
     // Manual-entry fields (used only when no lookup result is present)
     const [title, setTitle] = useState('');
@@ -36,7 +39,8 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
     const [genre, setGenre] = useState('');
     const [year, setYear] = useState('');
 
-    const [message, setMessage] = useState('');
+    const [errorMessage, setErrorMessage] = useState('');
+    const [toastMessage, setToastMessage] = useState('');
 
     /** True when fields should be locked because data came from an ISBN lookup. */
     const isFromLookup = lookupResult !== null;
@@ -71,25 +75,44 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
         setLookupError('');
     };
 
+    /** Called when the barcode scanner successfully decodes a barcode. */
+    const handleBarcodeScan = useCallback(async (barcode: string) => {
+        setShowScanner(false);
+        setIsbn(barcode);
+        setIsLooking(true);
+        setLookupError('');
+        setLookupResult(null);
+
+        try {
+            const result = await lookupBookByIsbn(barcode);
+            setLookupResult(result);
+        } catch {
+            setLookupError('Book not found for this barcode. You may enter details manually.');
+        } finally {
+            setIsLooking(false);
+        }
+    }, []);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setErrorMessage('');
 
         let newBook: Book;
 
-        if (isFromLookup) {
+        if (lookupResult) {
             newBook = {
-                title: lookupResult!.title,
-                authors: lookupResult!.authors,
-                isbn: lookupResult!.isbn || isbn.trim() || undefined,
-                publisher: lookupResult!.publisher || undefined,
-                publishDate: lookupResult!.publishDate || undefined,
-                pageCount: lookupResult!.pageCount,
-                description: lookupResult!.description || undefined,
-                subjects: lookupResult!.subjects.length > 0 ? lookupResult!.subjects : undefined,
-                coverSmall: lookupResult!.coverSmall || undefined,
-                coverMedium: lookupResult!.coverMedium || undefined,
-                coverLarge: lookupResult!.coverLarge || undefined,
-                bookUrl: lookupResult!.providerUrl || undefined
+                title: lookupResult.title,
+                authors: lookupResult.authors,
+                isbn: lookupResult.isbn || isbn.trim() || undefined,
+                publisher: lookupResult.publisher || undefined,
+                publishDate: lookupResult.publishDate || undefined,
+                pageCount: lookupResult.pageCount,
+                description: lookupResult.description || undefined,
+                subjects: lookupResult.subjects.length > 0 ? lookupResult.subjects : undefined,
+                coverSmall: lookupResult.coverSmall || undefined,
+                coverMedium: lookupResult.coverMedium || undefined,
+                coverLarge: lookupResult.coverLarge || undefined,
+                bookUrl: lookupResult.providerUrl || undefined
             };
         } else {
             const parsedAuthors = authors
@@ -98,7 +121,7 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
                 .filter((a) => a.length > 0);
 
             if (parsedAuthors.length === 0) {
-                setMessage('Please add at least one author.');
+                setErrorMessage('Please add at least one author.');
                 return;
             }
 
@@ -118,7 +141,6 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
 
         try {
             await addBook(newBook);
-            setMessage('Book added successfully!');
             setIsbn('');
             setLookupResult(null);
             setLookupError('');
@@ -131,26 +153,27 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
             setBookUrl('');
             setGenre('');
             setYear('');
+            setToastMessage('Book added successfully!');
             onItemAdded?.();
         } catch {
-            setMessage('Failed to add book. Please try again.');
+            setErrorMessage('Failed to add book. Please try again.');
         }
     };
 
     // Resolved display values (from lookup or manual entry)
-    const displayTitle = isFromLookup ? lookupResult!.title : title;
-    const displayAuthors = isFromLookup ? lookupResult!.authors.join(', ') : authors;
-    const displayPublisher = isFromLookup ? lookupResult!.publisher : publisher;
-    const displayPublishDate = isFromLookup ? lookupResult!.publishDate : publishDate;
-    const displayPageCount = isFromLookup ? (lookupResult!.pageCount?.toString() ?? '') : pageCount;
-    const displayDescription = isFromLookup ? lookupResult!.description : description;
-    const displayBookUrl = isFromLookup ? lookupResult!.providerUrl : bookUrl;
+    const displayTitle = lookupResult ? lookupResult.title : title;
+    const displayAuthors = lookupResult ? lookupResult.authors.join(', ') : authors;
+    const displayPublisher = lookupResult ? lookupResult.publisher : publisher;
+    const displayPublishDate = lookupResult ? lookupResult.publishDate : publishDate;
+    const displayPageCount = lookupResult ? (lookupResult.pageCount?.toString() ?? '') : pageCount;
+    const displayDescription = lookupResult ? lookupResult.description : description;
+    const displayBookUrl = lookupResult ? lookupResult.providerUrl : bookUrl;
 
     return (
         <div>
             <h2 className="h5 mb-3">Add a New Book</h2>
             <form onSubmit={handleSubmit}>
-                {/* ISBN + Lookup */}
+                {/* ISBN + Lookup + Scan */}
                 <div className="mb-3">
                     <label htmlFor="book-isbn" className="form-label">ISBN:</label>
                     <div className="input-group">
@@ -173,6 +196,15 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
                         >
                             {isLooking ? 'Looking up…' : 'Lookup'}
                         </button>
+                        <button
+                            type="button"
+                            className="btn btn-outline-secondary"
+                            onClick={() => setShowScanner((prev) => !prev)}
+                            disabled={isLooking}
+                            aria-label="Scan Barcode"
+                        >
+                            {isLooking ? 'Looking up…' : '📷 Scan Barcode'}
+                        </button>
                     </div>
                     {lookupError && <div className="form-text text-warning">{lookupError}</div>}
                     {isFromLookup && (
@@ -183,14 +215,20 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
                             </button>
                         </div>
                     )}
+                    {showScanner && (
+                        <BarcodeScanner
+                            onScan={handleBarcodeScan}
+                            onClose={() => setShowScanner(false)}
+                        />
+                    )}
                 </div>
 
                 {/* Medium cover image (shown after successful lookup) */}
-                {isFromLookup && lookupResult!.coverMedium && (
+                {lookupResult?.coverMedium && (
                     <div className="mb-3">
                         <img
-                            src={lookupResult!.coverMedium}
-                            alt={`Cover for ${lookupResult!.title}`}
+                            src={lookupResult.coverMedium}
+                            alt={`Cover for ${lookupResult.title}`}
                             style={{ maxHeight: '200px' }}
                         />
                     </div>
@@ -318,7 +356,12 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
 
                 <button className="btn btn-primary" type="submit">Add Book</button>
             </form>
-            {message && <p className="mt-2 text-success">{message}</p>}
+            {errorMessage && <p className="mt-2 text-danger">{errorMessage}</p>}
+            <Toast
+                message={toastMessage}
+                type="success"
+                onDismiss={() => setToastMessage('')}
+            />
         </div>
     );
 };

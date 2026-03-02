@@ -3,6 +3,18 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import BookForm from '../../components/BookForm';
 import * as api from '../../services/api';
 
+jest.mock('html5-qrcode', () => ({
+    Html5Qrcode: function() {
+        return {
+            start: () => Promise.resolve(),
+            stop: () => Promise.resolve()
+        };
+    },
+    Html5QrcodeSupportedFormats: {
+        EAN_13: 'EAN_13', EAN_8: 'EAN_8', UPC_A: 'UPC_A', UPC_E: 'UPC_E', CODE_128: 'CODE_128'
+    }
+}));
+
 jest.mock('../../services/api', () => ({
     addBook: jest.fn(),
     lookupBookByIsbn: jest.fn()
@@ -81,6 +93,11 @@ describe('BookForm', () => {
     it('renders the Lookup button next to the ISBN field', () => {
         render(<BookForm />);
         expect(screen.getByRole('button', { name: 'Lookup' })).toBeInTheDocument();
+    });
+
+    it('renders the Scan Barcode button next to the ISBN field', () => {
+        render(<BookForm />);
+        expect(screen.getByRole('button', { name: 'Scan Barcode' })).toBeInTheDocument();
     });
 
     it('calls lookupBookByIsbn (not mocked for DB changes) when Lookup button is clicked', async () => {
