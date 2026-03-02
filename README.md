@@ -69,6 +69,48 @@ Use **Run and Debug** and choose one of:
 
 `Full Stack: API + Client` starts the API and client together and opens browser debugging.
 
+## Local Phone Testing (LAN)
+
+Use this when testing the app from a phone on your local Wi-Fi.
+
+### 1) Start API + client with LAN binding
+
+From VS Code, run task:
+
+- `Full Stack: API + Client`
+
+The workspace tasks are configured to bind:
+
+- API to `0.0.0.0:5000`
+- Client dev server to `0.0.0.0:3000`
+
+### 2) Find your computer's local IPv4 address
+
+On Windows PowerShell:
+
+```powershell
+ipconfig
+```
+
+Look for your active adapter's `IPv4 Address` (example: `192.168.50.53`).
+
+### 3) Open from phone
+
+On your phone browser (same Wi-Fi network):
+
+- Client UI: `http://<YOUR_PC_IP>:3000`
+- API Swagger: `http://<YOUR_PC_IP>:5000/swagger`
+
+If Swagger opens on phone, API networking is working.
+
+### 4) Firewall check (if phone cannot connect)
+
+Allow inbound TCP on ports `3000` and `5000` in Windows Defender Firewall (Private network).
+
+### 5) Notes about API base URL
+
+`client/src/services/api.ts` rewrites `localhost` API URLs to the current browser host when opened from another device on LAN. This lets the same local config work on both desktop and phone.
+
 ## Persistence
 
 Data persists in the SQLite file:

@@ -7,7 +7,35 @@ const envBaseUrl =
     process.env.REACT_APP_API_BASE_URL
         ? process.env.REACT_APP_API_BASE_URL
         : undefined;
-const BASE_URL = envBaseUrl ?? 'http://localhost:5000';
+
+const resolveBaseUrl = (): string => {
+    const browserHostname = typeof window !== 'undefined' ? window.location.hostname : undefined;
+
+    if (envBaseUrl) {
+        if (browserHostname && browserHostname !== 'localhost' && browserHostname !== '127.0.0.1') {
+            try {
+                const parsed = new URL(envBaseUrl);
+                if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
+                    parsed.hostname = browserHostname;
+                    return parsed.origin;
+                }
+            } catch {
+                return envBaseUrl;
+            }
+        }
+
+        return envBaseUrl;
+    }
+
+    if (browserHostname) {
+        const protocol = typeof window !== 'undefined' ? window.location.protocol : 'http:';
+        return `${protocol}//${browserHostname}:5000`;
+    }
+
+    return 'http://localhost:5000';
+};
+
+const BASE_URL = resolveBaseUrl();
 const API_URL = `${BASE_URL}/api/vault`;
 const AUTH_URL = `${BASE_URL}/api/auth`;
 const BOOK_LOOKUP_URL = `${BASE_URL}/api/booklookup`;

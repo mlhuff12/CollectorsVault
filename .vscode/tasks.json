@@ -7,6 +7,8 @@
       "command": "dotnet",
       "args": [
         "run",
+        "--urls",
+        "http://0.0.0.0:5000",
         "--project",
         "${workspaceFolder}/server/CollectorsVault.Api.csproj"
       ],
@@ -40,7 +42,8 @@
         "cwd": "${workspaceFolder}/client",
         "env": {
           "FAST_REFRESH": "false",
-          "NODE_OPTIONS": "--openssl-legacy-provider"
+          "NODE_OPTIONS": "--openssl-legacy-provider",
+          "HOST": "0.0.0.0"
         }
       },
       "isBackground": true,
