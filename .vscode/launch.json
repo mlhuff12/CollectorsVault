@@ -3,24 +3,20 @@
   "configurations": [
     {
       "name": "API: Launch .NET",
-      "type": "coreclr",
+      "type": "node-terminal",
       "request": "launch",
-      "program": "dotnet",
-      "args": [
-        "run",
-        "--project",
-        "${workspaceFolder}/server/CollectorsVault.Api.csproj"
-      ],
-      "cwd": "${workspaceFolder}/server",
-      "env": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      },
-      "console": "integratedTerminal",
+      "command": "cd \"${workspaceFolder}/server\" && ASPNETCORE_ENVIRONMENT=Development dotnet run --project \"${workspaceFolder}/server/CollectorsVault.Api.csproj\"",
       "serverReadyAction": {
         "action": "openExternally",
         "pattern": "Now listening on:\\s+(https?://\\S+)",
         "uriFormat": "%s/swagger"
       }
+    },
+    {
+      "name": "API: Debug .NET (C#)",
+      "type": "dotnet",
+      "request": "launch",
+      "projectPath": "${workspaceFolder}/server/CollectorsVault.Api.csproj"
     },
     {
       "name": "Client: Start Dev Server",
@@ -30,7 +26,7 @@
     },
     {
       "name": "Client: Debug in Chrome",
-      "type": "pwa-chrome",
+      "type": "chrome",
       "request": "launch",
       "url": "http://localhost:3000",
       "webRoot": "${workspaceFolder}/client/src"
@@ -40,7 +36,7 @@
     {
       "name": "Full Stack: API + Client",
       "configurations": [
-        "API: Launch .NET",
+        "API: Debug .NET (C#)",
         "Client: Start Dev Server"
       ]
     }
