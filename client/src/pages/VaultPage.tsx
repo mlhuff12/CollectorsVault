@@ -123,6 +123,8 @@ const VaultPage: React.FC = () => {
         if (activeSection === 'books') {
             return (
                 <div className="card shadow-sm mb-3 p-3">
+                    <BookForm onItemAdded={handleItemAdded} />
+                    <hr />
                     <ItemList refreshKey={refreshKey} categoryFilter="book" title="Books" />
                 </div>
             );
@@ -131,6 +133,8 @@ const VaultPage: React.FC = () => {
         if (activeSection === 'movies') {
             return (
                 <div className="card shadow-sm mb-3 p-3">
+                    <MovieForm onItemAdded={handleItemAdded} />
+                    <hr />
                     <ItemList refreshKey={refreshKey} categoryFilter="movie" title="Movies" />
                 </div>
             );
@@ -138,6 +142,8 @@ const VaultPage: React.FC = () => {
 
         return (
             <div className="card shadow-sm mb-3 p-3">
+                <GameForm onItemAdded={handleItemAdded} />
+                <hr />
                 <ItemList refreshKey={refreshKey} categoryFilter="game" title="Games" />
             </div>
         );

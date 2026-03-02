@@ -203,7 +203,7 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
                             disabled={isLooking}
                             aria-label="Scan Barcode"
                         >
-                            📷
+                            {isLooking ? 'Looking up…' : '📷 Scan Barcode'}
                         </button>
                     </div>
                     {lookupError && <div className="form-text text-warning">{lookupError}</div>}

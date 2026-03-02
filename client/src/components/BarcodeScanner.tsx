@@ -37,7 +37,16 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
     }, [stopScanner, onClose]);
 
     useEffect(() => {
-        const scanner = new Html5Qrcode(SCANNER_ELEMENT_ID);
+        const scanner = new Html5Qrcode(SCANNER_ELEMENT_ID, {
+            formatsToSupport: [
+                Html5QrcodeSupportedFormats.EAN_13,
+                Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.UPC_A,
+                Html5QrcodeSupportedFormats.UPC_E,
+                Html5QrcodeSupportedFormats.CODE_128,
+            ],
+            verbose: false,
+        });
         scannerRef.current = scanner;
 
         scanner.start(
@@ -45,13 +54,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
             {
                 fps: 10,
                 qrbox: { width: 250, height: 150 },
-                formatsToSupport: [
-                    Html5QrcodeSupportedFormats.EAN_13,
-                    Html5QrcodeSupportedFormats.EAN_8,
-                    Html5QrcodeSupportedFormats.UPC_A,
-                    Html5QrcodeSupportedFormats.UPC_E,
-                    Html5QrcodeSupportedFormats.CODE_128,
-                ]
             },
             (decodedText) => {
                 if (hasScannedRef.current) return;
