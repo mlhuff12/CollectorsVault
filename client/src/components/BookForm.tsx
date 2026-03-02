@@ -99,20 +99,20 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
 
         let newBook: Book;
 
-        if (isFromLookup) {
+        if (lookupResult) {
             newBook = {
-                title: lookupResult!.title,
-                authors: lookupResult!.authors,
-                isbn: lookupResult!.isbn || isbn.trim() || undefined,
-                publisher: lookupResult!.publisher || undefined,
-                publishDate: lookupResult!.publishDate || undefined,
-                pageCount: lookupResult!.pageCount,
-                description: lookupResult!.description || undefined,
-                subjects: lookupResult!.subjects.length > 0 ? lookupResult!.subjects : undefined,
-                coverSmall: lookupResult!.coverSmall || undefined,
-                coverMedium: lookupResult!.coverMedium || undefined,
-                coverLarge: lookupResult!.coverLarge || undefined,
-                bookUrl: lookupResult!.providerUrl || undefined
+                title: lookupResult.title,
+                authors: lookupResult.authors,
+                isbn: lookupResult.isbn || isbn.trim() || undefined,
+                publisher: lookupResult.publisher || undefined,
+                publishDate: lookupResult.publishDate || undefined,
+                pageCount: lookupResult.pageCount,
+                description: lookupResult.description || undefined,
+                subjects: lookupResult.subjects.length > 0 ? lookupResult.subjects : undefined,
+                coverSmall: lookupResult.coverSmall || undefined,
+                coverMedium: lookupResult.coverMedium || undefined,
+                coverLarge: lookupResult.coverLarge || undefined,
+                bookUrl: lookupResult.providerUrl || undefined
             };
         } else {
             const parsedAuthors = authors
@@ -161,13 +161,13 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
     };
 
     // Resolved display values (from lookup or manual entry)
-    const displayTitle = isFromLookup ? lookupResult!.title : title;
-    const displayAuthors = isFromLookup ? lookupResult!.authors.join(', ') : authors;
-    const displayPublisher = isFromLookup ? lookupResult!.publisher : publisher;
-    const displayPublishDate = isFromLookup ? lookupResult!.publishDate : publishDate;
-    const displayPageCount = isFromLookup ? (lookupResult!.pageCount?.toString() ?? '') : pageCount;
-    const displayDescription = isFromLookup ? lookupResult!.description : description;
-    const displayBookUrl = isFromLookup ? lookupResult!.providerUrl : bookUrl;
+    const displayTitle = lookupResult ? lookupResult.title : title;
+    const displayAuthors = lookupResult ? lookupResult.authors.join(', ') : authors;
+    const displayPublisher = lookupResult ? lookupResult.publisher : publisher;
+    const displayPublishDate = lookupResult ? lookupResult.publishDate : publishDate;
+    const displayPageCount = lookupResult ? (lookupResult.pageCount?.toString() ?? '') : pageCount;
+    const displayDescription = lookupResult ? lookupResult.description : description;
+    const displayBookUrl = lookupResult ? lookupResult.providerUrl : bookUrl;
 
     return (
         <div>
@@ -224,11 +224,11 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
                 </div>
 
                 {/* Medium cover image (shown after successful lookup) */}
-                {isFromLookup && lookupResult!.coverMedium && (
+                {lookupResult?.coverMedium && (
                     <div className="mb-3">
                         <img
-                            src={lookupResult!.coverMedium}
-                            alt={`Cover for ${lookupResult!.title}`}
+                            src={lookupResult.coverMedium}
+                            alt={`Cover for ${lookupResult.title}`}
                             style={{ maxHeight: '200px' }}
                         />
                     </div>

@@ -19,7 +19,9 @@ client/.env.production.local
 **/obj/
 
 # IDE/editor
-.vscode/
+.vscode/*
+!.vscode/launch.json
+!.vscode/tasks.json
 *.user
 *.suo
 

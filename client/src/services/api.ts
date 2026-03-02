@@ -1,7 +1,13 @@
 import axios from 'axios';
 import { AdminUser, Book, BookLookupResult, Game, GameLookupResult, Movie, MovieLookupResult, VaultItem } from '../types';
 
-const BASE_URL = process.env.REACT_APP_API_BASE_URL ?? 'http://localhost:5000';
+const envBaseUrl =
+    typeof process !== 'undefined' &&
+    typeof process.env !== 'undefined' &&
+    process.env.REACT_APP_API_BASE_URL
+        ? process.env.REACT_APP_API_BASE_URL
+        : undefined;
+const BASE_URL = envBaseUrl ?? 'http://localhost:5000';
 const API_URL = `${BASE_URL}/api/vault`;
 const AUTH_URL = `${BASE_URL}/api/auth`;
 const BOOK_LOOKUP_URL = `${BASE_URL}/api/booklookup`;
@@ -38,11 +44,6 @@ export const addGame = async (game: Game): Promise<Game> => {
 
 export const deleteItem = async (id: number): Promise<void> => {
     await axios.delete(`${API_URL}/${id}`, { headers: getAuthHeader() });
-};
-
-export const lookupBookByIsbn = async (isbn: string): Promise<BookLookupResult> => {
-    const response = await axios.get(`${BOOK_LOOKUP_URL}/isbn/${encodeURIComponent(isbn)}`, { headers: getAuthHeader() });
-    return response.data;
 };
 
 export const lookupMovieByUpc = async (upc: string): Promise<MovieLookupResult> => {

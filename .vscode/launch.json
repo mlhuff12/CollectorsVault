@@ -1,0 +1,48 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "API: Launch .NET",
+      "type": "coreclr",
+      "request": "launch",
+      "program": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        "${workspaceFolder}/server/CollectorsVault.Api.csproj"
+      ],
+      "cwd": "${workspaceFolder}/server",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "console": "integratedTerminal",
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "Now listening on:\\s+(https?://\\S+)",
+        "uriFormat": "%s/swagger"
+      }
+    },
+    {
+      "name": "Client: Start Dev Server",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "cd \"${workspaceFolder}/client\" && FAST_REFRESH=false NODE_OPTIONS=--openssl-legacy-provider npm start"
+    },
+    {
+      "name": "Client: Debug in Chrome",
+      "type": "pwa-chrome",
+      "request": "launch",
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}/client/src"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Full Stack: API + Client",
+      "configurations": [
+        "API: Launch .NET",
+        "Client: Start Dev Server"
+      ]
+    }
+  ]
+}
