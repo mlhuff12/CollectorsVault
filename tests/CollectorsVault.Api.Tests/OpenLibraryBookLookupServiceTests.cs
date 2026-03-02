@@ -198,5 +198,71 @@ namespace CollectorsVault.Api.Tests
             Assert.NotNull(result);
             Assert.Equal(string.Empty, result!.Description);
         }
+
+        [Fact]
+        public async Task LookupByIsbnAsync_UsesEditionDescription_WhenWorkHasNoDescription()
+        {
+            const string booksJson = @"{
+                ""ISBN:9780547928227"": {
+                    ""title"": ""The Hobbit"",
+                    ""description"": ""An edition-level description."",
+                    ""works"": [{""key"": ""/works/OL262059W""}]
+                }
+            }";
+            const string workJson = @"{""subjects"": [""Fantasy""]}";
+
+            var (service, _) = CreateService(
+                ("/api/books", Ok(booksJson)),
+                ("/works/", Ok(workJson)));
+
+            var result = await service.LookupByIsbnAsync("9780547928227");
+
+            Assert.NotNull(result);
+            Assert.Equal("An edition-level description.", result!.Description);
+        }
+
+        [Fact]
+        public async Task LookupByIsbnAsync_PrefersWorkDescription_OverEditionDescription()
+        {
+            const string booksJson = @"{
+                ""ISBN:9780547928227"": {
+                    ""title"": ""The Hobbit"",
+                    ""description"": ""An edition-level description."",
+                    ""works"": [{""key"": ""/works/OL262059W""}]
+                }
+            }";
+            const string workJson = @"{""description"": ""The authoritative work-level description.""}";
+
+            var (service, _) = CreateService(
+                ("/api/books", Ok(booksJson)),
+                ("/works/", Ok(workJson)));
+
+            var result = await service.LookupByIsbnAsync("9780547928227");
+
+            Assert.NotNull(result);
+            Assert.Equal("The authoritative work-level description.", result!.Description);
+        }
+
+        [Fact]
+        public async Task LookupByIsbnAsync_UsesEditionDescription_WhenNoWorksKey()
+        {
+            const string booksJson = @"{
+                ""ISBN:9780547928227"": {
+                    ""title"": ""The Hobbit"",
+                    ""description"": {
+                        ""type"": ""/type/text"",
+                        ""value"": ""An edition-level object description.""
+                    }
+                }
+            }";
+
+            // Only one mapping — works endpoint must NOT be called
+            var (service, _) = CreateService(("/api/books", Ok(booksJson)));
+
+            var result = await service.LookupByIsbnAsync("9780547928227");
+
+            Assert.NotNull(result);
+            Assert.Equal("An edition-level object description.", result!.Description);
+        }
     }
 }

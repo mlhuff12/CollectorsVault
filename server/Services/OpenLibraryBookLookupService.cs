@@ -11,8 +11,10 @@ namespace CollectorsVault.Server.Services
     /// <summary>
     /// <see cref="IBookLookupService"/> implementation backed by the Open Library API.
     /// <list type="bullet">
-    ///   <item>ISBN lookup uses <c>/api/books?jscmd=data</c> for rich metadata (covers, publishers, subjects), then
-    ///   fetches the linked Work record (<c>/works/{key}.json</c>) to add the book description — two HTTP requests total.</item>
+    ///   <item>ISBN lookup uses <c>/api/books?jscmd=data</c> for rich metadata (covers, publishers, subjects, etc.).
+    ///   If the edition record itself includes a <c>description</c> field that is used as the initial value;
+    ///   then the linked Work record (<c>/works/{key}.json</c>) is fetched and its description (when present)
+    ///   takes precedence — two HTTP requests total.</item>
     ///   <item>Title / author search uses <c>/search.json</c> and derives cover image URLs from the <c>cover_i</c> field.
     ///   Descriptions are not fetched for search results to avoid per-result extra requests.</item>
     /// </list>
@@ -49,10 +51,15 @@ namespace CollectorsVault.Server.Services
             {
                 var result = ParseFromDataResponse(prop.Value, isbn);
 
-                // Description is not included in /api/books; fetch it from the linked Work record.
+                // Prefer the Work-level description (more authoritative); if the Work has none,
+                // keep any description already parsed from the edition record.
                 var workKey = ExtractFirstWorkKey(prop.Value);
                 if (!string.IsNullOrEmpty(workKey))
-                    result.Description = await FetchWorkDescriptionAsync(workKey);
+                {
+                    var workDescription = await FetchWorkDescriptionAsync(workKey);
+                    if (!string.IsNullOrEmpty(workDescription))
+                        result.Description = workDescription;
+                }
 
                 return result;
             }
@@ -140,6 +147,16 @@ namespace CollectorsVault.Server.Services
 
             if (el.TryGetProperty("url", out var url))
                 result.ProviderUrl = url.GetString() ?? string.Empty;
+
+            // Some editions include their own description; the Work description (fetched separately)
+            // takes precedence when available.
+            if (el.TryGetProperty("description", out var desc))
+            {
+                if (desc.ValueKind == JsonValueKind.String)
+                    result.Description = desc.GetString() ?? string.Empty;
+                else if (desc.ValueKind == JsonValueKind.Object && desc.TryGetProperty("value", out var descVal))
+                    result.Description = descVal.GetString() ?? string.Empty;
+            }
 
             return result;
         }
