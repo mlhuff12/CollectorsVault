@@ -12,15 +12,19 @@ namespace CollectorsVault.Server.Services
     /// <summary>
     /// <see cref="IBookLookupService"/> implementation backed by the Open Library API.
     /// <list type="bullet">
-    ///   <item>ISBN lookup uses <c>/api/books?jscmd=data</c> for rich metadata (covers, publishers, subjects, etc.).
-    ///   If the edition record itself includes a <c>description</c> field that is used as the initial value;
-    ///   then the linked Work record (<c>/works/{key}.json</c>) is fetched and its description (when present)
-    ///   takes precedence — two HTTP requests total.</item>
-    ///   <item>Series information is extracted from the Work's <c>series</c> field. When the Work has no
-    ///   series data but a <c>collectionID</c> subject is present, the collection endpoint is queried to
-    ///   find the matching work's <c>lending_edition</c>, which is then fetched for series info.</item>
-    ///   <item>Title / author search uses <c>/search.json</c> and derives cover image URLs from the <c>cover_i</c> field.
-    ///   Descriptions are not fetched for search results to avoid per-result extra requests.</item>
+    ///   <item>ISBN lookup uses <c>/api/books?jscmd=data</c> for rich metadata (covers, publishers, subjects, etc.).</item>
+    ///   <item>Series information is resolved via a two-step fallback strategy:
+    ///     <list type="number">
+    ///       <item>Edition level: <c>/isbn/{isbn}.json</c> — the most direct source; a <c>series</c> array is
+    ///       commonly populated at the edition level for series books (e.g. <c>["Animorphs #1"]</c>).</item>
+    ///       <item>Work level: <c>/works/{key}.json</c> — fetched anyway for the description; also checked for
+    ///       <c>series</c> when the edition record has none.</item>
+    ///     </list>
+    ///   If neither source resolves the series and the description is still needed, the work is still fetched.
+    ///   If the book has no series data at all, <see cref="BookLookupResult.SeriesNotFound"/> is <see langword="false"/>
+    ///   and both series fields are left empty.
+    ///   </item>
+    ///   <item>Title / author search uses <c>/search.json</c> and derives cover image URLs from the <c>cover_i</c> field.</item>
     /// </list>
     /// To switch to a different provider, implement <see cref="IBookLookupService"/> and update the DI registration in <c>Program.cs</c>.
     /// </summary>
@@ -56,45 +60,32 @@ namespace CollectorsVault.Server.Services
                 var result = ParseFromDataResponse(prop.Value, isbn);
 
                 var workKey = ExtractFirstWorkKey(prop.Value);
+
+                // ── Step 1: check the edition itself for series ──────────────────
+                // The /isbn/{isbn}.json endpoint (recommended by Open Library) commonly
+                // exposes a "series" array at the edition level. This is the most direct
+                // and reliable source of series data — check it first.
+                var editionSeries = await FetchEditionSeriesAsync(isbn);
+                if (editionSeries.HasValue)
+                {
+                    result.SeriesName = editionSeries.Value.Name;
+                    result.SeriesNumber = editionSeries.Value.Number;
+                }
+
+                // ── Step 2: fetch the work for description + series fallback ─────
                 if (!string.IsNullOrEmpty(workKey))
                 {
                     var workData = await FetchWorkDataAsync(workKey);
 
-                    // Prefer the Work-level description (more authoritative); if the Work has none,
-                    // keep any description already parsed from the edition record.
+                    // Prefer the Work-level description (more authoritative).
                     if (!string.IsNullOrEmpty(workData.Description))
                         result.Description = workData.Description;
 
-                    // Use series info from the work if available.
-                    if (!string.IsNullOrEmpty(workData.SeriesName))
+                    // Only use the work's series if the edition had none.
+                    if (string.IsNullOrEmpty(result.SeriesName) && !string.IsNullOrEmpty(workData.SeriesName))
                     {
                         result.SeriesName = workData.SeriesName;
                         result.SeriesNumber = workData.SeriesNumber;
-                    }
-                }
-
-                // If no series found yet, try the collectionID subject path.
-                if (string.IsNullOrEmpty(result.SeriesName))
-                {
-                    var collectionSubject = ExtractCollectionIdSubject(prop.Value);
-                    if (collectionSubject.HasValue)
-                    {
-                        var (collectionSeriesName, collectionPath) = collectionSubject.Value;
-                        if (!string.IsNullOrEmpty(collectionPath))
-                        {
-                            var (seriesName, seriesNumber) = await FetchSeriesFromCollectionAsync(collectionPath, workKey);
-                            if (!string.IsNullOrEmpty(seriesName))
-                            {
-                                result.SeriesName = seriesName;
-                                result.SeriesNumber = seriesNumber;
-                            }
-                            else
-                            {
-                                // Series identified via collectionID but number not determinable — prompt user.
-                                result.SeriesName = collectionSeriesName;
-                                result.SeriesNotFound = true;
-                            }
-                        }
                     }
                 }
 
@@ -263,32 +254,41 @@ namespace CollectorsVault.Server.Services
         }
 
         /// <summary>
-        /// Extracts a <c>collectionID</c> subject from the edition element, if present.
-        /// Returns the series name (e.g. "Animorphs") and the relative URL path to the
-        /// collection subject endpoint (e.g. "/subjects/collectionid:animorphs").
+        /// Fetches the <c>series</c> field from the edition record at <c>/isbn/{isbn}.json</c>.
+        /// This is the recommended primary source for series data: Open Library commonly populates
+        /// the <c>series</c> array at the edition level (e.g. <c>["Animorphs #1"]</c>,
+        /// <c>["Harry Potter ; 3"]</c>) making it the most direct and reliable lookup.
+        /// Returns <see langword="null"/> when the field is absent or the request fails.
         /// </summary>
-        private static (string SeriesName, string SubjectPath)? ExtractCollectionIdSubject(JsonElement el)
+        private async Task<(string Name, int? Number)?> FetchEditionSeriesAsync(string isbn)
         {
-            if (!el.TryGetProperty("subjects", out var subjects))
+            var response = await _httpClient.GetAsync($"/isbn/{Uri.EscapeDataString(isbn)}.json");
+            if (!response.IsSuccessStatusCode)
                 return null;
 
-            foreach (var subject in subjects.EnumerateArray())
+            var json = await response.Content.ReadAsStringAsync();
+            try
             {
-                if (!subject.TryGetProperty("name", out var nameProp)) continue;
-                var nameStr = nameProp.GetString() ?? string.Empty;
-                if (!nameStr.StartsWith("collectionID:", StringComparison.OrdinalIgnoreCase)) continue;
+                using var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement;
 
-                var seriesName = nameStr.Substring("collectionID:".Length).Trim();
+                if (!root.TryGetProperty("series", out var seriesArr) || seriesArr.ValueKind != JsonValueKind.Array)
+                    return null;
 
-                var subjectPath = string.Empty;
-                if (subject.TryGetProperty("url", out var urlProp))
+                foreach (var seriesEl in seriesArr.EnumerateArray())
                 {
-                    var urlStr = urlProp.GetString() ?? string.Empty;
-                    if (Uri.TryCreate(urlStr, UriKind.Absolute, out var uri))
-                        subjectPath = uri.AbsolutePath;
-                }
+                    if (seriesEl.ValueKind != JsonValueKind.String) continue;
+                    var seriesStr = seriesEl.GetString() ?? string.Empty;
+                    if (string.IsNullOrWhiteSpace(seriesStr)) continue;
 
-                return (seriesName, subjectPath);
+                    var (name, number) = ParseSeriesString(seriesStr);
+                    if (!string.IsNullOrEmpty(name))
+                        return (name, number);
+                }
+            }
+            catch (JsonException)
+            {
+                // Malformed JSON — treat as no series
             }
 
             return null;
@@ -346,70 +346,37 @@ namespace CollectorsVault.Server.Services
         }
 
         /// <summary>
-        /// Follows the collectionID subject path to find series information for the book
-        /// identified by <paramref name="workKey"/>.
-        /// Fetches the collection subject JSON, finds the matching work entry (by work key),
-        /// then fetches the <c>lending_edition</c> work for that entry to extract series data.
-        /// </summary>
-        private async Task<(string SeriesName, int? SeriesNumber)> FetchSeriesFromCollectionAsync(
-            string collectionPath, string? workKey)
-        {
-            var response = await _httpClient.GetAsync($"{collectionPath}.json");
-            if (!response.IsSuccessStatusCode)
-                return (string.Empty, null);
-
-            var json = await response.Content.ReadAsStringAsync();
-            try
-            {
-                using var doc = JsonDocument.Parse(json);
-                var root = doc.RootElement;
-
-                if (!root.TryGetProperty("works", out var works))
-                    return (string.Empty, null);
-
-                foreach (var work in works.EnumerateArray())
-                {
-                    // Match this collection entry against our book's work key.
-                    if (!string.IsNullOrEmpty(workKey))
-                    {
-                        if (!work.TryGetProperty("key", out var keyProp)) continue;
-                        var keyStr = keyProp.GetString() ?? string.Empty;
-                        if (!string.Equals(keyStr, workKey, StringComparison.OrdinalIgnoreCase)) continue;
-                    }
-
-                    // Get the lending_edition key for this work and look up its series data.
-                    if (!work.TryGetProperty("lending_edition", out var lendingEditionProp)) continue;
-                    var editionKey = lendingEditionProp.GetString();
-                    if (string.IsNullOrEmpty(editionKey)) continue;
-
-                    var workData = await FetchWorkDataAsync($"/works/{editionKey}");
-                    if (!string.IsNullOrEmpty(workData.SeriesName))
-                        return (workData.SeriesName, workData.SeriesNumber);
-                }
-            }
-            catch (JsonException)
-            {
-                // Malformed JSON — treat as no series found
-            }
-
-            return (string.Empty, null);
-        }
-
-        /// <summary>
-        /// Parses a series string such as <c>"Animorphs #1"</c> into a name and optional number.
-        /// Handles patterns like <c>"Series Name #N"</c>, <c>"Series Name, Book N"</c>,
-        /// and <c>"Series Name, N"</c>.
+        /// Parses a series string into a name and optional series number.
+        /// <para>
+        /// Handles the following formats documented in Open Library data:
+        /// <list type="bullet">
+        ///   <item><c>"Animorphs #1"</c> — hash prefix (<c>#N</c>)</item>
+        ///   <item><c>"Harry Potter ; 3"</c> — semicolon separator (<c>; N</c>)</item>
+        ///   <item><c>"Narnia ; bk. 1"</c> — semicolon + book abbreviation (<c>; bk. N</c>)</item>
+        ///   <item><c>"His Dark Materials, Book 1"</c> — comma + book word (<c>, Book N</c>)</item>
+        ///   <item><c>"Animorphs, 1"</c> — comma + bare number (<c>, N</c>)</item>
+        ///   <item><c>"Animorphs"</c> — name only, no number</item>
+        /// </list>
+        /// </para>
         /// </summary>
         public static (string Name, int? Number) ParseSeriesString(string series)
         {
-            // Match: "Some Name #N", "Some Name, Book N", or "Some Name, N"
+            // Handles:
+            //   "Name #N"                 (hash)
+            //   "Name ; N"                (semicolon + space + number)
+            //   "Name ; bk. N"            (semicolon + book abbreviation)
+            //   "Name, Book N"            (comma + Book word)
+            //   "Name, N"                 (comma + bare number)
             var match = Regex.Match(
-                series,
-                @"^(.+?)(?:\s*[,#]\s*(?:[Bb]ook\s+)?(\d+))?$");
+                series.Trim(),
+                @"^(.+?)(?:\s*(?:[;,#])\s*(?:[Bb]k\.?\s+|[Bb]ook\s+)?(\d+))?$");
 
             if (match.Success)
             {
                 var name = match.Groups[1].Value.Trim();
+                // Strip a trailing semicolon left over when the semicolon is the separator
+                // and no number was captured (e.g. "Name ;" with nothing after).
+                name = name.TrimEnd(';', ',', ' ');
                 var number = match.Groups[2].Success ? (int?)int.Parse(match.Groups[2].Value) : null;
                 return (name, number);
             }
