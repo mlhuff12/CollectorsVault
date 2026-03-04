@@ -88,6 +88,10 @@ namespace CollectorsVault.Server.Services
                 CoverMedium = request.CoverMedium?.Trim() ?? string.Empty,
                 CoverLarge = request.CoverLarge?.Trim() ?? string.Empty,
                 BookUrl = request.BookUrl?.Trim() ?? string.Empty,
+                BookFormat = request.BookFormat?.Trim() ?? string.Empty,
+                NeedsReplacement = request.NeedsReplacement,
+                SeriesName = request.SeriesName?.Trim() ?? string.Empty,
+                SeriesNumber = request.SeriesNumber,
                 CreatedUtcDate = DateTime.UtcNow,
                 LastModifiedUtcDate = DateTime.UtcNow,
                 UserId = userId

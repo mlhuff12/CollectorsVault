@@ -264,5 +264,160 @@ namespace CollectorsVault.Api.Tests
             Assert.NotNull(result);
             Assert.Equal("An edition-level object description.", result!.Description);
         }
+
+        // ── Series lookup — direct work series field ───────────────────────────
+
+        [Fact]
+        public async Task LookupByIsbnAsync_PopulatesSeriesName_WhenWorkHasSeriesField()
+        {
+            const string booksJson = @"{
+                ""ISBN:0590629778"": {
+                    ""title"": ""The Invasion"",
+                    ""works"": [{""key"": ""/works/OL7872220W""}]
+                }
+            }";
+            const string workJson = @"{""series"": [""Animorphs #1""]}";
+
+            var (service, _) = CreateService(
+                ("/api/books", Ok(booksJson)),
+                ("/works/", Ok(workJson)));
+
+            var result = await service.LookupByIsbnAsync("0590629778");
+
+            Assert.NotNull(result);
+            Assert.Equal("Animorphs", result!.SeriesName);
+            Assert.Equal(1, result.SeriesNumber);
+            Assert.False(result.SeriesNotFound);
+        }
+
+        [Fact]
+        public async Task LookupByIsbnAsync_PopulatesSeriesNameOnly_WhenWorkSeriesHasNoNumber()
+        {
+            const string booksJson = @"{
+                ""ISBN:0590629778"": {
+                    ""title"": ""The Invasion"",
+                    ""works"": [{""key"": ""/works/OL7872220W""}]
+                }
+            }";
+            const string workJson = @"{""series"": [""Animorphs""]}";
+
+            var (service, _) = CreateService(
+                ("/api/books", Ok(booksJson)),
+                ("/works/", Ok(workJson)));
+
+            var result = await service.LookupByIsbnAsync("0590629778");
+
+            Assert.NotNull(result);
+            Assert.Equal("Animorphs", result!.SeriesName);
+            Assert.Null(result.SeriesNumber);
+            Assert.False(result.SeriesNotFound);
+        }
+
+        // ── Series lookup — collectionID fallback path ─────────────────────────
+
+        [Fact]
+        public async Task LookupByIsbnAsync_UsesCollectionPath_WhenWorkHasNoSeries()
+        {
+            const string booksJson = @"{
+                ""ISBN:0590629778"": {
+                    ""title"": ""The Invasion"",
+                    ""works"": [{""key"": ""/works/OL7872220W""}],
+                    ""subjects"": [
+                        {""name"": ""collectionID:Animorphs"", ""url"": ""https://openlibrary.org/subjects/collectionid:animorphs""}
+                    ]
+                }
+            }";
+            const string workJson = @"{""description"": ""A shape-shifting adventure.""}";
+            const string collectionJson = @"{
+                ""works"": [
+                    {
+                        ""key"": ""/works/OL7872220W"",
+                        ""lending_edition"": ""OL24959144M""
+                    }
+                ]
+            }";
+            const string lendingEditionJson = @"{""series"": [""Animorphs #1""]}";
+
+            var (service, _) = CreateService(
+                ("/api/books", Ok(booksJson)),
+                ("/works/OL7872220W", Ok(workJson)),
+                ("/subjects/", Ok(collectionJson)),
+                ("/works/OL24959144M", Ok(lendingEditionJson)));
+
+            var result = await service.LookupByIsbnAsync("0590629778");
+
+            Assert.NotNull(result);
+            Assert.Equal("Animorphs", result!.SeriesName);
+            Assert.Equal(1, result.SeriesNumber);
+            Assert.False(result.SeriesNotFound);
+        }
+
+        [Fact]
+        public async Task LookupByIsbnAsync_SetsSeriesNotFound_WhenCollectionPathYieldsNoSeries()
+        {
+            const string booksJson = @"{
+                ""ISBN:0590629778"": {
+                    ""title"": ""The Invasion"",
+                    ""works"": [{""key"": ""/works/OL7872220W""}],
+                    ""subjects"": [
+                        {""name"": ""collectionID:Animorphs"", ""url"": ""https://openlibrary.org/subjects/collectionid:animorphs""}
+                    ]
+                }
+            }";
+            const string workJson = @"{""description"": ""A shape-shifting adventure.""}";
+            const string collectionJson = @"{ ""works"": [] }";
+
+            var (service, _) = CreateService(
+                ("/api/books", Ok(booksJson)),
+                ("/works/OL7872220W", Ok(workJson)),
+                ("/subjects/", Ok(collectionJson)));
+
+            var result = await service.LookupByIsbnAsync("0590629778");
+
+            Assert.NotNull(result);
+            Assert.Equal("Animorphs", result!.SeriesName);
+            Assert.True(result.SeriesNotFound);
+        }
+
+        [Fact]
+        public async Task LookupByIsbnAsync_LeavesSeriesEmpty_WhenNoCollectionIdSubject()
+        {
+            const string booksJson = @"{
+                ""ISBN:9780547928227"": {
+                    ""title"": ""The Hobbit"",
+                    ""works"": [{""key"": ""/works/OL262059W""}],
+                    ""subjects"": [
+                        {""name"": ""Fantasy fiction"", ""url"": ""https://openlibrary.org/subjects/fantasy_fiction""}
+                    ]
+                }
+            }";
+            const string workJson = @"{""description"": ""A hobbit's adventure.""}";
+
+            var (service, _) = CreateService(
+                ("/api/books", Ok(booksJson)),
+                ("/works/", Ok(workJson)));
+
+            var result = await service.LookupByIsbnAsync("9780547928227");
+
+            Assert.NotNull(result);
+            Assert.Equal(string.Empty, result!.SeriesName);
+            Assert.Null(result.SeriesNumber);
+            Assert.False(result.SeriesNotFound);
+        }
+
+        // ── ParseSeriesString unit tests ────────────────────────────────────────
+
+        [Theory]
+        [InlineData("Animorphs #1", "Animorphs", 1)]
+        [InlineData("Animorphs #12", "Animorphs", 12)]
+        [InlineData("Harry Potter, Book 1", "Harry Potter", 1)]
+        [InlineData("Harry Potter, 3", "Harry Potter", 3)]
+        [InlineData("Animorphs", "Animorphs", null)]
+        public void ParseSeriesString_ParsesNameAndNumber(string input, string expectedName, int? expectedNumber)
+        {
+            var (name, number) = OpenLibraryBookLookupService.ParseSeriesString(input);
+            Assert.Equal(expectedName, name);
+            Assert.Equal(expectedNumber, number);
+        }
     }
 }

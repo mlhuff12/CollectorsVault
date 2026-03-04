@@ -19,6 +19,14 @@ namespace CollectorsVault.Server.Contracts
         public string CoverMedium { get; set; } = string.Empty;
         public string CoverLarge { get; set; } = string.Empty;
         public string BookUrl { get; set; } = string.Empty;
+        /// <summary>Physical or digital format of the book (e.g. Hardcover, Paperback, eBook).</summary>
+        public string BookFormat { get; set; } = string.Empty;
+        /// <summary>Indicates whether this copy needs to be replaced.</summary>
+        public bool NeedsReplacement { get; set; }
+        /// <summary>Name of the series this book belongs to, if any.</summary>
+        public string SeriesName { get; set; } = string.Empty;
+        /// <summary>Position of this book within its series, if known.</summary>
+        public int? SeriesNumber { get; set; }
     }
 
     public class MovieRequest

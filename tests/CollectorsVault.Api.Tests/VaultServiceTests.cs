@@ -140,5 +140,30 @@ namespace CollectorsVault.Api.Tests
             Assert.InRange(book.CreatedUtcDate, before, after);
             Assert.InRange(book.LastModifiedUtcDate, before, after);
         }
+
+        [Fact]
+        public async Task AddBookAsync_PersistsSeriesAndFormatFields()
+        {
+            using var context = CreateInMemoryContext();
+            var service = new VaultService(context);
+
+            var request = new BookRequest
+            {
+                Title = "The Invasion",
+                Authors = new List<string> { "K.A. Applegate" },
+                ISBN = "0590629778",
+                SeriesName = "Animorphs",
+                SeriesNumber = 1,
+                BookFormat = "Paperback",
+                NeedsReplacement = true
+            };
+
+            var book = await service.AddBookAsync(request, userId: 1L);
+
+            Assert.Equal("Animorphs", book.SeriesName);
+            Assert.Equal(1, book.SeriesNumber);
+            Assert.Equal("Paperback", book.BookFormat);
+            Assert.True(book.NeedsReplacement);
+        }
     }
 }

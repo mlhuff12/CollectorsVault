@@ -19,6 +19,9 @@ export interface BookLookupResult {
     coverMedium: string;
     coverLarge: string;
     providerUrl: string;
+    seriesName: string;
+    seriesNumber?: number;
+    seriesNotFound: boolean;
 }
 
 export interface MovieLookupResult {
@@ -61,6 +64,10 @@ export interface Book {
     coverMedium?: string;
     coverLarge?: string;
     bookUrl?: string;
+    bookFormat?: string;
+    needsReplacement?: boolean;
+    seriesName?: string;
+    seriesNumber?: number;
 }
 
 export interface Movie {

@@ -42,5 +42,17 @@ namespace CollectorsVault.Server.Contracts
 
         /// <summary>Link to the book's page on the provider's website.</summary>
         public string ProviderUrl { get; set; } = string.Empty;
+
+        /// <summary>Name of the series this book belongs to, if available from the lookup provider.</summary>
+        public string SeriesName { get; set; } = string.Empty;
+
+        /// <summary>Position of this book within its series, if available from the lookup provider.</summary>
+        public int? SeriesNumber { get; set; }
+
+        /// <summary>
+        /// True when the book is identified as part of a series (via a collectionID subject)
+        /// but the series number could not be determined. The UI should prompt the user to enter it.
+        /// </summary>
+        public bool SeriesNotFound { get; set; }
     }
 }
