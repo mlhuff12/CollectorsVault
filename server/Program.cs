@@ -186,6 +186,19 @@ using (var scope = app.Services.CreateScope())
             dbContext.Database.EnsureCreated();
             app.Logger.LogInformation("SQLite schema recreated successfully.");
         }
+        else
+        {
+            // Tables exist — ensure any new columns added to existing tables are present.
+            // ALTER TABLE ADD COLUMN preserves all existing data.
+            var bookColumnsToAdd = new[]
+            {
+                ("BookFormat",       "TEXT NOT NULL DEFAULT ''"),
+                ("NeedsReplacement", "INTEGER NOT NULL DEFAULT 0"),
+                ("SeriesName",       "TEXT NOT NULL DEFAULT ''"),
+                ("SeriesNumber",     "INTEGER"),
+            };
+            AddMissingColumns(dbContext, "Book", bookColumnsToAdd, app.Logger);
+        }
     }
 
     var adminUsername = builder.Configuration["AdminUser:Username"] ?? "mlhuff12@gmail.com";
@@ -253,6 +266,59 @@ static List<string> GetMissingTables(VaultDbContext dbContext, IEnumerable<strin
         }
 
         return missingTables;
+    }
+    finally
+    {
+        if (openedByMethod && command.Connection.State == System.Data.ConnectionState.Open)
+        {
+            command.Connection.Close();
+        }
+    }
+}
+
+static void AddMissingColumns(VaultDbContext dbContext, string tableName,
+    IEnumerable<(string Name, string Definition)> columns, ILogger logger)
+{
+    // Validate that tableName and column names are safe SQL identifiers (letters, digits, underscores only).
+    if (!System.Text.RegularExpressions.Regex.IsMatch(tableName, @"^\w+$"))
+        throw new ArgumentException($"Invalid table name: '{tableName}'", nameof(tableName));
+
+    var connection = dbContext.Database.GetDbConnection();
+    using var command = connection.CreateCommand();
+    if (command.Connection is null) return;
+
+    var openedByMethod = false;
+    if (command.Connection.State != System.Data.ConnectionState.Open)
+    {
+        command.Connection.Open();
+        openedByMethod = true;
+    }
+
+    try
+    {
+        // PRAGMA table_info returns one row per column; we collect existing column names.
+        command.CommandText = $"PRAGMA table_info({tableName});";
+        var existingColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        using (var reader = command.ExecuteReader())
+        {
+            while (reader.Read())
+            {
+                existingColumns.Add(reader.GetString(1)); // column 1 is "name"
+            }
+        }
+
+        foreach (var (name, definition) in columns)
+        {
+            // Validate column name is a safe SQL identifier.
+            if (!System.Text.RegularExpressions.Regex.IsMatch(name, @"^\w+$"))
+                throw new ArgumentException($"Invalid column name: '{name}'", nameof(columns));
+
+            if (existingColumns.Contains(name)) continue;
+
+            command.CommandText = $"ALTER TABLE {tableName} ADD COLUMN {name} {definition};";
+            command.ExecuteNonQuery();
+            logger.LogInformation("Added missing column '{Column}' to table '{Table}'.", name, tableName);
+        }
     }
     finally
     {
