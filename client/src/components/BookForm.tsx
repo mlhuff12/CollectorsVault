@@ -134,7 +134,7 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
                 seriesName: seriesName.trim() || undefined,
                 seriesNumber: seriesNumber.trim() ? parseInt(seriesNumber, 10) : undefined,
                 bookFormat: bookFormat.trim() || undefined,
-                needsReplacement: needsReplacement || undefined
+                needsReplacement: needsReplacement
             };
         } else {
             const parsedAuthors = authors
@@ -161,7 +161,7 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
                 seriesName: seriesName.trim() || undefined,
                 seriesNumber: seriesNumber.trim() ? parseInt(seriesNumber, 10) : undefined,
                 bookFormat: bookFormat.trim() || undefined,
-                needsReplacement: needsReplacement || undefined
+                needsReplacement: needsReplacement
             };
         }
 
