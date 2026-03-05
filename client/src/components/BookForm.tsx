@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { addBook, lookupBookByIsbn } from '../services/api';
-import { Book, BookLookupResult } from '../types';
+import { Book, BookFormat, BookLookupResult } from '../types';
 import BarcodeScanner from './BarcodeScanner';
 import Toast from './Toast';
 
@@ -44,7 +44,7 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
     const [seriesNumber, setSeriesNumber] = useState('');
 
     // Collector-managed fields (always editable; not from lookup)
-    const [bookFormat, setBookFormat] = useState('');
+    const [bookFormat, setBookFormat] = useState<BookFormat | ''>('');
     const [needsReplacement, setNeedsReplacement] = useState(false);
 
     const [errorMessage, setErrorMessage] = useState('');
@@ -133,7 +133,7 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
                 bookUrl: lookupResult.providerUrl || undefined,
                 seriesName: seriesName.trim() || undefined,
                 seriesNumber: seriesNumber.trim() ? parseInt(seriesNumber, 10) : undefined,
-                bookFormat: bookFormat.trim() || undefined,
+                bookFormat: bookFormat || undefined,
                 needsReplacement: needsReplacement
             };
         } else {
@@ -160,7 +160,7 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
                 bookUrl: bookUrl.trim() || undefined,
                 seriesName: seriesName.trim() || undefined,
                 seriesNumber: seriesNumber.trim() ? parseInt(seriesNumber, 10) : undefined,
-                bookFormat: bookFormat.trim() || undefined,
+                bookFormat: bookFormat || undefined,
                 needsReplacement: needsReplacement
             };
         }
@@ -397,12 +397,17 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
                         id="book-format"
                         className="form-select"
                         value={bookFormat}
-                        onChange={(e) => setBookFormat(e.target.value)}
+                        onChange={(e) => setBookFormat(e.target.value as BookFormat | '')}
                     >
                         <option value="">— Select format —</option>
                         <option value="Hardcover">Hardcover</option>
                         <option value="Paperback">Paperback</option>
-                        <option value="eBook">eBook</option>
+                        <option value="MassMarketPaperback">Mass Market Paperback</option>
+                        <option value="TradePaperback">Trade Paperback</option>
+                        <option value="BoardBook">Board Book</option>
+                        <option value="LibraryBinding">Library Binding</option>
+                        <option value="SpiralBound">Spiral-Bound</option>
+                        <option value="EBook">eBook</option>
                         <option value="Audiobook">Audiobook</option>
                         <option value="Other">Other</option>
                     </select>

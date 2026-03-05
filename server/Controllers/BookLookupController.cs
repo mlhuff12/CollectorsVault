@@ -39,7 +39,9 @@ namespace CollectorsVault.Server.Controllers
         {
             var result = await _lookupService.LookupByIsbnAsync(isbn);
             if (result == null)
+            {
                 return NotFound();
+            }
 
             return Ok(result);
         }

@@ -70,27 +70,30 @@ namespace CollectorsVault.Server.Services
                 .Select(author => author.Trim())
                 .ToList();
 
+            var normalizedSubjects = (request.Subjects ?? new List<string>())
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Select(s => s.Trim())
+                .ToList();
+
             var book = new Book
             {
                 Title = request.Title,
-                Author = string.Join(", ", normalizedAuthors),
-                ISBN = request.ISBN?.Trim() ?? string.Empty,
-                PublicationYear = request.Year ?? 0,
+                Authors = normalizedAuthors,
+                ISBN = string.IsNullOrWhiteSpace(request.ISBN) ? null : request.ISBN.Trim(),
+                PublicationYear = request.Year,
                 Genre = request.Genre?.Trim() ?? string.Empty,
-                Publisher = request.Publisher?.Trim() ?? string.Empty,
-                PublishDate = request.PublishDate?.Trim() ?? string.Empty,
+                Publisher = string.IsNullOrWhiteSpace(request.Publisher) ? null : request.Publisher.Trim(),
+                PublishUtcDate = DateTime.TryParse(request.PublishDate, out var parsedDate) ? parsedDate.ToUniversalTime() : (DateTime?)null,
                 PageCount = request.PageCount,
                 Description = request.Description?.Trim() ?? string.Empty,
-                Subjects = string.Join(", ", (request.Subjects ?? new List<string>())
-                    .Where(s => !string.IsNullOrWhiteSpace(s))
-                    .Select(s => s.Trim())),
-                CoverSmall = request.CoverSmall?.Trim() ?? string.Empty,
-                CoverMedium = request.CoverMedium?.Trim() ?? string.Empty,
-                CoverLarge = request.CoverLarge?.Trim() ?? string.Empty,
-                BookUrl = request.BookUrl?.Trim() ?? string.Empty,
-                BookFormat = request.BookFormat?.Trim() ?? string.Empty,
+                Subjects = normalizedSubjects.Count > 0 ? normalizedSubjects : null,
+                CoverSmall = string.IsNullOrWhiteSpace(request.CoverSmall) ? null : request.CoverSmall.Trim(),
+                CoverMedium = string.IsNullOrWhiteSpace(request.CoverMedium) ? null : request.CoverMedium.Trim(),
+                CoverLarge = string.IsNullOrWhiteSpace(request.CoverLarge) ? null : request.CoverLarge.Trim(),
+                BookUrl = string.IsNullOrWhiteSpace(request.BookUrl) ? null : request.BookUrl.Trim(),
+                BookFormat = ParseBookFormat(request.BookFormat),
                 NeedsReplacement = request.NeedsReplacement,
-                SeriesName = request.SeriesName?.Trim() ?? string.Empty,
+                SeriesName = string.IsNullOrWhiteSpace(request.SeriesName) ? null : request.SeriesName.Trim(),
                 SeriesNumber = request.SeriesNumber,
                 CreatedUtcDate = DateTime.UtcNow,
                 LastModifiedUtcDate = DateTime.UtcNow,
@@ -100,6 +103,40 @@ namespace CollectorsVault.Server.Services
             _context.Books.Add(book);
             await _context.SaveChangesAsync();
             return book;
+        }
+
+        /// <summary>
+        /// Parses a book format string (e.g. "Paperback", "Mass Market Paperback") to the
+        /// <see cref="BookFormat"/> enum. Returns <see langword="null"/> when the value is
+        /// unrecognised or empty.
+        /// </summary>
+        private static BookFormat? ParseBookFormat(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            // Direct enum name match (case-insensitive).
+            if (Enum.TryParse<BookFormat>(value.Trim(), ignoreCase: true, out var result))
+            {
+                return result;
+            }
+
+            // Normalised string comparisons for common Open Library physical_format values.
+            return value.Trim().ToLowerInvariant() switch
+            {
+                "hardcover" or "hardback" => BookFormat.Hardcover,
+                "paperback" or "softcover" or "softback" => BookFormat.Paperback,
+                "mass market paperback" or "mass market" => BookFormat.MassMarketPaperback,
+                "trade paperback" => BookFormat.TradePaperback,
+                "board book" or "board books" => BookFormat.BoardBook,
+                "library binding" or "library bound" => BookFormat.LibraryBinding,
+                "spiral-bound" or "spiral bound" or "ring-bound" or "ring bound" => BookFormat.SpiralBound,
+                "ebook" or "e-book" or "e book" or "digital" => BookFormat.EBook,
+                "audiobook" or "audio book" or "audio cd" => BookFormat.Audiobook,
+                _ => BookFormat.Other
+            };
         }
 
         public async Task<Movie> AddMovieAsync(MovieRequest request, long userId)

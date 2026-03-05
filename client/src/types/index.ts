@@ -49,6 +49,19 @@ export interface GameLookupResult {
     igdbId?: number;
 }
 
+export type BookFormat =
+    | 'Unknown'
+    | 'Hardcover'
+    | 'Paperback'
+    | 'MassMarketPaperback'
+    | 'TradePaperback'
+    | 'BoardBook'
+    | 'LibraryBinding'
+    | 'SpiralBound'
+    | 'EBook'
+    | 'Audiobook'
+    | 'Other';
+
 export interface Book {
     title: string;
     authors: string[];
@@ -64,7 +77,7 @@ export interface Book {
     coverMedium?: string;
     coverLarge?: string;
     bookUrl?: string;
-    bookFormat?: string;
+    bookFormat?: BookFormat;
     needsReplacement?: boolean;
     seriesName?: string;
     seriesNumber?: number;

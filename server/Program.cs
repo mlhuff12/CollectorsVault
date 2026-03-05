@@ -192,12 +192,21 @@ using (var scope = app.Services.CreateScope())
             // ALTER TABLE ADD COLUMN preserves all existing data.
             var bookColumnsToAdd = new[]
             {
-                ("BookFormat",       "TEXT NOT NULL DEFAULT ''"),
+                // Series and format fields added in the series support feature.
+                ("BookFormat",       "TEXT"),
                 ("NeedsReplacement", "INTEGER NOT NULL DEFAULT 0"),
-                ("SeriesName",       "TEXT NOT NULL DEFAULT ''"),
+                ("SeriesName",       "TEXT"),
                 ("SeriesNumber",     "INTEGER"),
+                // Model refactor: Authors stored as JSON array; Subjects stored as JSON array.
+                ("Authors",          "TEXT NOT NULL DEFAULT '[]'"),
+                ("Subjects",         "TEXT"),
+                // PublishUtcDate replaces the old string PublishDate column.
+                ("PublishUtcDate",   "TEXT"),
             };
             AddMissingColumns(dbContext, "Book", bookColumnsToAdd, app.Logger);
+
+            // Migrate Authors from legacy comma-separated Author column when Authors is still empty.
+            MigrateAuthorToAuthors(dbContext, app.Logger);
         }
     }
 
@@ -281,11 +290,16 @@ static void AddMissingColumns(VaultDbContext dbContext, string tableName,
 {
     // Validate that tableName and column names are safe SQL identifiers (letters, digits, underscores only).
     if (!System.Text.RegularExpressions.Regex.IsMatch(tableName, @"^\w+$"))
+    {
         throw new ArgumentException($"Invalid table name: '{tableName}'", nameof(tableName));
+    }
 
     var connection = dbContext.Database.GetDbConnection();
     using var command = connection.CreateCommand();
-    if (command.Connection is null) return;
+    if (command.Connection is null)
+    {
+        return;
+    }
 
     var openedByMethod = false;
     if (command.Connection.State != System.Data.ConnectionState.Open)
@@ -311,14 +325,105 @@ static void AddMissingColumns(VaultDbContext dbContext, string tableName,
         {
             // Validate column name is a safe SQL identifier.
             if (!System.Text.RegularExpressions.Regex.IsMatch(name, @"^\w+$"))
+            {
                 throw new ArgumentException($"Invalid column name: '{name}'", nameof(columns));
+            }
 
-            if (existingColumns.Contains(name)) continue;
+            if (existingColumns.Contains(name))
+            {
+                continue;
+            }
 
             command.CommandText = $"ALTER TABLE {tableName} ADD COLUMN {name} {definition};";
             command.ExecuteNonQuery();
             logger.LogInformation("Added missing column '{Column}' to table '{Table}'.", name, tableName);
         }
+    }
+    finally
+    {
+        if (openedByMethod && command.Connection.State == System.Data.ConnectionState.Open)
+        {
+            command.Connection.Close();
+        }
+    }
+}
+
+static void MigrateAuthorToAuthors(VaultDbContext dbContext, ILogger logger)
+{
+    // When upgrading from a database that has the old single-string "Author" column,
+    // populate the new JSON-array "Authors" column for any rows that still have '[]'.
+    var connection = dbContext.Database.GetDbConnection();
+    using var command = connection.CreateCommand();
+    if (command.Connection is null)
+    {
+        return;
+    }
+
+    var openedByMethod = false;
+    if (command.Connection.State != System.Data.ConnectionState.Open)
+    {
+        command.Connection.Open();
+        openedByMethod = true;
+    }
+
+    try
+    {
+        // Check whether the legacy Author column still exists.
+        command.CommandText = "PRAGMA table_info(Book);";
+        var existingColumns = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        using (var reader = command.ExecuteReader())
+        {
+            while (reader.Read())
+            {
+                existingColumns.Add(reader.GetString(1));
+            }
+        }
+
+        if (!existingColumns.Contains("Author"))
+        {
+            return; // No legacy column to migrate.
+        }
+
+        // Read all rows that need migration and update them with properly serialized JSON.
+        command.CommandText = "SELECT Id, Author FROM Book WHERE (Authors IS NULL OR Authors = '[]') AND Author IS NOT NULL AND Author != '';";
+        var rows = new System.Collections.Generic.List<(long Id, string Author)>();
+        using (var reader = command.ExecuteReader())
+        {
+            while (reader.Read())
+            {
+                rows.Add((reader.GetInt64(0), reader.GetString(1)));
+            }
+        }
+
+        if (rows.Count == 0)
+        {
+            return;
+        }
+
+        using var updateCommand = connection.CreateCommand();
+        if (updateCommand.Connection is null)
+        {
+            return;
+        }
+        updateCommand.CommandText = "UPDATE Book SET Authors = @authors WHERE Id = @id;";
+        var authorsParam = updateCommand.CreateParameter();
+        authorsParam.ParameterName = "@authors";
+        updateCommand.Parameters.Add(authorsParam);
+        var idParam = updateCommand.CreateParameter();
+        idParam.ParameterName = "@id";
+        updateCommand.Parameters.Add(idParam);
+
+        foreach (var (id, author) in rows)
+        {
+            // Split on ", " to match the original join logic; trim each part.
+            var authors = author
+                .Split(new[] { ", " }, System.StringSplitOptions.RemoveEmptyEntries);
+            authorsParam.Value = System.Text.Json.JsonSerializer.Serialize(authors);
+            idParam.Value = id;
+            updateCommand.ExecuteNonQuery();
+        }
+
+        logger.LogInformation("Migrated {Count} book(s) from legacy Author column to Authors JSON array.", rows.Count);
     }
     finally
     {

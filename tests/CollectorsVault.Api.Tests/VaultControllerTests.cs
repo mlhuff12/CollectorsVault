@@ -59,7 +59,7 @@ namespace CollectorsVault.Api.Tests
             {
                 Id = 10L,
                 Title = "The Hobbit",
-                Author = "J.R.R. Tolkien",
+                Authors = new System.Collections.Generic.List<string> { "J.R.R. Tolkien" },
                 ISBN = "978-0547928227",
                 PublicationYear = 1937,
                 Genre = "Fantasy"

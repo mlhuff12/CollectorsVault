@@ -32,7 +32,9 @@ namespace CollectorsVault.Api.Tests
                 {
                     var descriptor = services.SingleOrDefaultDescriptor<DbContextOptions<VaultDbContext>>();
                     if (descriptor != null)
+                    {
                         services.Remove(descriptor);
+                    }
 
                     var dbName = $"BookIsbnTests_{Guid.NewGuid()}";
                     services.AddDbContext<VaultDbContext>(options =>
