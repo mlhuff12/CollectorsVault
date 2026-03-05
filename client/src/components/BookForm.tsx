@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { addBook, lookupBookByIsbn } from '../services/api';
-import { Book, BookFormat, BookLookupResult } from '../types';
+import { Book, BookFormat, BookLookupResult } from '../models';
 import BarcodeScanner from './BarcodeScanner';
 import Toast from './Toast';
 

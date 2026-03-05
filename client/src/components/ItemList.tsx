@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrashAlt } from '@fortawesome/free-solid-svg-icons';
-import { VaultItem } from '../types';
+import { VaultItem } from '../models';
 import { deleteItem, fetchItems } from '../services/api';
 
 /** Props accepted by {@link ItemList}. */
