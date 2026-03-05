@@ -110,7 +110,7 @@ namespace CollectorsVault.Server.Services
         /// <see cref="BookFormat"/> enum. Returns <see langword="null"/> when the value is
         /// unrecognised or empty.
         /// </summary>
-        private static BookFormat? ParseBookFormat(string? value)
+        internal static BookFormat? ParseBookFormat(string? value)
         {
             if (string.IsNullOrWhiteSpace(value))
             {

@@ -87,6 +87,7 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
             setLookupResult(result);
             if (result.seriesName) setSeriesName(result.seriesName);
             if (result.seriesNumber != null) setSeriesNumber(result.seriesNumber.toString());
+            if (result.bookFormat) setBookFormat(result.bookFormat);
         } catch {
             setLookupError('Book not found for the given ISBN. You may enter details manually.');
         } finally {
@@ -104,6 +105,7 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
     const handleClearLookup = () => {
         setLookupResult(null);
         setLookupError('');
+        setIsbn('');
         setSeriesName('');
         setSeriesNumber('');
     };
@@ -123,6 +125,7 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
             setLookupResult(result);
             if (result.seriesName) setSeriesName(result.seriesName);
             if (result.seriesNumber != null) setSeriesNumber(result.seriesNumber.toString());
+            if (result.bookFormat) setBookFormat(result.bookFormat);
         } catch {
             setLookupError('Book not found for this barcode. You may enter details manually.');
         } finally {
@@ -392,6 +395,7 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
                         value={seriesName}
                         onChange={(e) => setSeriesName(e.target.value)}
                         placeholder="e.g. Animorphs"
+                        autoComplete="off"
                     />
                 </div>
 
@@ -406,6 +410,7 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
                         onChange={(e) => setSeriesNumber(e.target.value)}
                         placeholder="e.g. 1"
                         min={1}
+                        autoComplete="off"
                     />
                 </div>
 

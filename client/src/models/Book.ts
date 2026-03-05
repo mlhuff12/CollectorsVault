@@ -27,6 +27,7 @@ export interface BookLookupResult {
     seriesName: string;
     seriesNumber?: number;
     seriesNotFound: boolean;
+    bookFormat?: BookFormat;
 }
 
 export interface Book {

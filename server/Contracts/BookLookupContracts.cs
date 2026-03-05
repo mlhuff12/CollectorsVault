@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CollectorsVault.Server.Models;
 
 namespace CollectorsVault.Server.Contracts
 {
@@ -54,5 +55,8 @@ namespace CollectorsVault.Server.Contracts
         /// but the series number could not be determined. The UI should prompt the user to enter it.
         /// </summary>
         public bool SeriesNotFound { get; set; }
+
+        /// <summary>Physical or digital format of the book, if available from the lookup provider.</summary>
+        public BookFormat? BookFormat { get; set; }
     }
 }

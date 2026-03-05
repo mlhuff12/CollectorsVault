@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using CollectorsVault.Server.Contracts;
+using CollectorsVault.Server.Models;
 using CollectorsVault.Server.Utils;
 
 namespace CollectorsVault.Server.Services
@@ -66,6 +67,25 @@ namespace CollectorsVault.Server.Services
                     {
                         result.SeriesName = workData.SeriesName;
                         result.SeriesNumber = workData.SeriesNumber;
+                    }
+                }
+
+                // Last-resort: if still no series, look for a "series:{name}" subject tag.
+                if (string.IsNullOrEmpty(result.SeriesName) && result.Subjects != null)
+                {
+                    foreach (var subject in result.Subjects)
+                    {
+                        const string prefix = "series:";
+                        if (subject.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                        {
+                            var nameFromSubject = subject[prefix.Length..].Trim();
+                            if (!string.IsNullOrEmpty(nameFromSubject))
+                            {
+                                result.SeriesName = nameFromSubject;
+                                result.SeriesNotFound = true;
+                                break;
+                            }
+                        }
                     }
                 }
 
@@ -174,6 +194,11 @@ namespace CollectorsVault.Server.Services
             if (el.TryGetProperty("url", out var url))
             {
                 result.ProviderUrl = url.GetString() ?? string.Empty;
+            }
+
+            if (el.TryGetProperty("physical_format", out var physicalFormat))
+            {
+                result.BookFormat = VaultService.ParseBookFormat(physicalFormat.GetString());
             }
 
             if (el.TryGetProperty("description", out var desc))
