@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Movie } from '../types';
+import { Movie } from '../models';
 import { addMovie, lookupMovieByUpc } from '../services/api';
 import BarcodeScanner from './BarcodeScanner';
 import Toast from './Toast';

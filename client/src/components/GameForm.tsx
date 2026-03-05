@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { addGame, lookupGameByUpc } from '../services/api';
-import { Game } from '../types';
+import { Game } from '../models';
 import BarcodeScanner from './BarcodeScanner';
 import Toast from './Toast';
 

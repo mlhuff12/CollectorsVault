@@ -83,6 +83,24 @@ When adding or modifying database schema, follow these conventions:
 - **Boolean/bit column names** must use the `{columnName}Ind` suffix (e.g., `AdminInd`).
 - Configure table names explicitly with `.ToTable("TableName")` in `OnModelCreating`.
 
+## Coding Standards
+
+- **`if` / `else if` / `else` statements must always use curly braces** even for single-line bodies.
+
+  ✅ Correct:
+  ```csharp
+  if (result == null)
+  {
+      return NotFound();
+  }
+  ```
+
+  ❌ Incorrect:
+  ```csharp
+  if (result == null)
+      return NotFound();
+  ```
+
 ## Endpoints
 
 - `GET /api/vault` — list all items (includes category)

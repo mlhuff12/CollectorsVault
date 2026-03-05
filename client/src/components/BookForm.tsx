@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { addBook, lookupBookByIsbn } from '../services/api';
-import { Book, BookLookupResult } from '../types';
+import { Book, BookFormat, BookLookupResult } from '../models';
 import BarcodeScanner from './BarcodeScanner';
 import Toast from './Toast';
 
@@ -39,6 +39,14 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
     const [genre, setGenre] = useState('');
     const [year, setYear] = useState('');
 
+    // Series fields (always editable; pre-populated from lookup when available)
+    const [seriesName, setSeriesName] = useState('');
+    const [seriesNumber, setSeriesNumber] = useState('');
+
+    // Collector-managed fields (always editable; not from lookup)
+    const [bookFormat, setBookFormat] = useState<BookFormat | ''>('');
+    const [needsReplacement, setNeedsReplacement] = useState(false);
+
     const [errorMessage, setErrorMessage] = useState('');
     const [toastMessage, setToastMessage] = useState('');
 
@@ -52,10 +60,14 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
         setIsLooking(true);
         setLookupError('');
         setLookupResult(null);
+        setSeriesName('');
+        setSeriesNumber('');
 
         try {
             const result = await lookupBookByIsbn(trimmedIsbn);
             setLookupResult(result);
+            if (result.seriesName) setSeriesName(result.seriesName);
+            if (result.seriesNumber != null) setSeriesNumber(result.seriesNumber.toString());
         } catch {
             setLookupError('Book not found for the given ISBN. You may enter details manually.');
         } finally {
@@ -73,6 +85,8 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
     const handleClearLookup = () => {
         setLookupResult(null);
         setLookupError('');
+        setSeriesName('');
+        setSeriesNumber('');
     };
 
     /** Called when the barcode scanner successfully decodes a barcode. */
@@ -82,10 +96,14 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
         setIsLooking(true);
         setLookupError('');
         setLookupResult(null);
+        setSeriesName('');
+        setSeriesNumber('');
 
         try {
             const result = await lookupBookByIsbn(barcode);
             setLookupResult(result);
+            if (result.seriesName) setSeriesName(result.seriesName);
+            if (result.seriesNumber != null) setSeriesNumber(result.seriesNumber.toString());
         } catch {
             setLookupError('Book not found for this barcode. You may enter details manually.');
         } finally {
@@ -112,7 +130,11 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
                 coverSmall: lookupResult.coverSmall || undefined,
                 coverMedium: lookupResult.coverMedium || undefined,
                 coverLarge: lookupResult.coverLarge || undefined,
-                bookUrl: lookupResult.providerUrl || undefined
+                bookUrl: lookupResult.providerUrl || undefined,
+                seriesName: seriesName.trim() || undefined,
+                seriesNumber: seriesNumber.trim() ? parseInt(seriesNumber, 10) : undefined,
+                bookFormat: bookFormat || undefined,
+                needsReplacement: needsReplacement
             };
         } else {
             const parsedAuthors = authors
@@ -135,7 +157,11 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
                 publishDate: publishDate.trim() || undefined,
                 pageCount: pageCount.trim() ? parseInt(pageCount, 10) : undefined,
                 description: description.trim() || undefined,
-                bookUrl: bookUrl.trim() || undefined
+                bookUrl: bookUrl.trim() || undefined,
+                seriesName: seriesName.trim() || undefined,
+                seriesNumber: seriesNumber.trim() ? parseInt(seriesNumber, 10) : undefined,
+                bookFormat: bookFormat || undefined,
+                needsReplacement: needsReplacement
             };
         }
 
@@ -153,6 +179,10 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
             setBookUrl('');
             setGenre('');
             setYear('');
+            setSeriesName('');
+            setSeriesNumber('');
+            setBookFormat('');
+            setNeedsReplacement(false);
             setToastMessage('Book added successfully!');
             onItemAdded?.();
         } catch {
@@ -326,6 +356,73 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
                         onChange={(e) => { if (!isFromLookup) setBookUrl(e.target.value); }}
                         readOnly={isFromLookup}
                     />
+                </div>
+
+                {/* Series Name */}
+                <div className="mb-3">
+                    <label htmlFor="book-series-name" className="form-label">Series Name (optional):</label>
+                    {lookupResult?.seriesNotFound && (
+                        <div className="form-text text-warning mb-1">
+                            This book appears to be part of a series, but we couldn't determine the series details. Please enter the Series Name and Series Number below.
+                        </div>
+                    )}
+                    <input
+                        id="book-series-name"
+                        type="text"
+                        className="form-control"
+                        value={seriesName}
+                        onChange={(e) => setSeriesName(e.target.value)}
+                        placeholder="e.g. Animorphs"
+                    />
+                </div>
+
+                {/* Series Number */}
+                <div className="mb-3">
+                    <label htmlFor="book-series-number" className="form-label">Series Number (optional):</label>
+                    <input
+                        id="book-series-number"
+                        type="number"
+                        className="form-control"
+                        value={seriesNumber}
+                        onChange={(e) => setSeriesNumber(e.target.value)}
+                        placeholder="e.g. 1"
+                        min={1}
+                    />
+                </div>
+
+                {/* Book Format */}
+                <div className="mb-3">
+                    <label htmlFor="book-format" className="form-label">Book Format (optional):</label>
+                    <select
+                        id="book-format"
+                        className="form-select"
+                        value={bookFormat}
+                        onChange={(e) => setBookFormat(e.target.value as BookFormat | '')}
+                    >
+                        <option value="">— Select format —</option>
+                        <option value="Hardcover">Hardcover</option>
+                        <option value="Paperback">Paperback</option>
+                        <option value="MassMarketPaperback">Mass Market Paperback</option>
+                        <option value="TradePaperback">Trade Paperback</option>
+                        <option value="BoardBook">Board Book</option>
+                        <option value="LibraryBinding">Library Binding</option>
+                        <option value="SpiralBound">Spiral-Bound</option>
+                        <option value="EBook">eBook</option>
+                        <option value="Audiobook">Audiobook</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                {/* Needs Replacement */}
+                <div className="mb-3 form-check">
+                    <input
+                        id="book-needs-replacement"
+                        type="checkbox"
+                        className="form-check-input"
+                        checked={needsReplacement}
+                        onChange={(e) => setNeedsReplacement(e.target.checked)}
+                    />
+                    <label htmlFor="book-needs-replacement" className="form-check-label">Needs Replacement</label>
                 </div>
 
                 {/* Manual-only fields (year and genre are not returned by lookup) */}

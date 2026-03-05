@@ -36,14 +36,18 @@ namespace CollectorsVault.Server.Utilities
         public static bool VerifyTotp(string base32Secret, string code)
         {
             if (string.IsNullOrWhiteSpace(code) || code.Length != Digits)
+            {
                 return false;
+            }
 
             var counter = DateTimeOffset.UtcNow.ToUnixTimeSeconds() / Period;
 
             for (var i = -1; i <= 1; i++)
             {
                 if (ComputeHotp(base32Secret, counter + i) == code)
+                {
                     return true;
+                }
             }
 
             return false;
@@ -54,11 +58,15 @@ namespace CollectorsVault.Server.Utilities
             var key = FromBase32(base32Secret);
             var counterBytes = BitConverter.GetBytes(counter);
             if (BitConverter.IsLittleEndian)
+            {
                 Array.Reverse(counterBytes);
+            }
 
             byte[] hash;
             using (var hmac = new HMACSHA1(key))
+            {
                 hash = hmac.ComputeHash(counterBytes);
+            }
 
             var offset = hash[^1] & 0x0F;
             var code = ((hash[offset] & 0x7F) << 24)

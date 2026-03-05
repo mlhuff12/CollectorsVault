@@ -215,4 +215,114 @@ describe('BookForm', () => {
         // Fields should remain editable after a failed lookup
         expect(screen.getByLabelText('Title:')).not.toHaveAttribute('readOnly');
     });
+
+    // ── Series fields ─────────────────────────────────────────────────────────
+
+    it('renders Series Name and Series Number fields', () => {
+        render(<BookForm />);
+        expect(screen.getByLabelText('Series Name (optional):')).toBeInTheDocument();
+        expect(screen.getByLabelText('Series Number (optional):')).toBeInTheDocument();
+    });
+
+    it('pre-populates series fields from lookup result', async () => {
+        const lookupData = {
+            title: 'The Invasion',
+            authors: ['K.A. Applegate'],
+            isbn: '0590629778',
+            publisher: 'Scholastic',
+            publishDate: '1996',
+            pageCount: 192,
+            description: 'Shape-shifting adventure.',
+            subjects: [],
+            coverSmall: '',
+            coverMedium: '',
+            coverLarge: '',
+            providerUrl: '',
+            seriesName: 'Animorphs',
+            seriesNumber: 1,
+            seriesNotFound: false
+        };
+        mockLookupBookByIsbn.mockResolvedValue(lookupData);
+
+        render(<BookForm />);
+        fireEvent.change(screen.getByLabelText('ISBN:'), { target: { value: '0590629778' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
+
+        await waitFor(() => {
+            expect(screen.getByLabelText('Series Name (optional):')).toHaveValue('Animorphs');
+        });
+        expect(screen.getByLabelText('Series Number (optional):')).toHaveValue(1);
+    });
+
+    it('shows series-not-found warning when seriesNotFound is true', async () => {
+        const lookupData = {
+            title: 'The Invasion',
+            authors: ['K.A. Applegate'],
+            isbn: '0590629778',
+            publisher: 'Scholastic',
+            publishDate: '1996',
+            pageCount: 192,
+            description: 'Shape-shifting adventure.',
+            subjects: [],
+            coverSmall: '',
+            coverMedium: '',
+            coverLarge: '',
+            providerUrl: '',
+            seriesName: 'Animorphs',
+            seriesNumber: undefined,
+            seriesNotFound: true
+        };
+        mockLookupBookByIsbn.mockResolvedValue(lookupData);
+
+        render(<BookForm />);
+        fireEvent.change(screen.getByLabelText('ISBN:'), { target: { value: '0590629778' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
+
+        await waitFor(() => {
+            expect(screen.getByText(/couldn't determine the series details/i)).toBeInTheDocument();
+        });
+        // Series name pre-filled but series number empty for user to fill
+        expect(screen.getByLabelText('Series Name (optional):')).toHaveValue('Animorphs');
+        expect(screen.getByLabelText('Series Number (optional):')).toHaveValue(null);
+    });
+
+    // ── Book Format and Needs Replacement fields ──────────────────────────────
+
+    it('renders Book Format dropdown and Needs Replacement checkbox', () => {
+        render(<BookForm />);
+        expect(screen.getByLabelText('Book Format (optional):')).toBeInTheDocument();
+        expect(screen.getByLabelText('Needs Replacement')).toBeInTheDocument();
+    });
+
+    it('includes series and format fields in manual submission payload', async () => {
+        const onItemAdded = jest.fn();
+        mockAddBook.mockResolvedValue({
+            id: 1,
+            title: 'The Invasion',
+            authors: ['K.A. Applegate'],
+            category: 'book'
+        });
+
+        render(<BookForm onItemAdded={onItemAdded} />);
+
+        fireEvent.change(screen.getByLabelText('Title:'), { target: { value: 'The Invasion' } });
+        fireEvent.change(screen.getByLabelText('Authors (comma-separated):'), { target: { value: 'K.A. Applegate' } });
+        fireEvent.change(screen.getByLabelText('Series Name (optional):'), { target: { value: 'Animorphs' } });
+        fireEvent.change(screen.getByLabelText('Series Number (optional):'), { target: { value: '1' } });
+        fireEvent.change(screen.getByLabelText('Book Format (optional):'), { target: { value: 'Paperback' } });
+        fireEvent.click(screen.getByLabelText('Needs Replacement'));
+
+        fireEvent.click(screen.getByRole('button', { name: 'Add Book' }));
+
+        await waitFor(() => {
+            expect(mockAddBook).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    seriesName: 'Animorphs',
+                    seriesNumber: 1,
+                    bookFormat: 'Paperback',
+                    needsReplacement: true
+                })
+            );
+        });
+    });
 });

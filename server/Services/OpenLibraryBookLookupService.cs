@@ -3,22 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using CollectorsVault.Server.Contracts;
+using CollectorsVault.Server.Utils;
 
 namespace CollectorsVault.Server.Services
 {
     /// <summary>
     /// <see cref="IBookLookupService"/> implementation backed by the Open Library API.
-    /// <list type="bullet">
-    ///   <item>ISBN lookup uses <c>/api/books?jscmd=data</c> for rich metadata (covers, publishers, subjects, etc.).
-    ///   If the edition record itself includes a <c>description</c> field that is used as the initial value;
-    ///   then the linked Work record (<c>/works/{key}.json</c>) is fetched and its description (when present)
-    ///   takes precedence — two HTTP requests total.</item>
-    ///   <item>Title / author search uses <c>/search.json</c> and derives cover image URLs from the <c>cover_i</c> field.
-    ///   Descriptions are not fetched for search results to avoid per-result extra requests.</item>
-    /// </list>
-    /// To switch to a different provider, implement <see cref="IBookLookupService"/> and update the DI registration in <c>Program.cs</c>.
     /// </summary>
     public class OpenLibraryBookLookupService : IBookLookupService
     {
@@ -33,32 +26,47 @@ namespace CollectorsVault.Server.Services
         /// <inheritdoc/>
         public async Task<BookLookupResult?> LookupByIsbnAsync(string isbn)
         {
-            // /api/books with jscmd=data returns rich data (covers, publishers, subjects, etc.)
             var url = $"/api/books?bibkeys=ISBN:{Uri.EscapeDataString(isbn)}&format=json&jscmd=data";
             var response = await _httpClient.GetAsync(url);
-            if (!response.IsSuccessStatusCode)
-                return null;
 
-            var json = await response.Content.ReadAsStringAsync();
-            using var doc = JsonDocument.Parse(json);
+            using var doc = await JsonDocumentUtils.ParseResponseAsync(response);
+            if (doc == null)
+            {
+                return null;
+            }
+
             var root = doc.RootElement;
-
             if (root.ValueKind != JsonValueKind.Object)
+            {
                 return null;
+            }
 
-            // Response is a dict keyed by "ISBN:xxx" — grab the first (only) entry.
             foreach (var prop in root.EnumerateObject())
             {
                 var result = ParseFromDataResponse(prop.Value, isbn);
-
-                // Prefer the Work-level description (more authoritative); if the Work has none,
-                // keep any description already parsed from the edition record.
                 var workKey = ExtractFirstWorkKey(prop.Value);
+
+                var editionSeries = await FetchEditionSeriesAsync(isbn);
+                if (editionSeries.HasValue)
+                {
+                    result.SeriesName = editionSeries.Value.Name;
+                    result.SeriesNumber = editionSeries.Value.Number;
+                }
+
                 if (!string.IsNullOrEmpty(workKey))
                 {
-                    var workDescription = await FetchWorkDescriptionAsync(workKey);
-                    if (!string.IsNullOrEmpty(workDescription))
-                        result.Description = workDescription;
+                    var workData = await FetchWorkDataAsync(workKey);
+
+                    if (!string.IsNullOrEmpty(workData.Description))
+                    {
+                        result.Description = workData.Description;
+                    }
+
+                    if (string.IsNullOrEmpty(result.SeriesName) && !string.IsNullOrEmpty(workData.SeriesName))
+                    {
+                        result.SeriesName = workData.SeriesName;
+                        result.SeriesNumber = workData.SeriesNumber;
+                    }
                 }
 
                 return result;
@@ -79,125 +87,156 @@ namespace CollectorsVault.Server.Services
             return await SearchAsync($"/search.json?author={Uri.EscapeDataString(author)}&limit=10");
         }
 
-        // ── private helpers ────────────────────────────────────────────────────
-
         private async Task<IEnumerable<BookLookupResult>> SearchAsync(string url)
         {
             var response = await _httpClient.GetAsync(url);
-            if (!response.IsSuccessStatusCode)
-                return Enumerable.Empty<BookLookupResult>();
 
-            var json = await response.Content.ReadAsStringAsync();
-            using var doc = JsonDocument.Parse(json);
+            using var doc = await JsonDocumentUtils.ParseResponseAsync(response);
+            if (doc == null)
+            {
+                return Enumerable.Empty<BookLookupResult>();
+            }
+
             var root = doc.RootElement;
-
             if (!root.TryGetProperty("docs", out var docs))
+            {
                 return Enumerable.Empty<BookLookupResult>();
+            }
 
             var results = new List<BookLookupResult>();
             foreach (var item in docs.EnumerateArray())
+            {
                 results.Add(ParseFromSearchDoc(item));
+            }
 
             return results;
         }
 
-        /// <summary>
-        /// Parses a book from the <c>/api/books?jscmd=data</c> response element.
-        /// </summary>
         private static BookLookupResult ParseFromDataResponse(JsonElement el, string isbn)
         {
             var result = new BookLookupResult { Isbn = isbn };
 
             if (el.TryGetProperty("title", out var title))
+            {
                 result.Title = title.GetString() ?? string.Empty;
+            }
 
             if (el.TryGetProperty("authors", out var authors))
+            {
                 result.Authors = authors.EnumerateArray()
                     .Where(a => a.TryGetProperty("name", out _))
                     .Select(a => a.GetProperty("name").GetString() ?? string.Empty)
                     .ToList();
+            }
 
             if (el.TryGetProperty("number_of_pages", out var pages) && pages.ValueKind == JsonValueKind.Number)
+            {
                 result.PageCount = pages.GetInt32();
+            }
 
             if (el.TryGetProperty("publish_date", out var pd))
+            {
                 result.PublishDate = pd.GetString() ?? string.Empty;
+            }
 
             if (el.TryGetProperty("publishers", out var publishers))
+            {
                 result.Publisher = publishers.EnumerateArray()
                     .Where(p => p.TryGetProperty("name", out _))
                     .Select(p => p.GetProperty("name").GetString() ?? string.Empty)
                     .FirstOrDefault() ?? string.Empty;
+            }
 
             if (el.TryGetProperty("subjects", out var subjects))
+            {
                 result.Subjects = subjects.EnumerateArray()
                     .Where(s => s.TryGetProperty("name", out _))
                     .Select(s => s.GetProperty("name").GetString() ?? string.Empty)
                     .ToList();
+            }
 
             if (el.TryGetProperty("cover", out var cover))
             {
                 if (cover.TryGetProperty("small", out var small))
+                {
                     result.CoverSmall = small.GetString() ?? string.Empty;
+                }
                 if (cover.TryGetProperty("medium", out var medium))
+                {
                     result.CoverMedium = medium.GetString() ?? string.Empty;
+                }
                 if (cover.TryGetProperty("large", out var large))
+                {
                     result.CoverLarge = large.GetString() ?? string.Empty;
+                }
             }
 
             if (el.TryGetProperty("url", out var url))
+            {
                 result.ProviderUrl = url.GetString() ?? string.Empty;
+            }
 
-            // Some editions include their own description; the Work description (fetched separately)
-            // takes precedence when available.
             if (el.TryGetProperty("description", out var desc))
             {
                 if (desc.ValueKind == JsonValueKind.String)
+                {
                     result.Description = desc.GetString() ?? string.Empty;
+                }
                 else if (desc.ValueKind == JsonValueKind.Object && desc.TryGetProperty("value", out var descVal))
+                {
                     result.Description = descVal.GetString() ?? string.Empty;
+                }
             }
 
             return result;
         }
 
-        /// <summary>
-        /// Parses a book from a single doc element in the <c>/search.json</c> response.
-        /// Cover image URLs are derived from the <c>cover_i</c> field.
-        /// Description is not populated here to avoid per-result extra requests.
-        /// </summary>
         private static BookLookupResult ParseFromSearchDoc(JsonElement el)
         {
             var result = new BookLookupResult();
 
             if (el.TryGetProperty("title", out var title))
+            {
                 result.Title = title.GetString() ?? string.Empty;
+            }
 
             if (el.TryGetProperty("author_name", out var authors))
+            {
                 result.Authors = authors.EnumerateArray()
                     .Select(a => a.GetString() ?? string.Empty)
                     .ToList();
+            }
 
             if (el.TryGetProperty("isbn", out var isbns))
+            {
                 result.Isbn = isbns.EnumerateArray()
                     .Select(i => i.GetString() ?? string.Empty)
                     .FirstOrDefault() ?? string.Empty;
+            }
 
             if (el.TryGetProperty("publisher", out var publishers))
+            {
                 result.Publisher = publishers.EnumerateArray()
                     .Select(p => p.GetString() ?? string.Empty)
                     .FirstOrDefault() ?? string.Empty;
+            }
 
             if (el.TryGetProperty("first_publish_year", out var year) && year.ValueKind == JsonValueKind.Number)
+            {
                 result.PublishDate = year.GetInt32().ToString();
+            }
 
             if (el.TryGetProperty("number_of_pages_median", out var pages) && pages.ValueKind == JsonValueKind.Number)
+            {
                 result.PageCount = pages.GetInt32();
+            }
 
             if (el.TryGetProperty("subject", out var subjects))
+            {
                 result.Subjects = subjects.EnumerateArray()
                     .Select(s => s.GetString() ?? string.Empty)
                     .ToList();
+            }
 
             if (el.TryGetProperty("cover_i", out var coverId) && coverId.ValueKind == JsonValueKind.Number)
             {
@@ -210,55 +249,147 @@ namespace CollectorsVault.Server.Services
             return result;
         }
 
-        /// <summary>
-        /// Extracts the first work key (e.g. <c>/works/OL262059W</c>) from a <c>/api/books?jscmd=data</c> element.
-        /// </summary>
         private static string? ExtractFirstWorkKey(JsonElement el)
         {
             if (!el.TryGetProperty("works", out var works))
+            {
                 return null;
+            }
+
             foreach (var work in works.EnumerateArray())
             {
                 if (work.TryGetProperty("key", out var key))
+                {
                     return key.GetString();
+                }
             }
+
             return null;
         }
 
-        /// <summary>
-        /// Fetches the description for a work from <c>/works/{key}.json</c>.
-        /// The description field may be a plain string or an object with a <c>value</c> property.
-        /// Returns an empty string when the work has no description or the request fails.
-        /// </summary>
-        private async Task<string> FetchWorkDescriptionAsync(string workKey)
+        private async Task<(string Name, int? Number)?> FetchEditionSeriesAsync(string isbn)
         {
-            // workKey is like "/works/OL262059W"
-            var response = await _httpClient.GetAsync($"{workKey}.json");
-            if (!response.IsSuccessStatusCode)
-                return string.Empty;
+            var response = await _httpClient.GetAsync($"/isbn/{Uri.EscapeDataString(isbn)}.json");
 
-            var json = await response.Content.ReadAsStringAsync();
-            try
+            using var doc = await JsonDocumentUtils.ParseResponseAsync(response);
+            if (doc == null)
             {
-                using var doc = JsonDocument.Parse(json);
-                var root = doc.RootElement;
-
-                if (!root.TryGetProperty("description", out var desc))
-                    return string.Empty;
-
-                // The field is either a plain string or {"type": "/type/text", "value": "..."}
-                if (desc.ValueKind == JsonValueKind.String)
-                    return desc.GetString() ?? string.Empty;
-
-                if (desc.ValueKind == JsonValueKind.Object && desc.TryGetProperty("value", out var value))
-                    return value.GetString() ?? string.Empty;
-            }
-            catch (JsonException)
-            {
-                // Malformed JSON from the Works endpoint — treat as no description
+                return null;
             }
 
-            return string.Empty;
+            var root = doc.RootElement;
+            if (!root.TryGetProperty("series", out var seriesArr) || seriesArr.ValueKind != JsonValueKind.Array)
+            {
+                return null;
+            }
+
+            foreach (var seriesEl in seriesArr.EnumerateArray())
+            {
+                if (seriesEl.ValueKind != JsonValueKind.String)
+                {
+                    continue;
+                }
+
+                var seriesStr = seriesEl.GetString() ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(seriesStr))
+                {
+                    continue;
+                }
+
+                var (name, number) = ParseSeriesString(seriesStr);
+                if (!string.IsNullOrEmpty(name))
+                {
+                    return (name, number);
+                }
+            }
+
+            return null;
         }
+
+        private async Task<WorkData> FetchWorkDataAsync(string workKey)
+        {
+            var response = await _httpClient.GetAsync($"{workKey}.json");
+
+            using var doc = await JsonDocumentUtils.ParseResponseAsync(response);
+            if (doc == null)
+            {
+                return new WorkData(string.Empty, string.Empty, null);
+            }
+
+            var root = doc.RootElement;
+
+            var description = string.Empty;
+            if (root.TryGetProperty("description", out var desc))
+            {
+                if (desc.ValueKind == JsonValueKind.String)
+                {
+                    description = desc.GetString() ?? string.Empty;
+                }
+                else if (desc.ValueKind == JsonValueKind.Object && desc.TryGetProperty("value", out var value))
+                {
+                    description = value.GetString() ?? string.Empty;
+                }
+            }
+
+            var seriesName = string.Empty;
+            int? seriesNumber = null;
+            if (root.TryGetProperty("series", out var seriesArr) && seriesArr.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var seriesEl in seriesArr.EnumerateArray())
+                {
+                    if (seriesEl.ValueKind != JsonValueKind.String)
+                    {
+                        continue;
+                    }
+
+                    var seriesStr = seriesEl.GetString() ?? string.Empty;
+                    if (string.IsNullOrEmpty(seriesStr))
+                    {
+                        continue;
+                    }
+
+                    (seriesName, seriesNumber) = ParseSeriesString(seriesStr);
+                    if (!string.IsNullOrEmpty(seriesName))
+                    {
+                        break;
+                    }
+                }
+            }
+
+            return new WorkData(description, seriesName, seriesNumber);
+        }
+
+        /// <summary>
+        /// Parses a series string into a name and optional series number.
+        /// <para>
+        /// Handles the following formats documented in Open Library data:
+        /// <list type="bullet">
+        ///   <item><c>"Animorphs #1"</c> — hash prefix (<c>#N</c>)</item>
+        ///   <item><c>"Harry Potter ; 3"</c> — semicolon separator (<c>; N</c>)</item>
+        ///   <item><c>"Narnia ; bk. 1"</c> — semicolon + book abbreviation (<c>; bk. N</c>)</item>
+        ///   <item><c>"His Dark Materials, Book 1"</c> — comma + book word (<c>, Book N</c>)</item>
+        ///   <item><c>"Animorphs, 1"</c> — comma + bare number (<c>, N</c>)</item>
+        ///   <item><c>"Animorphs"</c> — name only, no number</item>
+        /// </list>
+        /// </para>
+        /// </summary>
+        public static (string Name, int? Number) ParseSeriesString(string series)
+        {
+            var match = Regex.Match(
+                series.Trim(),
+                @"^(.+?)(?:\s*(?:[;,#])\s*(?:[Bb]k\.?\s+|[Bb]ook\s+)?(\d+))?$");
+
+            if (match.Success)
+            {
+                var name = match.Groups[1].Value.Trim();
+                name = name.TrimEnd(';', ',', ' ');
+                var number = match.Groups[2].Success ? (int?)int.Parse(match.Groups[2].Value) : null;
+                return (name, number);
+            }
+
+            return (series.Trim(), null);
+        }
+
+        private record WorkData(string Description, string SeriesName, int? SeriesNumber);
     }
 }

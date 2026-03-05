@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { AdminUser, Book, BookLookupResult, Game, GameLookupResult, Movie, MovieLookupResult, VaultItem } from '../types';
+import { AdminUser, Book, BookLookupResult, Game, GameLookupResult, Movie, MovieLookupResult, VaultItem } from '../models';
 
 const envBaseUrl =
     typeof process !== 'undefined' &&

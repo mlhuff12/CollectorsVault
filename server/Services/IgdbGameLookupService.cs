@@ -46,11 +46,15 @@ namespace CollectorsVault.Server.Services
         public async Task<GameLookupResult?> LookupByUpcAsync(string upc)
         {
             if (!HasCredentials())
+            {
                 return null;
+            }
 
             var token = await GetAccessTokenAsync();
             if (string.IsNullOrEmpty(token))
+            {
                 return null;
+            }
 
             try
             {
@@ -69,11 +73,15 @@ namespace CollectorsVault.Server.Services
         public async Task<IEnumerable<GameLookupResult>> SearchByTitleAsync(string title)
         {
             if (!HasCredentials())
+            {
                 return Array.Empty<GameLookupResult>();
+            }
 
             var token = await GetAccessTokenAsync();
             if (string.IsNullOrEmpty(token))
+            {
                 return Array.Empty<GameLookupResult>();
+            }
 
             try
             {
@@ -98,14 +106,18 @@ namespace CollectorsVault.Server.Services
         private async Task<string?> GetAccessTokenAsync()
         {
             if (!string.IsNullOrEmpty(_accessToken) && DateTime.UtcNow < _tokenExpiry)
+            {
                 return _accessToken;
+            }
 
             try
             {
                 var url = $"/oauth2/token?client_id={Uri.EscapeDataString(_clientId)}&client_secret={Uri.EscapeDataString(_clientSecret)}&grant_type=client_credentials";
                 var response = await _twitchClient.PostAsync(url, new StringContent(string.Empty));
                 if (!response.IsSuccessStatusCode)
+                {
                     return null;
+                }
 
                 var json = await response.Content.ReadAsStringAsync();
                 using var doc = JsonDocument.Parse(json);
@@ -113,7 +125,9 @@ namespace CollectorsVault.Server.Services
 
                 _accessToken = root.TryGetProperty("access_token", out var at) ? at.GetString() : null;
                 if (root.TryGetProperty("expires_in", out var exp) && exp.ValueKind == JsonValueKind.Number)
+                {
                     _tokenExpiry = DateTime.UtcNow.AddSeconds(exp.GetInt32() - 60);
+                }
 
                 return _accessToken;
             }
@@ -136,7 +150,9 @@ namespace CollectorsVault.Server.Services
 
             var response = await _igdbClient.SendAsync(request);
             if (!response.IsSuccessStatusCode)
+            {
                 return new List<GameLookupResult>();
+            }
 
             var json = await response.Content.ReadAsStringAsync();
             using var doc = JsonDocument.Parse(json);
@@ -145,7 +161,9 @@ namespace CollectorsVault.Server.Services
             foreach (var item in doc.RootElement.EnumerateArray())
             {
                 if (item.TryGetProperty("game", out var game))
+                {
                     results.Add(ParseGame(game));
+                }
             }
 
             return results;
@@ -163,34 +181,45 @@ namespace CollectorsVault.Server.Services
 
             var response = await _igdbClient.SendAsync(request);
             if (!response.IsSuccessStatusCode)
+            {
                 return new List<GameLookupResult>();
+            }
 
             var json = await response.Content.ReadAsStringAsync();
             using var doc = JsonDocument.Parse(json);
 
             var results = new List<GameLookupResult>();
             foreach (var item in doc.RootElement.EnumerateArray())
+            {
                 results.Add(ParseGame(item));
+            }
 
             return results;
         }
 
-        /// <summary>Parses a single IGDB game JSON element into a <see cref="GameLookupResult"/>.</summary>
         private static GameLookupResult ParseGame(JsonElement el)
         {
             var result = new GameLookupResult();
 
             if (el.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.Number)
+            {
                 result.IgdbId = id.GetInt64();
+            }
 
             if (el.TryGetProperty("name", out var name))
+            {
                 result.Title = name.GetString() ?? string.Empty;
+            }
 
             if (el.TryGetProperty("summary", out var summary))
+            {
                 result.Description = summary.GetString() ?? string.Empty;
+            }
 
             if (el.TryGetProperty("first_release_date", out var releaseTs) && releaseTs.ValueKind == JsonValueKind.Number)
+            {
                 result.ReleaseYear = DateTimeOffset.FromUnixTimeSeconds(releaseTs.GetInt64()).Year;
+            }
 
             if (el.TryGetProperty("platforms", out var platforms))
             {
@@ -198,7 +227,9 @@ namespace CollectorsVault.Server.Services
                 foreach (var p in platforms.EnumerateArray())
                 {
                     if (p.TryGetProperty("name", out var pName))
+                    {
                         names.Add(pName.GetString() ?? string.Empty);
+                    }
                 }
                 result.Platform = string.Join(", ", names);
             }
@@ -209,7 +240,9 @@ namespace CollectorsVault.Server.Services
                 foreach (var g in genres.EnumerateArray())
                 {
                     if (g.TryGetProperty("name", out var gName))
+                    {
                         names.Add(gName.GetString() ?? string.Empty);
+                    }
                 }
                 result.Genre = string.Join(", ", names);
             }
@@ -219,7 +252,9 @@ namespace CollectorsVault.Server.Services
                 var url = coverUrl.GetString() ?? string.Empty;
                 // IGDB cover URLs start with "//"; make them https
                 if (url.StartsWith("//"))
+                {
                     url = "https:" + url;
+                }
                 // Replace "t_thumb" with "t_cover_big" for a larger image
                 result.CoverUrl = url.Replace("t_thumb", "t_cover_big");
             }
@@ -232,14 +267,20 @@ namespace CollectorsVault.Server.Services
                 {
                     var companyName = string.Empty;
                     if (company.TryGetProperty("company", out var companyEl) && companyEl.TryGetProperty("name", out var cName))
+                    {
                         companyName = cName.GetString() ?? string.Empty;
+                    }
 
                     if (!string.IsNullOrEmpty(companyName))
                     {
                         if (company.TryGetProperty("developer", out var devFlag) && devFlag.GetBoolean())
+                        {
                             developers.Add(companyName);
+                        }
                         if (company.TryGetProperty("publisher", out var pubFlag) && pubFlag.GetBoolean())
+                        {
                             publishers.Add(companyName);
+                        }
                     }
                 }
                 result.Developer = string.Join(", ", developers);

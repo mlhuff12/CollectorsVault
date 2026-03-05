@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using CollectorsVault.Server.Models;
 
@@ -31,6 +33,41 @@ namespace CollectorsVault.Server.Data
             modelBuilder.Entity<Book>().ToTable("Book");
             modelBuilder.Entity<Movie>().ToTable("Movie");
             modelBuilder.Entity<Game>().ToTable("Game");
+
+            // Store Authors and Subjects as JSON arrays in a single TEXT column.
+            modelBuilder.Entity<Book>()
+                .Property(b => b.Authors)
+                .HasColumnType("TEXT")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null!),
+                    v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null!) ?? new List<string>());
+
+            modelBuilder.Entity<Book>()
+                .Property(b => b.Subjects)
+                .HasColumnType("TEXT")
+                .HasConversion(
+                    v => v == null ? null : JsonSerializer.Serialize(v, (JsonSerializerOptions)null!),
+                    v => v == null ? null : JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null!));
+
+            // Store BookFormat enum as its name string for readability.
+            // An empty/unrecognised string is treated as null (no format set).
+            modelBuilder.Entity<Book>()
+                .Property(b => b.BookFormat)
+                .HasConversion(
+                    v => v.HasValue ? v.Value.ToString() : null,
+                    v => ParseBookFormatFromDb(v));
+        }
+
+        private static BookFormat? ParseBookFormatFromDb(string? v)
+        {
+            if (string.IsNullOrEmpty(v))
+            {
+                return null;
+            }
+
+            return System.Enum.TryParse<BookFormat>(v, ignoreCase: true, out var parsed)
+                ? parsed
+                : (BookFormat?)null;
         }
     }
 }

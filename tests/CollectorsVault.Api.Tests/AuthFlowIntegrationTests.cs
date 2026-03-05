@@ -190,7 +190,9 @@ namespace CollectorsVault.Api.Tests
             foreach (var descriptor in services)
             {
                 if (descriptor.ServiceType == typeof(T))
+                {
                     return descriptor;
+                }
             }
             return null;
         }

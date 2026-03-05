@@ -39,7 +39,9 @@ namespace CollectorsVault.Server.Controllers
         {
             var result = await _lookupService.LookupByUpcAsync(upc);
             if (result == null)
+            {
                 return NotFound();
+            }
 
             return Ok(result);
         }

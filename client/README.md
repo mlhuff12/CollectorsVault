@@ -82,3 +82,20 @@ Make sure the server is running before using the app.
 - `src/components/ItemList.tsx`
 - `src/services/api.ts`
 - `src/styles.css`
+
+## Coding Standards
+
+- **`if` / `else if` / `else` statements must always use curly braces** even for single-line bodies.
+
+  ✅ Correct:
+  ```ts
+  if (result === null) {
+      return;
+  }
+  ```
+
+  ❌ Incorrect:
+  ```ts
+  if (result === null)
+      return;
+  ```

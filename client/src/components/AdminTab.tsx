@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrashAlt } from '@fortawesome/free-solid-svg-icons';
-import { AdminUser } from '../types';
+import { AdminUser } from '../models';
 import { deleteUserById, fetchAllUsers } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 

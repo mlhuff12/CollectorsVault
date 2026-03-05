@@ -85,6 +85,7 @@ namespace CollectorsVault.Api.Tests
 
             var (service, _) = CreateService(
                 ("/api/books", Ok(booksJson)),
+                ("/isbn/", NotFound()),
                 ("/works/", Ok(workJson)));
 
             var result = await service.LookupByIsbnAsync("9780547928227");
@@ -112,6 +113,7 @@ namespace CollectorsVault.Api.Tests
 
             var (service, _) = CreateService(
                 ("/api/books", Ok(booksJson)),
+                ("/isbn/", NotFound()),
                 ("/works/", Ok(workJson)));
 
             var result = await service.LookupByIsbnAsync("9780547928227");
@@ -133,6 +135,7 @@ namespace CollectorsVault.Api.Tests
 
             var (service, _) = CreateService(
                 ("/api/books", Ok(booksJson)),
+                ("/isbn/", NotFound()),
                 ("/works/", Ok(workJson)));
 
             var result = await service.LookupByIsbnAsync("9780547928227");
@@ -153,6 +156,7 @@ namespace CollectorsVault.Api.Tests
 
             var (service, _) = CreateService(
                 ("/api/books", Ok(booksJson)),
+                ("/isbn/", NotFound()),
                 ("/works/", NotFound()));
 
             var result = await service.LookupByIsbnAsync("9780547928227");
@@ -173,6 +177,7 @@ namespace CollectorsVault.Api.Tests
 
             var (service, _) = CreateService(
                 ("/api/books", Ok(booksJson)),
+                ("/isbn/", NotFound()),
                 ("/works/", Ok("not valid json {{{")));
 
             var result = await service.LookupByIsbnAsync("9780547928227");
@@ -190,8 +195,10 @@ namespace CollectorsVault.Api.Tests
                 }
             }";
 
-            // Only one mapping — works endpoint must NOT be called
-            var (service, _) = CreateService(("/api/books", Ok(booksJson)));
+            // No work key → work endpoint must NOT be called; edition endpoint is always called.
+            var (service, _) = CreateService(
+                ("/api/books", Ok(booksJson)),
+                ("/isbn/", NotFound()));
 
             var result = await service.LookupByIsbnAsync("9780547928227");
 
@@ -213,6 +220,7 @@ namespace CollectorsVault.Api.Tests
 
             var (service, _) = CreateService(
                 ("/api/books", Ok(booksJson)),
+                ("/isbn/", NotFound()),
                 ("/works/", Ok(workJson)));
 
             var result = await service.LookupByIsbnAsync("9780547928227");
@@ -235,6 +243,7 @@ namespace CollectorsVault.Api.Tests
 
             var (service, _) = CreateService(
                 ("/api/books", Ok(booksJson)),
+                ("/isbn/", NotFound()),
                 ("/works/", Ok(workJson)));
 
             var result = await service.LookupByIsbnAsync("9780547928227");
@@ -256,13 +265,188 @@ namespace CollectorsVault.Api.Tests
                 }
             }";
 
-            // Only one mapping — works endpoint must NOT be called
-            var (service, _) = CreateService(("/api/books", Ok(booksJson)));
+            // No work key → work endpoint must NOT be called; edition endpoint is always called.
+            var (service, _) = CreateService(
+                ("/api/books", Ok(booksJson)),
+                ("/isbn/", NotFound()));
 
             var result = await service.LookupByIsbnAsync("9780547928227");
 
             Assert.NotNull(result);
             Assert.Equal("An edition-level object description.", result!.Description);
+        }
+
+        // ── Series lookup — edition level (primary source) ─────────────────────
+
+        [Fact]
+        public async Task LookupByIsbnAsync_PopulatesSeriesName_WhenEditionHasSeriesField()
+        {
+            // The /isbn/{isbn}.json endpoint exposes a "series" array at the edition level.
+            // This is the most direct and reliable source — it is checked first.
+            const string booksJson = @"{
+                ""ISBN:0590629778"": {
+                    ""title"": ""The Invasion"",
+                    ""works"": [{""key"": ""/works/OL7872220W""}]
+                }
+            }";
+            const string editionJson = @"{""series"": [""Animorphs #1""]}";
+            const string workJson = @"{""description"": ""A shape-shifting adventure.""}";
+
+            var (service, _) = CreateService(
+                ("/api/books", Ok(booksJson)),
+                ("/isbn/", Ok(editionJson)),
+                ("/works/", Ok(workJson)));
+
+            var result = await service.LookupByIsbnAsync("0590629778");
+
+            Assert.NotNull(result);
+            Assert.Equal("Animorphs", result!.SeriesName);
+            Assert.Equal(1, result.SeriesNumber);
+            Assert.False(result.SeriesNotFound);
+        }
+
+        [Fact]
+        public async Task LookupByIsbnAsync_PopulatesSeriesName_WhenEditionHasSemicolonFormat()
+        {
+            // Open Library also uses "Name ; N" or "Name ; bk. N" as the series string format.
+            const string booksJson = @"{
+                ""ISBN:0439064864"": {
+                    ""title"": ""Harry Potter and the Chamber of Secrets"",
+                    ""works"": [{""key"": ""/works/OL82592W""}]
+                }
+            }";
+            const string editionJson = @"{""series"": [""Harry Potter ; 2""]}";
+            const string workJson = @"{""description"": ""Harry returns to Hogwarts.""}";
+
+            var (service, _) = CreateService(
+                ("/api/books", Ok(booksJson)),
+                ("/isbn/", Ok(editionJson)),
+                ("/works/", Ok(workJson)));
+
+            var result = await service.LookupByIsbnAsync("0439064864");
+
+            Assert.NotNull(result);
+            Assert.Equal("Harry Potter", result!.SeriesName);
+            Assert.Equal(2, result.SeriesNumber);
+            Assert.False(result.SeriesNotFound);
+        }
+
+        [Fact]
+        public async Task LookupByIsbnAsync_EditionSeriesTakesPriorityOverWorkSeries()
+        {
+            // The edition-level series is checked first; the work-level series is the fallback.
+            const string booksJson = @"{
+                ""ISBN:0590629778"": {
+                    ""title"": ""The Invasion"",
+                    ""works"": [{""key"": ""/works/OL7872220W""}]
+                }
+            }";
+            const string editionJson = @"{""series"": [""Animorphs #1""]}";
+            // Work also has series — edition should take priority.
+            const string workJson = @"{""series"": [""SomethingElse #99""], ""description"": ""A shape-shifting adventure.""}";
+
+            var (service, _) = CreateService(
+                ("/api/books", Ok(booksJson)),
+                ("/isbn/", Ok(editionJson)),
+                ("/works/", Ok(workJson)));
+
+            var result = await service.LookupByIsbnAsync("0590629778");
+
+            Assert.NotNull(result);
+            Assert.Equal("Animorphs", result!.SeriesName);
+            Assert.Equal(1, result.SeriesNumber);
+        }
+
+        // ── Series lookup — work level (fallback when edition has none) ─────────
+
+        [Fact]
+        public async Task LookupByIsbnAsync_FallsBackToWorkSeries_WhenEditionHasNone()
+        {
+            const string booksJson = @"{
+                ""ISBN:0590629778"": {
+                    ""title"": ""The Invasion"",
+                    ""works"": [{""key"": ""/works/OL7872220W""}]
+                }
+            }";
+            const string editionJson = @"{""title"": ""The Invasion""}";  // no series field
+            const string workJson = @"{""series"": [""Animorphs #1""]}";
+
+            var (service, _) = CreateService(
+                ("/api/books", Ok(booksJson)),
+                ("/isbn/", Ok(editionJson)),
+                ("/works/", Ok(workJson)));
+
+            var result = await service.LookupByIsbnAsync("0590629778");
+
+            Assert.NotNull(result);
+            Assert.Equal("Animorphs", result!.SeriesName);
+            Assert.Equal(1, result.SeriesNumber);
+            Assert.False(result.SeriesNotFound);
+        }
+
+        [Fact]
+        public async Task LookupByIsbnAsync_LeavesSeriesEmpty_WhenNeitherEditionNorWorkHasSeries()
+        {
+            const string booksJson = @"{
+                ""ISBN:9780547928227"": {
+                    ""title"": ""The Hobbit"",
+                    ""works"": [{""key"": ""/works/OL262059W""}]
+                }
+            }";
+            const string editionJson = @"{""title"": ""The Hobbit""}";  // no series
+            const string workJson = @"{""description"": ""A hobbit's adventure.""}";  // no series
+
+            var (service, _) = CreateService(
+                ("/api/books", Ok(booksJson)),
+                ("/isbn/", Ok(editionJson)),
+                ("/works/", Ok(workJson)));
+
+            var result = await service.LookupByIsbnAsync("9780547928227");
+
+            Assert.NotNull(result);
+            Assert.Equal(string.Empty, result!.SeriesName);
+            Assert.Null(result.SeriesNumber);
+            Assert.False(result.SeriesNotFound);
+        }
+
+        [Fact]
+        public async Task LookupByIsbnAsync_LeavesSeriesEmpty_WhenEditionEndpointFails()
+        {
+            const string booksJson = @"{
+                ""ISBN:0590629778"": {
+                    ""title"": ""The Invasion"",
+                    ""works"": [{""key"": ""/works/OL7872220W""}]
+                }
+            }";
+            const string workJson = @"{""description"": ""A shape-shifting adventure.""}";
+
+            var (service, _) = CreateService(
+                ("/api/books", Ok(booksJson)),
+                ("/isbn/", NotFound()),
+                ("/works/", Ok(workJson)));
+
+            var result = await service.LookupByIsbnAsync("0590629778");
+
+            Assert.NotNull(result);
+            Assert.Equal(string.Empty, result!.SeriesName);
+        }
+
+        // ── ParseSeriesString unit tests ────────────────────────────────────────
+
+        [Theory]
+        [InlineData("Animorphs #1", "Animorphs", 1)]
+        [InlineData("Animorphs #12", "Animorphs", 12)]
+        [InlineData("Harry Potter, Book 1", "Harry Potter", 1)]
+        [InlineData("Harry Potter, 3", "Harry Potter", 3)]
+        [InlineData("Harry Potter ; 3", "Harry Potter", 3)]
+        [InlineData("His Dark Materials ; bk. 1", "His Dark Materials", 1)]
+        [InlineData("Narnia ; bk. 2", "Narnia", 2)]
+        [InlineData("Animorphs", "Animorphs", null)]
+        public void ParseSeriesString_ParsesNameAndNumber(string input, string expectedName, int? expectedNumber)
+        {
+            var (name, number) = OpenLibraryBookLookupService.ParseSeriesString(input);
+            Assert.Equal(expectedName, name);
+            Assert.Equal(expectedNumber, number);
         }
     }
 }

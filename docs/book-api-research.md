@@ -350,11 +350,96 @@ ISBNdb is worth revisiting only if data quality gaps become a real user-facing p
 
 ---
 
+## Series Information Lookup Research
+
+### Summary
+
+Finding accurate series name and series number for a book requires checking multiple data sources in
+priority order. Neither Open Library nor Google Books guarantees a structured, machine-readable series
+field, but Open Library exposes the most reliable path.
+
+### Best Approach: Edition-first, then Work-level fallback
+
+Open Library exposes a `series` array at **two levels**, both returning strings like
+`"Animorphs #1"`, `"Harry Potter ; 3"`, or `"His Dark Materials ; bk. 1"`:
+
+| Priority | Endpoint | Notes |
+|----------|----------|-------|
+| 1 | `GET /isbn/{isbn}.json` | **Edition level** — most direct and commonly populated. Recommended by Open Library as the future-proof endpoint. |
+| 2 | `GET /works/{key}.json` | **Work level** — fetched anyway for description; also checked for `series` when the edition has none. |
+| 3 | Prompt the user | Neither source has data — show a UI notice and let the user enter series info manually. |
+
+#### Why `/isbn/{isbn}.json` is preferred over the legacy Books API
+
+The legacy `/api/books?jscmd=data` endpoint (still used for its convenient rich metadata: cover URLs,
+author names, subject names) does **not** expose a `series` field. The modern `/isbn/{isbn}.json`
+endpoint does.
+
+```
+# Best-practice primary lookup for series data
+GET https://openlibrary.org/isbn/{isbn}.json
+→ "series": ["Animorphs #1"]   ← edition-level series, most reliable
+```
+
+#### Series string formats encountered in Open Library data
+
+The `series` field is always an array of strings, but the format varies by how the record was
+catalogued:
+
+| Format | Example | Notes |
+|--------|---------|-------|
+| `Name #N` | `"Animorphs #1"` | Most common for children's/YA series |
+| `Name ; N` | `"Harry Potter ; 3"` | Semicolon separator, common in library cataloguing |
+| `Name ; bk. N` | `"His Dark Materials ; bk. 1"` | Semicolon + book abbreviation |
+| `Name, Book N` | `"The Chronicles of Narnia, Book 1"` | Comma + "Book" word |
+| `Name, N` | `"Animorphs, 1"` | Comma + bare number |
+| `Name` | `"Animorphs"` | Name only, no number |
+
+All of these are handled by `ParseSeriesString` in `OpenLibraryBookLookupService`.
+
+### Approaches Investigated but Not Used
+
+#### `collectionID` subject → collection endpoint → `lending_edition` (removed)
+
+Early research noted that some edition records contain a subject like `"collectionID:Animorphs"` with a
+URL to the collection endpoint (`/subjects/collectionid:animorphs.json`). That endpoint lists works in
+the collection, some with a `lending_edition` key pointing to another work JSON that sometimes has
+`series` data.
+
+**This approach was removed** because:
+- It requires 2–3 additional HTTP requests per lookup.
+- The `lending_edition` work does not reliably contain series data — it depends on which
+  specific edition Internet Archive has available for lending.
+- The direct `/isbn/{isbn}.json` → `/works/{key}.json` path is simpler, fewer requests, and more
+  reliable.
+
+#### Google Books `categories` field
+
+Google Books returns a `categories` array (e.g. `["Fiction"]`) but does **not** expose a structured
+series field. Series information is sometimes embedded in the `title` or `subtitle` fields
+(e.g. `"Animorphs #1: The Invasion"`) but this requires fragile string parsing and is not reliable
+enough for automatic extraction.
+
+### Implementation in Collectors Vault
+
+`OpenLibraryBookLookupService.LookupByIsbnAsync` uses the following request sequence:
+
+1. `GET /api/books?bibkeys=ISBN:{isbn}&format=json&jscmd=data` — rich metadata (cover URLs, author names, subject names, publisher).
+2. `GET /isbn/{isbn}.json` — edition-level `series` field (primary series source).
+3. `GET /works/{workKey}.json` — description + work-level `series` fallback.
+
+If neither step 2 nor step 3 resolves the series, the UI leaves the Series Name/Number fields empty
+for the user to fill in manually.
+
+---
+
 ## Quick Reference: API Endpoint Cheat Sheet
 
 ```
 # Open Library — no key needed
-ISBN:   GET https://openlibrary.org/api/books?bibkeys=ISBN:{isbn}&format=json&jscmd=data
+ISBN (rich metadata):     GET https://openlibrary.org/api/books?bibkeys=ISBN:{isbn}&format=json&jscmd=data
+ISBN (edition + series):  GET https://openlibrary.org/isbn/{isbn}.json       ← primary series source
+Work (desc + series fallback): GET https://openlibrary.org/works/{key}.json  ← description + series fallback
 Title:  GET https://openlibrary.org/search.json?title={title}&limit=5
 Author: GET https://openlibrary.org/search.json?author={author}&limit=5
 Cover:  https://covers.openlibrary.org/b/isbn/{isbn}-L.jpg  (direct image URL)
