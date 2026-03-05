@@ -327,4 +327,65 @@ describe('BookForm', () => {
             );
         });
     });
+
+    it('clears ISBN field when Clear and enter manually is clicked', async () => {
+        const lookupData = {
+            title: 'The Hobbit',
+            authors: ['J.R.R. Tolkien'],
+            isbn: '9780547928227',
+            publisher: 'Houghton Mifflin',
+            publishDate: '1937',
+            pageCount: 310,
+            description: 'A fantasy novel.',
+            subjects: [],
+            coverSmall: '',
+            coverMedium: '',
+            coverLarge: '',
+            providerUrl: '',
+            seriesName: '',
+            seriesNotFound: false
+        };
+        mockLookupBookByIsbn.mockResolvedValue(lookupData);
+
+        render(<BookForm />);
+        fireEvent.change(screen.getByLabelText('ISBN:'), { target: { value: '9780547928227' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
+
+        await waitFor(() => {
+            expect(screen.getByLabelText('Title:')).toHaveValue('The Hobbit');
+        });
+
+        fireEvent.click(screen.getByRole('button', { name: 'Clear and enter manually' }));
+
+        expect(screen.getByLabelText('ISBN:')).toHaveValue('');
+    });
+
+    it('pre-populates book format from lookup result', async () => {
+        const lookupData = {
+            title: 'The Hobbit',
+            authors: ['J.R.R. Tolkien'],
+            isbn: '9780547928227',
+            publisher: 'Houghton Mifflin',
+            publishDate: '1937',
+            pageCount: 310,
+            description: 'A fantasy novel.',
+            subjects: [],
+            coverSmall: '',
+            coverMedium: '',
+            coverLarge: '',
+            providerUrl: '',
+            seriesName: '',
+            seriesNotFound: false,
+            bookFormat: 'Paperback' as const
+        };
+        mockLookupBookByIsbn.mockResolvedValue(lookupData);
+
+        render(<BookForm />);
+        fireEvent.change(screen.getByLabelText('ISBN:'), { target: { value: '9780547928227' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
+
+        await waitFor(() => {
+            expect(screen.getByLabelText('Book Format (optional):')).toHaveValue('Paperback');
+        });
+    });
 });

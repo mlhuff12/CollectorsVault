@@ -431,6 +431,102 @@ namespace CollectorsVault.Api.Tests
             Assert.Equal(string.Empty, result!.SeriesName);
         }
 
+        // ── Series lookup — subject tag fallback ──────────────────────────────
+
+        [Fact]
+        public async Task LookupByIsbnAsync_PopulatesSeriesName_FromSubjectTag_WhenNoOtherSeriesFound()
+        {
+            const string booksJson = @"{
+                ""ISBN:0590629778"": {
+                    ""title"": ""The Invasion"",
+                    ""subjects"": [{""name"": ""series:Animorphs""}],
+                    ""works"": [{""key"": ""/works/OL7872220W""}]
+                }
+            }";
+            const string editionJson = @"{""title"": ""The Invasion""}";  // no series field
+            const string workJson = @"{""description"": ""A shape-shifting adventure.""}";  // no series field
+
+            var (service, _) = CreateService(
+                ("/api/books", Ok(booksJson)),
+                ("/isbn/", Ok(editionJson)),
+                ("/works/", Ok(workJson)));
+
+            var result = await service.LookupByIsbnAsync("0590629778");
+
+            Assert.NotNull(result);
+            Assert.Equal("Animorphs", result!.SeriesName);
+            Assert.Null(result.SeriesNumber);
+            Assert.True(result.SeriesNotFound);
+        }
+
+        [Fact]
+        public async Task LookupByIsbnAsync_SubjectTagSeriesNotUsed_WhenEditionSeriesAlreadyFound()
+        {
+            // When edition series is available, the subject tag fallback should not override it.
+            const string booksJson = @"{
+                ""ISBN:0590629778"": {
+                    ""title"": ""The Invasion"",
+                    ""subjects"": [{""name"": ""series:WrongSeries""}],
+                    ""works"": [{""key"": ""/works/OL7872220W""}]
+                }
+            }";
+            const string editionJson = @"{""series"": [""Animorphs #1""]}";
+            const string workJson = @"{""description"": ""A shape-shifting adventure.""}";
+
+            var (service, _) = CreateService(
+                ("/api/books", Ok(booksJson)),
+                ("/isbn/", Ok(editionJson)),
+                ("/works/", Ok(workJson)));
+
+            var result = await service.LookupByIsbnAsync("0590629778");
+
+            Assert.NotNull(result);
+            Assert.Equal("Animorphs", result!.SeriesName);
+            Assert.Equal(1, result.SeriesNumber);
+            Assert.False(result.SeriesNotFound);
+        }
+
+        // ── physical_format → BookFormat ──────────────────────────────────────
+
+        [Fact]
+        public async Task LookupByIsbnAsync_PopulatesBookFormat_WhenPhysicalFormatPresent()
+        {
+            const string booksJson = @"{
+                ""ISBN:9780547928227"": {
+                    ""title"": ""The Hobbit"",
+                    ""physical_format"": ""Paperback""
+                }
+            }";
+
+            var (service, _) = CreateService(
+                ("/api/books", Ok(booksJson)),
+                ("/isbn/", NotFound()));
+
+            var result = await service.LookupByIsbnAsync("9780547928227");
+
+            Assert.NotNull(result);
+            Assert.Equal(CollectorsVault.Server.Models.BookFormat.Paperback, result!.BookFormat);
+        }
+
+        [Fact]
+        public async Task LookupByIsbnAsync_LeavesBookFormatNull_WhenPhysicalFormatAbsent()
+        {
+            const string booksJson = @"{
+                ""ISBN:9780547928227"": {
+                    ""title"": ""The Hobbit""
+                }
+            }";
+
+            var (service, _) = CreateService(
+                ("/api/books", Ok(booksJson)),
+                ("/isbn/", NotFound()));
+
+            var result = await service.LookupByIsbnAsync("9780547928227");
+
+            Assert.NotNull(result);
+            Assert.Null(result!.BookFormat);
+        }
+
         // ── ParseSeriesString unit tests ────────────────────────────────────────
 
         [Theory]

@@ -202,6 +202,13 @@ using (var scope = app.Services.CreateScope())
                 ("Subjects",         "TEXT"),
                 // PublishUtcDate replaces the old string PublishDate column.
                 ("PublishUtcDate",   "TEXT"),
+                // Cover images and book URL added with lookup feature.
+                ("CoverSmall",       "TEXT"),
+                ("CoverMedium",      "TEXT"),
+                ("CoverLarge",       "TEXT"),
+                ("BookUrl",          "TEXT"),
+                // PageCount added with lookup feature.
+                ("PageCount",        "INTEGER"),
             };
             AddMissingColumns(dbContext, "Book", bookColumnsToAdd, app.Logger);
 
