@@ -477,6 +477,212 @@ For a lightly-used personal app, 5 GB/month is more than sufficient — typical 
 
 ---
 
+## Monitoring Usage and Setting Up Alerts
+
+Staying within Azure's free tier limits requires actively watching how much of each quota you have consumed. This section explains how to view current usage for each service and how to set up alerts that notify you before limits are exceeded or costs begin.
+
+---
+
+### Viewing Current Usage
+
+#### Central View: Subscription → Usage + Quotas
+
+The quickest way to see all service quotas in one place:
+
+1. In the [Azure portal](https://portal.azure.com/), open **Subscriptions** and select your subscription.
+2. In the left menu under **Settings**, click **Usage + quotas**.
+3. Use the **Provider** and **Location** dropdowns to filter by service type (e.g., `Microsoft.Web` for App Service, `Microsoft.Sql` for SQL Database, `Microsoft.Storage` for Blob Storage).
+4. The list shows your current usage and the limit for each resource.
+
+Alternatively, search for **"Quotas"** in the portal search bar to open the dedicated Azure Quotas hub, which provides a centralized view across all subscriptions and resource providers.
+
+- [Quotas overview – Microsoft Learn](https://learn.microsoft.com/en-us/azure/quotas/quotas-overview)
+- [View quotas in the Azure portal – Microsoft Learn](https://learn.microsoft.com/en-us/azure/quotas/view-quotas)
+- [Check resource usage against limits – Microsoft Learn](https://learn.microsoft.com/en-us/azure/networking/check-usage-against-limits)
+
+---
+
+#### Per-Service Usage: Where to Look
+
+**Azure App Service (F1 — CPU Quota)**
+
+The most critical limit on the free tier is 60 CPU minutes/day.
+
+1. Open your App Service in the portal.
+2. In the left menu under **Monitoring**, click **Quotas**.
+3. The **CPU (Short)**, **CPU (Day)**, **Memory**, **Bandwidth**, and **File System** usage bars are shown, each with a current value and daily/5-minute cap.
+4. When CPU (Day) reaches its limit, the app is automatically suspended until UTC midnight.
+
+- [Monitor an App Service app – Microsoft Learn](https://learn.microsoft.com/en-us/azure/app-service/web-sites-monitor)
+
+---
+
+**Azure SQL Database (Free Offer — vCore Seconds)**
+
+1. Open your SQL Database in the portal.
+2. In the left menu under **Monitoring**, click **Metrics**.
+3. Select the metric `vCores` or review the **SQL Database free offer usage** in the database's **Overview** blade — a progress bar shows how many of the 100,000 free vCore-seconds have been consumed this month.
+4. Alternatively, run this T-SQL query to view current consumption:
+   ```sql
+   SELECT * FROM sys.dm_db_resource_stats;
+   ```
+
+- [Azure SQL Database free offer](https://learn.microsoft.com/en-us/azure/azure-sql/database/free-offer?view=azuresql)
+
+---
+
+**Azure Blob Storage (Capacity and Operation Counts)**
+
+1. Open your Storage Account in the portal.
+2. In the left menu under **Monitoring**, click **Metrics**.
+3. Add the following metrics to the chart:
+   - `Used Capacity` — total bytes stored (free limit: 5 GB).
+   - `Transactions` — total operations (free limits: 20,000 reads, 10,000 writes/month).
+4. Set the **Time range** to "Last 30 days" and **Granularity** to "1 month" for a clear monthly total.
+
+- [Monitor Azure Blob Storage – Microsoft Learn](https://learn.microsoft.com/en-us/azure/storage/blobs/monitor-blob-storage)
+
+---
+
+**Azure Functions (Execution Count)**
+
+1. Open your Function App in the portal.
+2. In the left menu under **Monitoring**, click **Metrics**.
+3. Add the metric `Function Execution Count` to see the total executions for the current period.
+4. Alternatively, open **Application Insights** (if linked) and query:
+   ```kusto
+   requests
+   | summarize count() by bin(timestamp, 1d)
+   | order by timestamp desc
+   ```
+
+- [Monitor Azure Functions – Microsoft Learn](https://learn.microsoft.com/en-us/azure/azure-functions/monitor-functions)
+
+---
+
+**Azure Cost Management: Overall Spend**
+
+This is the most important view — it shows actual and forecasted charges across all services.
+
+1. Search for **Cost Management** in the portal.
+2. Click **Cost analysis**.
+3. Set the scope to your subscription or resource group (e.g., `collectors-vault-rg`).
+4. Use the **Accumulated costs** view to see spend so far this month alongside a forecast.
+5. Drill down by **Service name** to see which resource is generating cost.
+
+- [Start analyzing costs – Microsoft Learn](https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/quick-acm-cost-analysis)
+
+---
+
+### Setting Up Alerts
+
+#### 1. Azure Cost Management Budget Alert (Recommended First Step)
+
+This alert fires when your total Azure spend reaches a dollar threshold. It is the most important safety net for the free tier.
+
+**Steps:**
+
+1. In the portal, open **Cost Management + Billing** → **Cost Management** → **Budgets**.
+2. Click **+ Add**.
+3. Configure the budget:
+   - **Scope:** Your subscription (or the `collectors-vault-rg` resource group for tighter scope).
+   - **Name:** e.g., `collectors-vault-monthly`
+   - **Reset period:** Monthly
+   - **Amount:** `$1` (catches any unexpected charges immediately)
+4. On the **Set alerts** step, add two thresholds:
+   - `80%` of budget (= $0.80) → **Alert type: Actual** → add your email address.
+   - `100%` of budget (= $1.00) → **Alert type: Actual** → add your email address.
+5. Click **Create**.
+
+> **Note:** Budget alerts are evaluated every 24 hours and do **not** automatically stop resources. They only send notifications.
+
+- [Tutorial: Create and manage budgets – Microsoft Learn](https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/tutorial-acm-create-budgets)
+- [Monitor usage and spending with cost alerts – Microsoft Learn](https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/cost-mgt-alerts-monitor-usage-spending)
+
+---
+
+#### 2. Azure Monitor Metric Alert — App Service CPU Quota
+
+Receive an email before the daily 60-minute CPU cap is hit.
+
+**Steps:**
+
+1. Open your App Service → **Monitoring** → **Alerts**.
+2. Click **+ Create** → **Alert rule**.
+3. Under **Condition**, click **Add condition** and search for `CPU Percentage`.
+4. Set **Threshold type:** Static, **Operator:** Greater than, **Threshold value:** `80` (80% CPU, giving you a warning before suspension).
+5. Set the **Aggregation type:** Average, **Period:** 5 minutes.
+6. Under **Actions**, click **Add action group** → create a new group with your email as the notification target.
+7. Give the alert a name (e.g., `app-service-cpu-high`) and click **Create**.
+
+- [Create a metric alert for an Azure resource – Microsoft Learn](https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/tutorial-metric-alert)
+
+---
+
+#### 3. Azure Monitor Metric Alert — Blob Storage Capacity
+
+Receive an email before the 5 GB free storage limit is approached.
+
+**Steps:**
+
+1. Open your Storage Account → **Monitoring** → **Alerts**.
+2. Click **+ Create** → **Alert rule**.
+3. Under **Condition**, search for `Used Capacity`.
+4. Set **Threshold value:** `4294967296` (4 GB in bytes = 4 × 1,073,741,824 — 80% of the 5 GB free limit).
+5. Set **Aggregation type:** Average, **Period:** 1 hour.
+6. Attach your email via an action group (or reuse the one created above).
+7. Name the alert (e.g., `blob-storage-capacity-warning`) and click **Create**.
+
+---
+
+#### 4. Azure Monitor Metric Alert — Azure Functions Execution Count
+
+Receive a warning when function executions approach the 1 million/month free limit.
+
+**Steps:**
+
+1. Open your Function App → **Monitoring** → **Alerts**.
+2. Click **+ Create** → **Alert rule**.
+3. Under **Condition**, search for `Function Execution Count`.
+4. Set **Threshold value:** `800000` (800K executions — 80% of the 1M free limit) with **Aggregation:** Total and the longest available **Period** (Azure Monitor supports up to 6 hours for this metric; for a monthly cumulative view use **Cost Management** or **Application Insights** instead).
+5. Attach your action group and name the alert (e.g., `functions-execution-warning`).
+
+> **Tip:** For a true monthly execution count, check the **Function App → Monitoring → Metrics** blade and set the time range manually to "Last 30 days" to get a cumulative view. Azure Monitor metric alerts work on rolling windows (max ~6 hours to 1 day), so they are best used for catching sudden spikes rather than monthly totals.
+
+---
+
+#### 5. Azure SQL Database — Monitor for Auto-Pause Risk
+
+Azure SQL's free tier auto-pauses the database when 100,000 vCore-seconds/month are consumed. You can create an alert to warn you before this happens.
+
+**Steps:**
+
+1. Open your Azure SQL Database → **Monitoring** → **Alerts**.
+2. Click **+ Create** → **Alert rule**.
+3. Under **Condition**, search for `CPU percentage`.
+4. Set **Threshold value:** `75` (75% sustained CPU) as a proxy for heavy vCore consumption.
+5. Attach your action group and name the alert (e.g., `sql-high-cpu-warning`).
+
+> For a direct vCore-second consumption alert, you can also set up an **Azure Monitor scheduled query alert** using a Log Analytics workspace to query `sys.dm_db_resource_stats` periodically, though this is more advanced.
+
+- [Monitor Azure SQL Database – Microsoft Learn](https://learn.microsoft.com/en-us/azure/azure-sql/database/monitoring-sql-database-azure-monitor?view=azuresql)
+
+---
+
+### Quick Reference: Where to Find Usage for Each Service
+
+| Service | Usage location in Azure portal |
+|---------|-------------------------------|
+| App Service CPU quota | App Service → Monitoring → **Quotas** |
+| Azure SQL vCore usage | SQL Database → Overview (free offer progress bar) or → Monitoring → **Metrics** |
+| Blob Storage capacity | Storage Account → Monitoring → **Metrics** → `Used Capacity` |
+| Blob Storage operations | Storage Account → Monitoring → **Metrics** → `Transactions` |
+| Azure Functions executions | Function App → Monitoring → **Metrics** → `Function Execution Count` |
+| Overall spend (all services) | **Cost Management** → Cost analysis |
+| All quota limits by subscription | **Subscriptions** → Usage + quotas |
+
+---
+
 ## Potential Gotchas and Recommendations
 
 ### 1. Free Tier Does Not Hard-Stop Usage
@@ -511,8 +717,12 @@ The free tier allows 100 GB/month. If this is exceeded, the app is suspended (no
 - [ ] Create an **Azure SQL Database** (free offer) and update EF Core provider
 - [ ] Create a **Storage Account** and a `covers` Blob container for images
 - [ ] Store all connection strings and API keys in **App Service Application Settings** (or Key Vault)
-- [ ] Set up a **$1/month budget alert** in Azure Cost Management
+- [ ] Set up a **$1/month budget alert** in Azure Cost Management (Cost Management → Budgets → + Add)
+- [ ] Set up an **App Service CPU alert** (App Service → Monitoring → Alerts → CPU Percentage > 80%)
+- [ ] Set up a **Blob Storage capacity alert** (Storage Account → Monitoring → Alerts → Used Capacity > 4 GB)
+- [ ] Set up an **Azure Functions execution alert** (Function App → Monitoring → Alerts → Execution Count > 800,000)
 - [ ] Optionally enable **Application Insights** for telemetry (free up to 5 GB/month)
+- [ ] Bookmark the **Cost Management → Cost analysis** page to check monthly spend at a glance
 
 ---
 
