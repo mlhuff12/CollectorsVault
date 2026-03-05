@@ -14,6 +14,29 @@ Base URLs:
 - `https://localhost:5001` (HTTPS — used by the client and required for camera access)
 - `http://localhost:5000` (HTTP — redirects to HTTPS)
 
+For LAN phone testing in this workspace, VS Code task `API: Run .NET` starts the API at:
+
+- `https://0.0.0.0:5000` (open as `https://<YOUR_PC_IP>:5000`)
+
+For a trusted certificate on your LAN IP (instead of browser warnings), generate a local cert:
+
+- VS Code task: `API: Setup LAN HTTPS Cert`
+
+```powershell
+winget install --id FiloSottile.mkcert --exact --accept-package-agreements --accept-source-agreements --silent
+$mkcertPath = "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\FiloSottile.mkcert_Microsoft.Winget.Source_8wekyb3d8bbwe\mkcert.exe"
+& $mkcertPath -install
+& $mkcertPath -cert-file ".\server\.certs\lan-api-cert.pem" -key-file ".\server\.certs\lan-api-key.pem" localhost 127.0.0.1 ::1 <YOUR_PC_IP>
+```
+
+`API: Run .NET` is preconfigured to use `server/.certs/lan-api-cert.pem` and `server/.certs/lan-api-key.pem`.
+
+Note: trusting `mkcert` on the PC does not trust your phone automatically. Install `rootCA.pem` from `$(mkcert -CAROOT)` on your phone to remove HTTPS certificate warnings there.
+
+For easier transfer to your phone, run task `API: Export Phone Trust CA`. It copies the CA file to:
+
+- `server/.certs/phone-trust/rootCA.pem`
+
 ## Configuration & Secrets
 
 Sensitive values (`Jwt:Key` and optionally `ConnectionStrings:DefaultConnection`) are managed

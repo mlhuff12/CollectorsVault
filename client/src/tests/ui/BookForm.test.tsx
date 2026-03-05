@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import BookForm from '../../components/BookForm';
 import * as api from '../../services/api';
 
-jest.mock('html5-qrcode', () => ({
+vi.mock('html5-qrcode', () => ({
     Html5Qrcode: function() {
         return {
             start: () => Promise.resolve(),
@@ -15,9 +15,9 @@ jest.mock('html5-qrcode', () => ({
     }
 }));
 
-jest.mock('../../services/api', () => ({
-    addBook: jest.fn(),
-    lookupBookByIsbn: jest.fn()
+vi.mock('../../services/api', () => ({
+    addBook: vi.fn(),
+    lookupBookByIsbn: vi.fn()
 }));
 
 describe('BookForm', () => {
@@ -25,18 +25,16 @@ describe('BookForm', () => {
     const mockLookupBookByIsbn = api.lookupBookByIsbn as jest.MockedFunction<typeof api.lookupBookByIsbn>;
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     // ── Manual entry ──────────────────────────────────────────────────────────
 
     it('submits parsed book payload and resets form on success (manual entry)', async () => {
-        const onItemAdded = jest.fn();
+        const onItemAdded = vi.fn();
         mockAddBook.mockResolvedValue({
-            id: 1,
             title: 'Dune',
-            authors: ['Frank Herbert'],
-            category: 'book'
+            authors: ['Frank Herbert']
         });
 
         render(<BookForm onItemAdded={onItemAdded} />);
@@ -60,7 +58,7 @@ describe('BookForm', () => {
         });
 
         expect(onItemAdded).toHaveBeenCalledTimes(1);
-        expect(screen.getByText('Book added successfully!')).toBeInTheDocument();
+        expect(await screen.findByText('Book added successfully!')).toBeInTheDocument();
     });
 
     it('shows validation when no author names provided (manual entry)', async () => {
@@ -113,7 +111,9 @@ describe('BookForm', () => {
             coverSmall: 'https://covers.openlibrary.org/b/id/123-S.jpg',
             coverMedium: 'https://covers.openlibrary.org/b/id/123-M.jpg',
             coverLarge: 'https://covers.openlibrary.org/b/id/123-L.jpg',
-            providerUrl: 'https://openlibrary.org/books/OL123'
+            providerUrl: 'https://openlibrary.org/books/OL123',
+            seriesName: '',
+            seriesNotFound: false
         };
         mockLookupBookByIsbn.mockResolvedValue(lookupData);
 
@@ -142,7 +142,9 @@ describe('BookForm', () => {
             coverSmall: 'https://covers.openlibrary.org/b/id/123-S.jpg',
             coverMedium: 'https://covers.openlibrary.org/b/id/123-M.jpg',
             coverLarge: 'https://covers.openlibrary.org/b/id/123-L.jpg',
-            providerUrl: 'https://openlibrary.org/books/OL123'
+            providerUrl: 'https://openlibrary.org/books/OL123',
+            seriesName: '',
+            seriesNotFound: false
         };
         mockLookupBookByIsbn.mockResolvedValue(lookupData);
 
@@ -182,7 +184,9 @@ describe('BookForm', () => {
             coverSmall: '',
             coverMedium: '',
             coverLarge: '',
-            providerUrl: ''
+            providerUrl: '',
+            seriesName: '',
+            seriesNotFound: false
         };
         mockLookupBookByIsbn.mockResolvedValue(lookupData);
 
@@ -295,12 +299,10 @@ describe('BookForm', () => {
     });
 
     it('includes series and format fields in manual submission payload', async () => {
-        const onItemAdded = jest.fn();
+        const onItemAdded = vi.fn();
         mockAddBook.mockResolvedValue({
-            id: 1,
             title: 'The Invasion',
-            authors: ['K.A. Applegate'],
-            category: 'book'
+            authors: ['K.A. Applegate']
         });
 
         render(<BookForm onItemAdded={onItemAdded} />);

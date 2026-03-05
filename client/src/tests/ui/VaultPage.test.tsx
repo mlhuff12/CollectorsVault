@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import VaultPage from '../../pages/VaultPage';
 import * as api from '../../services/api';
 
-jest.mock('html5-qrcode', () => ({
+vi.mock('html5-qrcode', () => ({
     Html5Qrcode: function() {
         return {
             start: () => Promise.resolve(),
@@ -16,22 +16,22 @@ jest.mock('html5-qrcode', () => ({
     }
 }));
 
-jest.mock('../../services/api', () => ({
-    fetchItems: jest.fn(),
-    addBook: jest.fn(),
-    addMovie: jest.fn(),
-    addGame: jest.fn(),
-    deleteItem: jest.fn(),
-    fetchAllUsers: jest.fn(),
-    lookupBookByIsbn: jest.fn(),
-    lookupMovieByUpc: jest.fn(),
-    lookupGameByUpc: jest.fn()
+vi.mock('../../services/api', () => ({
+    fetchItems: vi.fn(),
+    addBook: vi.fn(),
+    addMovie: vi.fn(),
+    addGame: vi.fn(),
+    deleteItem: vi.fn(),
+    fetchAllUsers: vi.fn(),
+    lookupBookByIsbn: vi.fn(),
+    lookupMovieByUpc: vi.fn(),
+    lookupGameByUpc: vi.fn()
 }));
 
 let mockIsAdmin = false;
 
-jest.mock('../../context/AuthContext', () => ({
-    useAuth: () => ({ username: 'testuser', logout: jest.fn(), isAdmin: mockIsAdmin })
+vi.mock('../../context/AuthContext', () => ({
+    useAuth: () => ({ username: 'testuser', logout: vi.fn(), isAdmin: mockIsAdmin })
 }));
 
 describe('VaultPage', () => {
@@ -41,18 +41,18 @@ describe('VaultPage', () => {
 
     beforeEach(() => {
         mockIsAdmin = false;
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         mockFetchItems.mockResolvedValue([
             { id: 1, title: 'Dune', description: 'Sci-fi classic', category: 'book' },
             { id: 2, title: 'Inception', description: 'Mind-bending thriller', category: 'movie' },
             { id: 3, title: 'Halo Infinite', description: 'FPS campaign', category: 'game' }
         ]);
         mockDeleteItem.mockResolvedValue();
-        jest.spyOn(window, 'confirm').mockReturnValue(true);
+        vi.spyOn(window, 'confirm').mockReturnValue(true);
     });
 
     afterEach(() => {
-        jest.restoreAllMocks();
+        vi.restoreAllMocks();
     });
 
     const renderVaultPage = (route = '/') => {

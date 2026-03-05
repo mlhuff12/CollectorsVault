@@ -2,7 +2,7 @@
 
 - `ui/`: React UI tests (component/page behavior with mocked services)
 - `unit/`: Pure unit tests for utilities and isolated logic
-- `integration/`: Cross-module tests that still run locally in Jest
+- `integration/`: Cross-module tests that run locally in Vitest
 
 ## Naming
 

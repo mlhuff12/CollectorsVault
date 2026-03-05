@@ -7,21 +7,23 @@ import SignupPage from '../../pages/SignupPage';
 import * as api from '../../services/api';
 import QRCode from 'qrcode';
 
-const mockSetAuth = jest.fn();
+const mockSetAuth = vi.fn();
 
-jest.mock('../../services/api', () => ({
-    login: jest.fn(),
-    signup: jest.fn()
+vi.mock('../../services/api', () => ({
+    login: vi.fn(),
+    signup: vi.fn()
 }));
 
-jest.mock('../../context/AuthContext', () => ({
+vi.mock('../../context/AuthContext', () => ({
     useAuth: () => ({
         setAuth: mockSetAuth
     })
 }));
 
-jest.mock('qrcode', () => ({
-    toDataURL: jest.fn()
+vi.mock('qrcode', () => ({
+    default: {
+        toDataURL: vi.fn()
+    }
 }));
 
 describe('Auth UI flow', () => {
@@ -32,7 +34,7 @@ describe('Auth UI flow', () => {
     >;
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     it('logs in with mocked API call and redirects to home', async () => {

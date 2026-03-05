@@ -3,11 +3,17 @@ import { render, screen } from '@testing-library/react';
 
 let mockIsAuthenticated = false;
 
-jest.mock('../../pages/LoginPage', () => () => <div>Login Page Mock</div>);
-jest.mock('../../pages/SignupPage', () => () => <div>Signup Page Mock</div>);
-jest.mock('../../pages/VaultPage', () => () => <div>Vault Page Mock</div>);
+vi.mock('../../pages/LoginPage', () => ({
+    default: () => <div>Login Page Mock</div>
+}));
+vi.mock('../../pages/SignupPage', () => ({
+    default: () => <div>Signup Page Mock</div>
+}));
+vi.mock('../../pages/VaultPage', () => ({
+    default: () => <div>Vault Page Mock</div>
+}));
 
-jest.mock('../../context/AuthContext', () => {
+vi.mock('../../context/AuthContext', () => {
     const React = require('react');
     return {
         AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,

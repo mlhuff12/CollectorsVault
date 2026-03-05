@@ -3,14 +3,14 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import App from '../../App';
 import * as api from '../../services/api';
 
-jest.mock('../../services/api', () => ({
-    fetchItems: jest.fn(),
-    addBook: jest.fn(),
-    addMovie: jest.fn(),
-    addGame: jest.fn(),
-    deleteItem: jest.fn(),
-    signup: jest.fn(),
-    login: jest.fn()
+vi.mock('../../services/api', () => ({
+    fetchItems: vi.fn(),
+    addBook: vi.fn(),
+    addMovie: vi.fn(),
+    addGame: vi.fn(),
+    deleteItem: vi.fn(),
+    signup: vi.fn(),
+    login: vi.fn()
 }));
 
 describe('App login integration flow', () => {
@@ -19,13 +19,13 @@ describe('App login integration flow', () => {
 
     beforeEach(() => {
         localStorage.clear();
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         mockFetchItems.mockResolvedValue([]);
         window.history.pushState({}, '', '/login');
     });
 
     it('logs in from login page and renders vault home without API server', async () => {
-        mockLogin.mockResolvedValue({ token: 'token-123', username: 'michelle' });
+        mockLogin.mockResolvedValue({ token: 'token-123', username: 'michelle', isAdmin: false });
 
         render(<App />);
 

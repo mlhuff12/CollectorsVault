@@ -3,27 +3,25 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import MovieForm from '../../components/MovieForm';
 import * as api from '../../services/api';
 
-jest.mock('../../services/api', () => ({
-    addMovie: jest.fn(),
-    lookupMovieByUpc: jest.fn()
+vi.mock('../../services/api', () => ({
+    addMovie: vi.fn(),
+    lookupMovieByUpc: vi.fn()
 }));
 
 describe('MovieForm', () => {
     const mockAddMovie = api.addMovie as jest.MockedFunction<typeof api.addMovie>;
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     it('submits movie and calls onItemAdded on success', async () => {
-        const onItemAdded = jest.fn();
+        const onItemAdded = vi.fn();
         mockAddMovie.mockResolvedValue({
-            id: 1,
             title: 'Inception',
             director: 'Christopher Nolan',
             releaseYear: 2010,
-            genre: 'Sci-fi',
-            category: 'movie'
+            genre: 'Sci-fi'
         });
 
         const { container } = render(<MovieForm onItemAdded={onItemAdded} />);

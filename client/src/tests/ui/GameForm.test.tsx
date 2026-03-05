@@ -3,26 +3,24 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import GameForm from '../../components/GameForm';
 import * as api from '../../services/api';
 
-jest.mock('../../services/api', () => ({
-    addGame: jest.fn(),
-    lookupGameByUpc: jest.fn()
+vi.mock('../../services/api', () => ({
+    addGame: vi.fn(),
+    lookupGameByUpc: vi.fn()
 }));
 
 describe('GameForm', () => {
     const mockAddGame = api.addGame as jest.MockedFunction<typeof api.addGame>;
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     it('submits game and calls onItemAdded on success', async () => {
-        const onItemAdded = jest.fn();
+        const onItemAdded = vi.fn();
         mockAddGame.mockResolvedValue({
-            id: 1,
             title: 'Halo Infinite',
             platform: 'Xbox',
-            releaseDate: '2021-12-08',
-            category: 'game'
+            releaseDate: '2021-12-08'
         });
 
         const { container } = render(<GameForm onItemAdded={onItemAdded} />);

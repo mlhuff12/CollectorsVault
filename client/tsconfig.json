@@ -18,7 +18,13 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "allowSyntheticDefaultImports": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "types": [
+      "vitest/globals",
+      "jest",
+      "node",
+      "@testing-library/jest-dom"
+    ]
   },
   "include": [
     "src"
