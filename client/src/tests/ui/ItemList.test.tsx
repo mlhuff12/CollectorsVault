@@ -3,9 +3,9 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import ItemList from '../../components/ItemList';
 import * as api from '../../services/api';
 
-jest.mock('../../services/api', () => ({
-    fetchItems: jest.fn(),
-    deleteItem: jest.fn()
+vi.mock('../../services/api', () => ({
+    fetchItems: vi.fn(),
+    deleteItem: vi.fn()
 }));
 
 describe('ItemList', () => {
@@ -13,12 +13,12 @@ describe('ItemList', () => {
     const mockDeleteItem = api.deleteItem as jest.MockedFunction<typeof api.deleteItem>;
 
     beforeEach(() => {
-        jest.clearAllMocks();
-        jest.spyOn(window, 'confirm').mockReturnValue(true);
+        vi.clearAllMocks();
+        vi.spyOn(window, 'confirm').mockReturnValue(true);
     });
 
     afterEach(() => {
-        jest.restoreAllMocks();
+        vi.restoreAllMocks();
     });
 
     it('loads and renders items from mocked service', async () => {

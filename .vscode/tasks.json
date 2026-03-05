@@ -2,18 +2,52 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "API: Setup LAN HTTPS Cert",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/server/scripts/setup-lan-cert.ps1"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "API: Export Phone Trust CA",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/server/scripts/export-phone-trust-ca.ps1"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
       "label": "API: Run .NET",
       "type": "shell",
       "command": "dotnet",
       "args": [
         "run",
         "--urls",
-        "http://0.0.0.0:5000",
+        "https://0.0.0.0:5000",
         "--project",
         "${workspaceFolder}/server/CollectorsVault.Api.csproj"
       ],
       "options": {
-        "cwd": "${workspaceFolder}/server"
+        "cwd": "${workspaceFolder}/server",
+        "env": {
+          "ASPNETCORE_Kestrel__Certificates__Default__Path": "${workspaceFolder}/server/.certs/lan-api-cert.pem",
+          "ASPNETCORE_Kestrel__Certificates__Default__KeyPath": "${workspaceFolder}/server/.certs/lan-api-key.pem"
+        }
       },
       "isBackground": true,
       "problemMatcher": {
@@ -41,8 +75,6 @@
       "options": {
         "cwd": "${workspaceFolder}/client",
         "env": {
-          "FAST_REFRESH": "false",
-          "NODE_OPTIONS": "--openssl-legacy-provider",
           "HOST": "0.0.0.0"
         }
       },
@@ -58,7 +90,7 @@
         "background": {
           "activeOnStart": true,
           "beginsPattern": ".",
-          "endsPattern": "Compiled successfully"
+          "endsPattern": "ready in"
         }
       }
     },

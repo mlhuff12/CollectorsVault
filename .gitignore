@@ -6,6 +6,7 @@ yarn-error.log*
 
 # React build artifacts
 client/build/
+client/dist/
 client/.cache/
 
 # Local environment overrides (never commit secrets)
@@ -36,3 +37,6 @@ server/*.db-wal
 server/Data/*.db
 server/Data/*.db-shm
 server/Data/*.db-wal
+
+# Local HTTPS certs for LAN phone testing
+server/.certs/

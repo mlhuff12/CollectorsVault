@@ -1,12 +1,27 @@
 import axios from 'axios';
 import { AdminUser, Book, BookLookupResult, Game, GameLookupResult, Movie, MovieLookupResult, VaultItem } from '../models';
 
-const envBaseUrl =
-    typeof process !== 'undefined' &&
-    typeof process.env !== 'undefined' &&
-    process.env.REACT_APP_API_BASE_URL
-        ? process.env.REACT_APP_API_BASE_URL
-        : undefined;
+const readViteEnv = (key: string): string | undefined => {
+    try {
+        // Keep CRA/Jest compatibility by reading import.meta via runtime evaluation.
+        const metaEnv = Function('return (import.meta && import.meta.env) ? import.meta.env : undefined;')() as Record<string, unknown> | undefined;
+        const value = metaEnv?.[key];
+        return typeof value === 'string' && value.trim().length > 0 ? value : undefined;
+    } catch {
+        return undefined;
+    }
+};
+
+const readCraEnv = (key: string): string | undefined => {
+    if (typeof process === 'undefined' || typeof process.env === 'undefined') {
+        return undefined;
+    }
+
+    const value = process.env[key];
+    return value && value.trim().length > 0 ? value : undefined;
+};
+
+const envBaseUrl = readViteEnv('VITE_API_BASE_URL') ?? readCraEnv('REACT_APP_API_BASE_URL');
 
 const resolveBaseUrl = (): string => {
     const browserHostname = typeof window !== 'undefined' ? window.location.hostname : undefined;
@@ -32,7 +47,7 @@ const resolveBaseUrl = (): string => {
         return `${protocol}//${browserHostname}:5000`;
     }
 
-    return 'http://localhost:5000';
+    return 'https://localhost:5000';
 };
 
 const BASE_URL = resolveBaseUrl();

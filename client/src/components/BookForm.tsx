@@ -10,6 +10,25 @@ interface BookFormProps {
     onItemAdded?: () => void;
 }
 
+const toBookFormat = (value: string): BookFormat | '' => {
+    switch (value) {
+        case 'Unknown':
+        case 'Hardcover':
+        case 'Paperback':
+        case 'MassMarketPaperback':
+        case 'TradePaperback':
+        case 'BoardBook':
+        case 'LibraryBinding':
+        case 'SpiralBound':
+        case 'EBook':
+        case 'Audiobook':
+        case 'Other':
+            return value;
+        default:
+            return '';
+    }
+};
+
 /**
  * BookForm renders a form for adding a new book to the authenticated user's vault.
  *
@@ -397,7 +416,10 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
                         id="book-format"
                         className="form-select"
                         value={bookFormat}
-                        onChange={(e) => setBookFormat(e.target.value as BookFormat | '')}
+                        onChange={(e) => {
+                            const nextValue = e.target.value;
+                            setBookFormat(toBookFormat(nextValue));
+                        }}
                     >
                         <option value="">— Select format —</option>
                         <option value="Hardcover">Hardcover</option>

@@ -3,12 +3,12 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import AdminTab from '../../components/AdminTab';
 import * as api from '../../services/api';
 
-jest.mock('../../services/api', () => ({
-    fetchAllUsers: jest.fn(),
-    deleteUserById: jest.fn()
+vi.mock('../../services/api', () => ({
+    fetchAllUsers: vi.fn(),
+    deleteUserById: vi.fn()
 }));
 
-jest.mock('../../context/AuthContext', () => ({
+vi.mock('../../context/AuthContext', () => ({
     useAuth: () => ({ username: 'adminuser' })
 }));
 
@@ -17,8 +17,8 @@ describe('AdminTab', () => {
     const mockDeleteUserById = api.deleteUserById as jest.MockedFunction<typeof api.deleteUserById>;
 
     beforeEach(() => {
-        jest.clearAllMocks();
-        jest.spyOn(window, 'confirm').mockReturnValue(true);
+        vi.clearAllMocks();
+        vi.spyOn(window, 'confirm').mockReturnValue(true);
         mockFetchAllUsers.mockResolvedValue([
             { id: 1, username: 'adminuser', isAdmin: true, bookCount: 2, movieCount: 1, gameCount: 0 },
             { id: 2, username: 'regularuser', isAdmin: false, bookCount: 0, movieCount: 3, gameCount: 5 }
@@ -27,7 +27,7 @@ describe('AdminTab', () => {
     });
 
     afterEach(() => {
-        jest.restoreAllMocks();
+        vi.restoreAllMocks();
     });
 
     it('loads and displays all users with counts', async () => {
@@ -99,7 +99,7 @@ describe('AdminTab', () => {
     });
 
     it('does not delete when confirm is cancelled', async () => {
-        jest.spyOn(window, 'confirm').mockReturnValue(false);
+        vi.spyOn(window, 'confirm').mockReturnValue(false);
 
         render(<AdminTab />);
 

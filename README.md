@@ -51,6 +51,16 @@ From `client`:
 npm run test:ci
 ```
 
+### 4) Run Vite validation pipeline (Phase 4)
+
+From `client`:
+
+```bash
+npm run verify:vite
+```
+
+This runs the Vite production build plus the Vitest suite.
+
 UI tests mock API service calls (`client/src/services/api.ts`) and do not hit the backend.
 
 ## Debugging in VS Code
@@ -81,7 +91,7 @@ From VS Code, run task:
 
 The workspace tasks are configured to bind:
 
-- API to `0.0.0.0:5000`
+- API to `https://0.0.0.0:5000`
 - Client dev server to `0.0.0.0:3000`
 
 ### 2) Find your computer's local IPv4 address
@@ -98,8 +108,8 @@ Look for your active adapter's `IPv4 Address` (example: `192.168.50.53`).
 
 On your phone browser (same Wi-Fi network):
 
-- Client UI: `http://<YOUR_PC_IP>:3000`
-- API Swagger: `http://<YOUR_PC_IP>:5000/swagger`
+- Client UI: `https://<YOUR_PC_IP>:3000`
+- API Swagger: `https://<YOUR_PC_IP>:5000/swagger`
 
 If Swagger opens on phone, API networking is working.
 
@@ -107,7 +117,30 @@ If Swagger opens on phone, API networking is working.
 
 Allow inbound TCP on ports `3000` and `5000` in Windows Defender Firewall (Private network).
 
-### 5) Notes about API base URL
+### 5) Generate a trusted LAN HTTPS cert (recommended)
+
+Run VS Code task:
+
+- `API: Setup LAN HTTPS Cert`
+
+Equivalent PowerShell (if you prefer terminal):
+
+```powershell
+winget install --id FiloSottile.mkcert --exact --accept-package-agreements --accept-source-agreements --silent
+$mkcertPath = "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\FiloSottile.mkcert_Microsoft.Winget.Source_8wekyb3d8bbwe\mkcert.exe"
+& $mkcertPath -install
+& $mkcertPath -cert-file ".\server\.certs\lan-api-cert.pem" -key-file ".\server\.certs\lan-api-key.pem" localhost 127.0.0.1 ::1 <YOUR_PC_IP>
+```
+
+The `API: Run .NET` task is configured to use `server/.certs/lan-api-cert.pem` and `server/.certs/lan-api-key.pem` automatically.
+
+Important for phone trust:
+
+- `mkcert -install` trusts the CA on your PC only.
+- To remove HTTPS warnings on your phone, install the generated `rootCA.pem` from `$(mkcert -CAROOT)` on the phone and trust it for apps/VPN.
+- Use task `API: Export Phone Trust CA` to copy it into `server/.certs/phone-trust/rootCA.pem` for easy transfer.
+
+### 6) Notes about API base URL
 
 `client/src/services/api.ts` rewrites `localhost` API URLs to the current browser host when opened from another device on LAN. This lets the same local config work on both desktop and phone.
 
@@ -129,3 +162,4 @@ For module-level details, see:
 
 - `client/README.md`
 - `server/README.md`
+- `docs/lan-https-certificate-setup.md`

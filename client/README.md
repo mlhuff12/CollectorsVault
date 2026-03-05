@@ -21,14 +21,26 @@ npm install
 npm start
 ```
 
-> **Note:** The dev server starts on `https://localhost:3000` (HTTPS is enabled by default
-> to allow the barcode/camera scanner to work on mobile devices).
+> **Note:** The dev server starts on `https://localhost:3000`.
+> Camera/barcode access on mobile browsers usually requires HTTPS or localhost.
 
 Production build:
 
 ```bash
 npm run build
 ```
+
+Alternate Vite commands:
+
+```bash
+npm run dev:vite
+npm run build:vite
+```
+
+Environment variable for API URL:
+
+- Primary (Vite): `VITE_API_BASE_URL`
+- Backward-compatible (CRA): `REACT_APP_API_BASE_URL`
 
 ## UI Tests
 
@@ -44,9 +56,15 @@ Run tests once (CI-friendly):
 npm run test:ci
 ```
 
+Run Vite-phase CI validation (Vite build + Vitest tests):
+
+```bash
+npm run verify:vite
+```
+
 ### Mocking Strategy (No API Calls)
 
-- UI tests mock `src/services/api.ts` with `jest.mock(...)`.
+- UI tests mock `src/services/api.ts` with `vi.mock(...)`.
 - Tests validate component behavior against mocked responses.
 - The real backend is **not required** and is never called during these tests.
 
@@ -63,6 +81,11 @@ From **Run and Debug**, use:
 - `Client: Debug in Chrome` to debug the app in browser (opens `https://localhost:3000`)
 
 For full-stack debugging, run `Full Stack: API + Client` from the workspace root launch profiles.
+
+## Camera and HTTPS
+
+- Desktop localhost testing works for camera in most browsers.
+- For phone testing on LAN, use a secure tunnel or HTTPS reverse proxy if camera permission is blocked.
 
 ## API Dependency
 

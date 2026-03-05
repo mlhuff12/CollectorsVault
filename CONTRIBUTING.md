@@ -38,6 +38,8 @@ Thanks for your interest in improving CollectorsVault.
    - `dotnet build CollectorsVault.sln`
    - `npm test` in `client` (when client code or behavior is affected)
    - `npm run build` in `client`
+- For client build/tooling changes (including Vite migration work), also include:
+   - `npm run verify:vite` in `client`
 - Include any manual test steps performed (for example: create, list, delete flows).
 
 ## README updates
