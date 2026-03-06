@@ -28,9 +28,9 @@ From `server`:
 dotnet run
 ```
 
-API base URL: `https://localhost:5001`
+API base URL: `https://localhost:5000`
 
-Swagger UI: `https://localhost:5001/swagger`
+Swagger UI: `https://localhost:5000/swagger`
 
 ### 2) Run the client
 
@@ -129,8 +129,10 @@ Equivalent PowerShell (if you prefer terminal):
 winget install --id FiloSottile.mkcert --exact --accept-package-agreements --accept-source-agreements --silent
 $mkcertPath = "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\FiloSottile.mkcert_Microsoft.Winget.Source_8wekyb3d8bbwe\mkcert.exe"
 & $mkcertPath -install
-& $mkcertPath -cert-file ".\server\.certs\lan-api-cert.pem" -key-file ".\server\.certs\lan-api-key.pem" localhost 127.0.0.1 ::1 <YOUR_PC_IP>
+& $mkcertPath -cert-file ".\server\.certs\lan-api-cert.pem" -key-file ".\server\.certs\lan-api-key.pem" localhost 127.0.0.1 ::1 <YOUR_PC_IP_1> <YOUR_PC_IP_2>
 ```
+
+The `API: Setup LAN HTTPS Cert` task auto-includes all active LAN IPv4 addresses.
 
 The `API: Run .NET` task is configured to use `server/.certs/lan-api-cert.pem` and `server/.certs/lan-api-key.pem` automatically.
 
