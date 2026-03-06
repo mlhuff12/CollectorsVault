@@ -9,6 +9,7 @@ using Xunit;
 
 namespace CollectorsVault.Api.Tests
 {
+    [Trait("Category", "Unit")]
     public class MovieLookupControllerTests
     {
         private static MovieLookupController CreateController(IMovieLookupService service)

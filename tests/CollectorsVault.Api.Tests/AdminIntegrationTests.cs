@@ -16,6 +16,7 @@ using Xunit;
 
 namespace CollectorsVault.Api.Tests
 {
+    [Trait("Category", "Integration")]
     public class AdminIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
     {
         private readonly WebApplicationFactory<Program> _factory;

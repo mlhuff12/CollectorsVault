@@ -11,6 +11,7 @@ namespace CollectorsVault.Api.Tests
     /// <summary>
     /// Unit tests for <see cref="JsonDocumentUtils"/>.
     /// </summary>
+    [Trait("Category", "Unit")]
     public class JsonDocumentUtilsTests
     {
         // ── TryParseJson ──────────────────────────────────────────────────────

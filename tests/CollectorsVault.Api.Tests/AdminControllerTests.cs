@@ -10,6 +10,7 @@ using Xunit;
 
 namespace CollectorsVault.Api.Tests
 {
+    [Trait("Category", "Unit")]
     public class AdminControllerTests
     {
         private static AdminController CreateController(

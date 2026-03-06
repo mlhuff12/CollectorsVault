@@ -14,6 +14,7 @@ namespace CollectorsVault.Api.Tests
     /// Unit tests for <see cref="VaultService.AddBookAsync"/> using an in-memory database.
     /// No changes are persisted to an external database.
     /// </summary>
+    [Trait("Category", "Unit")]
     public class VaultServiceTests
     {
         private static VaultDbContext CreateInMemoryContext()

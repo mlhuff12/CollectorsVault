@@ -13,6 +13,7 @@ namespace CollectorsVault.Api.Tests
     /// Unit tests for <see cref="OpenLibraryBookLookupService"/> that verify HTTP-level behaviour
     /// by mocking <see cref="HttpMessageHandler"/>.
     /// </summary>
+    [Trait("Category", "Unit")]
     public class OpenLibraryBookLookupServiceTests
     {
         // ── helpers ────────────────────────────────────────────────────────────

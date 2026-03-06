@@ -9,6 +9,7 @@ using Xunit;
 
 namespace CollectorsVault.Api.Tests
 {
+    [Trait("Category", "Unit")]
     public class BookLookupControllerTests
     {
         private static BookLookupController CreateController(IBookLookupService service)

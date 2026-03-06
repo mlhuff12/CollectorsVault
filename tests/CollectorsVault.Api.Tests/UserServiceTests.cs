@@ -6,6 +6,7 @@ using Xunit;
 
 namespace CollectorsVault.Api.Tests
 {
+    [Trait("Category", "Unit")]
     public class UserServiceTests
     {
         private static UserService CreateService(string? userIdClaimValue)

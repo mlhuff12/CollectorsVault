@@ -20,6 +20,7 @@ namespace CollectorsVault.Api.Tests
     /// ISBN lookup (via the /api/booklookup endpoint) → save book → delete book.
     /// These tests use an in-memory database so no changes are made to a real database.
     /// </summary>
+    [Trait("Category", "Integration")]
     public class BookIsbnIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
     {
         private readonly WebApplicationFactory<Program> _factory;

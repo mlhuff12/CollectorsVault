@@ -11,6 +11,7 @@ using Xunit;
 
 namespace CollectorsVault.Api.Tests
 {
+    [Trait("Category", "Unit")]
     public class VaultControllerTests
     {
         private static VaultController CreateControllerWithUser(IVaultService service, long userId = 1)
