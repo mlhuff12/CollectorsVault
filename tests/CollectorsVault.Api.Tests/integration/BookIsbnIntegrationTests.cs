@@ -13,7 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using CollectorsVault.Server.Data;
 using Xunit;
 
-namespace CollectorsVault.Api.Tests
+namespace CollectorsVault.Api.Tests.Integration
 {
     /// <summary>
     /// Integration tests covering the full Create-Book flow:
