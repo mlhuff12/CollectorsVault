@@ -11,8 +11,8 @@ dotnet run
 
 Base URLs:
 
-- `https://localhost:5001` (HTTPS — used by the client and required for camera access)
-- `http://localhost:5000` (HTTP — redirects to HTTPS)
+- `https://localhost:5000` (HTTPS — used by the client and required for camera access)
+- `http://localhost:5001` (HTTP — redirects to HTTPS)
 
 For LAN phone testing in this workspace, VS Code task `API: Run .NET` starts the API at:
 
@@ -26,7 +26,14 @@ For a trusted certificate on your LAN IP (instead of browser warnings), generate
 winget install --id FiloSottile.mkcert --exact --accept-package-agreements --accept-source-agreements --silent
 $mkcertPath = "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\FiloSottile.mkcert_Microsoft.Winget.Source_8wekyb3d8bbwe\mkcert.exe"
 & $mkcertPath -install
-& $mkcertPath -cert-file ".\server\.certs\lan-api-cert.pem" -key-file ".\server\.certs\lan-api-key.pem" localhost 127.0.0.1 ::1 <YOUR_PC_IP>
+& $mkcertPath -cert-file ".\server\.certs\lan-api-cert.pem" -key-file ".\server\.certs\lan-api-key.pem" localhost 127.0.0.1 ::1 <YOUR_PC_IP_1> <YOUR_PC_IP_2>
+```
+
+The `API: Setup LAN HTTPS Cert` task now auto-includes all active LAN IPv4 addresses on your PC.
+If needed, you can run the script directly with a custom list:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\server\scripts\setup-lan-cert.ps1 -IpAddress "192.168.1.10,10.0.0.25"
 ```
 
 `API: Run .NET` is preconfigured to use `server/.certs/lan-api-cert.pem` and `server/.certs/lan-api-key.pem`.
@@ -54,7 +61,7 @@ dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Data Source=Data/
 
 ### HTTPS dev certificate
 
-The API serves HTTPS on `https://localhost:5001`. Trust the .NET development certificate
+The API serves HTTPS on `https://localhost:5000`. Trust the .NET development certificate
 once per machine so browsers do not show certificate warnings:
 
 ```bash
@@ -80,14 +87,14 @@ From **Run and Debug**, use `API: Launch .NET`.
 
 Swagger:
 
-- UI: `https://localhost:5001/swagger`
-- OpenAPI JSON: `https://localhost:5001/swagger/v1/swagger.json`
+- UI: `https://localhost:5000/swagger`
+- OpenAPI JSON: `https://localhost:5000/swagger/v1/swagger.json`
 
 ## API Documentation
 
 - Swagger/OpenAPI is enabled in all environments.
 - XML documentation comments from controllers are included in Swagger output.
-- Open `https://localhost:5001/swagger` to browse and test endpoints.
+- Open `https://localhost:5000/swagger` to browse and test endpoints.
 
 ## Persistence
 
@@ -134,7 +141,7 @@ When adding or modifying database schema, follow these conventions:
 
 ## Testing With Swagger
 
-1. Open `https://localhost:5001/swagger`
+1. Open `https://localhost:5000/swagger`
 2. Expand an endpoint.
 3. Click **Try it out**.
 4. Paste a sample request body.

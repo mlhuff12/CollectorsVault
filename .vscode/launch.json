@@ -5,7 +5,7 @@
       "name": "API: Launch .NET",
       "type": "node-terminal",
       "request": "launch",
-      "command": "cd \"${workspaceFolder}/server\" && dotnet run --urls http://0.0.0.0:5000 --project \"${workspaceFolder}/server/CollectorsVault.Api.csproj\"",
+      "command": "cd \"${workspaceFolder}/server\" && dotnet run --launch-profile https --urls https://0.0.0.0:5000 --project \"${workspaceFolder}/server/CollectorsVault.Api.csproj\"",
       "serverReadyAction": {
         "action": "openExternally",
         "pattern": "Now listening on:\\s+(https?://\\S+)",

@@ -85,13 +85,14 @@ For full-stack debugging, run `Full Stack: API + Client` from the workspace root
 ## Camera and HTTPS
 
 - Desktop localhost testing works for camera in most browsers.
-- For phone testing on LAN, use a secure tunnel or HTTPS reverse proxy if camera permission is blocked.
+- For phone testing on LAN, the Vite dev server automatically reuses `server/.certs/lan-api-cert.pem` and `server/.certs/lan-api-key.pem` when present.
+- If those files are missing, Vite falls back to a self-signed dev cert (`basic-ssl`), which may show as insecure in browsers.
 
 ## API Dependency
 
 The frontend expects the API at:
 
-- `https://localhost:5001/api/vault`
+- `https://localhost:5000/api/vault`
 
 Make sure the server is running before using the app.
 
