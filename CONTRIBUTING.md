@@ -50,6 +50,16 @@ Thanks for your interest in improving CollectorsVault.
    - `npm run verify:vite` in `client`
 - Include any manual test steps performed (for example: create, list, delete flows).
 
+### Testing command cheat sheet
+
+| What | Command | Directory |
+|------|---------|-----------|
+| API unit tests | `dotnet test tests/CollectorsVault.Api.Tests/CollectorsVault.Api.Tests.csproj` | repo root |
+| Solution build | `dotnet build CollectorsVault.sln` | repo root |
+| Client tests | `npm test` | `client/` |
+| Client build | `npm run build` | `client/` |
+| Vite verify (build + tests) | `npm run verify:vite` | `client/` |
+
 ## README updates
 
 - Update `README.md` files when setup commands, routes, persistence, or API usage changes.
