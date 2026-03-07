@@ -78,8 +78,10 @@ namespace CollectorsVault.Api.Tests.Integration
         /// to simulate what the frontend would send after a successful lookup.
         /// </summary>
         [Fact]
-        public async Task IsbnLookupFlow_CreateBook_ThenDelete()
+        public async Task IsbnLookupFlow_WhenCalled_CreateBook_ThenDelete()
         {
+            // Arrange
+            // Act
             var client = await CreateAuthenticatedClientAsync();
 
             // Simulate what the frontend sends after a successful ISBN lookup:
@@ -90,7 +92,7 @@ namespace CollectorsVault.Api.Tests.Integration
                 Authors = new[] { "J.R.R. Tolkien" },
                 ISBN = "9780547928227",
                 Publisher = "Houghton Mifflin",
-                PublishDate = "September 21, 1937",
+                PublishDateString = "September 21, 1937",
                 PageCount = 310,
                 Description = "In a hole in the ground there lived a hobbit.",
                 CoverSmall = "https://covers.openlibrary.org/b/id/8406786-S.jpg",
@@ -101,6 +103,8 @@ namespace CollectorsVault.Api.Tests.Integration
 
             // 1. Create the book
             var createResponse = await client.PostAsJsonAsync("/api/vault/books", bookRequest);
+
+            // Assert
             Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
 
             // 2. Verify the book appears in the vault
@@ -126,11 +130,15 @@ namespace CollectorsVault.Api.Tests.Integration
         /// Tests that the /api/booklookup/isbn endpoint requires authentication.
         /// </summary>
         [Fact]
-        public async Task BookLookupEndpoint_RequiresAuthentication()
+        public async Task BookLookupEndpoint_WhenCalled_RequiresAuthentication()
         {
+            // Arrange
+            // Act
             var client = _factory.CreateClient();
 
             var response = await client.GetAsync("/api/booklookup/isbn/9780547928227");
+
+            // Assert
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
 
@@ -139,8 +147,10 @@ namespace CollectorsVault.Api.Tests.Integration
         /// Verifies the round-trip by ensuring the vault shows the saved book title.
         /// </summary>
         [Fact]
-        public async Task CreateBook_WithAllLookupFields_SavesSuccessfully_ThenDelete()
+        public async Task CreateBook_WhenCalled_WithAllLookupFields_SavesSuccessfully_ThenDelete()
         {
+            // Arrange
+            // Act
             var client = await CreateAuthenticatedClientAsync();
 
             var bookRequest = new
@@ -148,10 +158,8 @@ namespace CollectorsVault.Api.Tests.Integration
                 Title = "Dune",
                 Authors = new[] { "Frank Herbert" },
                 ISBN = "9780441013593",
-                Year = 1965,
-                Genre = "Sci-Fi",
                 Publisher = "Chilton Books",
-                PublishDate = "1965",
+                PublishDateString = "1965",
                 PageCount = 412,
                 Description = "A sweeping epic of politics, religion and ecology.",
                 CoverSmall = "https://covers.openlibrary.org/b/id/999-S.jpg",
@@ -161,6 +169,8 @@ namespace CollectorsVault.Api.Tests.Integration
             };
 
             var createResponse = await client.PostAsJsonAsync("/api/vault/books", bookRequest);
+
+            // Assert
             Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
 
             // Retrieve vault and verify
@@ -176,3 +186,4 @@ namespace CollectorsVault.Api.Tests.Integration
         }
     }
 }
+

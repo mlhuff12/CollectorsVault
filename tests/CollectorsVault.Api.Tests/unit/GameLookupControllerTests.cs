@@ -16,8 +16,9 @@ namespace CollectorsVault.Api.Tests.Unit
             => new GameLookupController(service);
 
         [Fact]
-        public async Task GetByUpc_ReturnsOk_WhenGameFound()
+        public async Task GetByUpc_WhenGameFound_ReturnsOk()
         {
+            // Arrange
             var expected = new GameLookupResult
             {
                 Title = "Halo Infinite",
@@ -32,29 +33,36 @@ namespace CollectorsVault.Api.Tests.Unit
             var mock = new Mock<IGameLookupService>();
             mock.Setup(s => s.LookupByUpcAsync("093155176577")).ReturnsAsync(expected);
 
+            // Act
             var result = await CreateController(mock.Object).GetByUpc("093155176577");
 
             var ok = Assert.IsType<OkObjectResult>(result.Result);
             var payload = Assert.IsType<GameLookupResult>(ok.Value);
+
+            // Assert
             Assert.Equal("Halo Infinite", payload.Title);
             Assert.Equal("343 Industries", payload.Developer);
             Assert.Equal(2021, payload.ReleaseYear);
         }
 
         [Fact]
-        public async Task GetByUpc_ReturnsNotFound_WhenGameMissing()
+        public async Task GetByUpc_WhenGameMissing_ReturnsNotFound()
         {
+            // Arrange
             var mock = new Mock<IGameLookupService>();
             mock.Setup(s => s.LookupByUpcAsync("000000000000")).ReturnsAsync((GameLookupResult?)null);
 
+            // Act
             var result = await CreateController(mock.Object).GetByUpc("000000000000");
 
+            // Assert
             Assert.IsType<NotFoundResult>(result.Result);
         }
 
         [Fact]
-        public async Task SearchByTitle_ReturnsOk_WithResults()
+        public async Task SearchByTitle_WhenCalled_ReturnsOk_WithResults()
         {
+            // Arrange
             var expected = new List<GameLookupResult>
             {
                 new GameLookupResult { Title = "Halo Infinite", ReleaseYear = 2021 },
@@ -64,24 +72,33 @@ namespace CollectorsVault.Api.Tests.Unit
             var mock = new Mock<IGameLookupService>();
             mock.Setup(s => s.SearchByTitleAsync("Halo")).ReturnsAsync(expected);
 
+            // Act
             var result = await CreateController(mock.Object).SearchByTitle("Halo");
 
             var ok = Assert.IsType<OkObjectResult>(result.Result);
             var payload = Assert.IsAssignableFrom<IEnumerable<GameLookupResult>>(ok.Value);
+
+            // Assert
             Assert.Equal(2, System.Linq.Enumerable.Count(payload));
         }
 
         [Fact]
-        public async Task SearchByTitle_ReturnsOk_WithEmptyList_WhenNoneFound()
+        public async Task SearchByTitle_WhenNoneFound_ReturnsOk_WithEmptyList()
         {
+            // Arrange
             var mock = new Mock<IGameLookupService>();
             mock.Setup(s => s.SearchByTitleAsync("xyzzy")).ReturnsAsync(new List<GameLookupResult>());
 
+            // Act
             var result = await CreateController(mock.Object).SearchByTitle("xyzzy");
 
             var ok = Assert.IsType<OkObjectResult>(result.Result);
             var payload = Assert.IsAssignableFrom<IEnumerable<GameLookupResult>>(ok.Value);
+
+            // Assert
             Assert.Empty(payload);
         }
     }
 }
+
+

@@ -41,13 +41,17 @@ namespace CollectorsVault.Api.Tests.Integration
         }
 
         [Fact]
-        public async Task FullAuthFlow_SignupLoginCreateItemsDeleteUser()
+        public async Task FullAuthFlow_WhenCalled_SignupLoginCreateItemsDeleteUser()
         {
+            // Arrange
+            // Act
             var client = _factory.CreateClient();
             var username = $"testuser_{Guid.NewGuid():N}";
 
             // 1. Signup
             var signupResponse = await client.PostAsJsonAsync("/api/auth/signup", new { Username = username });
+
+            // Assert
             Assert.Equal(HttpStatusCode.OK, signupResponse.StatusCode);
             var signupData = await signupResponse.Content.ReadFromJsonAsync<SignupResponse>();
             Assert.NotNull(signupData);
@@ -86,8 +90,7 @@ namespace CollectorsVault.Api.Tests.Integration
                 Title = "Integration Test Book",
                 Authors = new[] { "Test Author" },
                 ISBN = "123-456",
-                Year = 2024,
-                Genre = "Testing"
+                PublishDateString = "2024"
             });
             Assert.Equal(HttpStatusCode.Created, bookResponse.StatusCode);
 
@@ -143,12 +146,16 @@ namespace CollectorsVault.Api.Tests.Integration
         }
 
         [Fact]
-        public async Task Signup_DuplicateUsername_ReturnsConflict()
+        public async Task Signup_WhenCalled_DuplicateUsername_ReturnsConflict()
         {
+            // Arrange
+            // Act
             var client = _factory.CreateClient();
             var username = $"dupuser_{Guid.NewGuid():N}";
 
             var first = await client.PostAsJsonAsync("/api/auth/signup", new { Username = username });
+
+            // Assert
             Assert.Equal(HttpStatusCode.OK, first.StatusCode);
 
             var second = await client.PostAsJsonAsync("/api/auth/signup", new { Username = username });
@@ -156,8 +163,10 @@ namespace CollectorsVault.Api.Tests.Integration
         }
 
         [Fact]
-        public async Task Login_InvalidTotpCode_ReturnsUnauthorized()
+        public async Task Login_WhenCalled_InvalidTotpCode_ReturnsUnauthorized()
         {
+            // Arrange
+            // Act
             var client = _factory.CreateClient();
             var username = $"invtotp_{Guid.NewGuid():N}";
 
@@ -165,15 +174,21 @@ namespace CollectorsVault.Api.Tests.Integration
 
             // "AAAAAA" is not a valid 6-digit TOTP code (contains letters)
             var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new { Username = username, TotpCode = "AAAAAA" });
+
+            // Assert
             Assert.Equal(HttpStatusCode.Unauthorized, loginResponse.StatusCode);
         }
 
         [Fact]
-        public async Task VaultEndpoints_RequireAuthentication()
+        public async Task VaultEndpoints_WhenCalled_RequireAuthentication()
         {
+            // Arrange
+            // Act
             var client = _factory.CreateClient();
 
             var getResponse = await client.GetAsync("/api/vault");
+
+            // Assert
             Assert.Equal(HttpStatusCode.Unauthorized, getResponse.StatusCode);
 
             var postBookResponse = await client.PostAsJsonAsync("/api/vault/books", new { Title = "Test" });
@@ -199,3 +214,4 @@ namespace CollectorsVault.Api.Tests.Integration
         }
     }
 }
+

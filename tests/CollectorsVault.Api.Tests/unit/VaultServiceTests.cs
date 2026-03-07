@@ -26,8 +26,9 @@ namespace CollectorsVault.Api.Tests.Unit
         }
 
         [Fact]
-        public async Task AddBookAsync_PersistsAllBasicFields()
+        public async Task AddBookAsync_WhenCalled_PersistsAllBasicFields()
         {
+            // Arrange
             using var context = CreateInMemoryContext();
             var service = new VaultService(context);
 
@@ -35,24 +36,23 @@ namespace CollectorsVault.Api.Tests.Unit
             {
                 Title = "Dune",
                 Authors = new List<string> { "Frank Herbert" },
-                ISBN = "9780441172719",
-                Year = 1965,
-                Genre = "Sci-Fi"
+                ISBN = "9780441172719"
             };
 
+            // Act
             var book = await service.AddBookAsync(request, userId: 1L);
 
+            // Assert
             Assert.Equal("Dune", book.Title);
             Assert.Equal(new List<string> { "Frank Herbert" }, book.Authors);
             Assert.Equal("9780441172719", book.ISBN);
-            Assert.Equal(1965, book.PublicationYear);
-            Assert.Equal("Sci-Fi", book.Genre);
             Assert.Equal(1L, book.UserId);
         }
 
         [Fact]
-        public async Task AddBookAsync_PersistsLookupFields()
+        public async Task AddBookAsync_WhenCalled_PersistsLookupFields()
         {
+            // Arrange
             using var context = CreateInMemoryContext();
             var service = new VaultService(context);
 
@@ -62,7 +62,7 @@ namespace CollectorsVault.Api.Tests.Unit
                 Authors = new List<string> { "J.R.R. Tolkien" },
                 ISBN = "9780547928227",
                 Publisher = "Houghton Mifflin",
-                PublishDate = "September 21, 1937",
+                PublishDateString = "September 21, 1937",
                 PageCount = 310,
                 Description = "A fantasy novel about a hobbit.",
                 Subjects = new List<string> { "Fantasy", "Adventure" },
@@ -72,17 +72,15 @@ namespace CollectorsVault.Api.Tests.Unit
                 BookUrl = "https://openlibrary.org/books/OL123"
             };
 
+            // Act
             var book = await service.AddBookAsync(request, userId: 2L);
 
+            // Assert
             Assert.Equal("The Hobbit", book.Title);
             Assert.Equal(new List<string> { "J.R.R. Tolkien" }, book.Authors);
             Assert.Equal("9780547928227", book.ISBN);
             Assert.Equal("Houghton Mifflin", book.Publisher);
-            // "September 21, 1937" parses successfully to a DateTime
-            Assert.NotNull(book.PublishUtcDate);
-            Assert.Equal(1937, book.PublishUtcDate!.Value.Year);
-            Assert.Equal(9, book.PublishUtcDate.Value.Month);
-            Assert.Equal(21, book.PublishUtcDate.Value.Day);
+            Assert.Equal("September 21, 1937", book.PublishDateString);
             Assert.Equal(310, book.PageCount);
             Assert.Equal("A fantasy novel about a hobbit.", book.Description);
             Assert.Equal(new List<string> { "Fantasy", "Adventure" }, book.Subjects);
@@ -93,8 +91,9 @@ namespace CollectorsVault.Api.Tests.Unit
         }
 
         [Fact]
-        public async Task AddBookAsync_StoresMultipleAuthors()
+        public async Task AddBookAsync_WhenCalled_StoresMultipleAuthors()
         {
+            // Arrange
             using var context = CreateInMemoryContext();
             var service = new VaultService(context);
 
@@ -104,14 +103,17 @@ namespace CollectorsVault.Api.Tests.Unit
                 Authors = new List<string> { "Terry Pratchett", "Neil Gaiman" }
             };
 
+            // Act
             var book = await service.AddBookAsync(request, userId: 1L);
 
+            // Assert
             Assert.Equal(new List<string> { "Terry Pratchett", "Neil Gaiman" }, book.Authors);
         }
 
         [Fact]
-        public async Task AddBookAsync_IgnoresBlankAuthors()
+        public async Task AddBookAsync_WhenCalled_IgnoresBlankAuthors()
         {
+            // Arrange
             using var context = CreateInMemoryContext();
             var service = new VaultService(context);
 
@@ -121,17 +123,21 @@ namespace CollectorsVault.Api.Tests.Unit
                 Authors = new List<string> { "  ", "Valid Author", "" }
             };
 
+            // Act
             var book = await service.AddBookAsync(request, userId: 1L);
 
+            // Assert
             Assert.Equal(new List<string> { "Valid Author" }, book.Authors);
         }
 
         [Fact]
-        public async Task AddBookAsync_SetsTimestamps()
+        public async Task AddBookAsync_WhenCalled_SetsTimestamps()
         {
+            // Arrange
             using var context = CreateInMemoryContext();
             var service = new VaultService(context);
 
+            // Act
             var before = DateTime.UtcNow;
 
             var book = await service.AddBookAsync(new BookRequest
@@ -142,13 +148,15 @@ namespace CollectorsVault.Api.Tests.Unit
 
             var after = DateTime.UtcNow;
 
+            // Assert
             Assert.InRange(book.CreatedUtcDate, before, after);
             Assert.InRange(book.LastModifiedUtcDate, before, after);
         }
 
         [Fact]
-        public async Task AddBookAsync_PersistsSeriesAndFormatFields()
+        public async Task AddBookAsync_WhenCalled_PersistsSeriesAndFormatFields()
         {
+            // Arrange
             using var context = CreateInMemoryContext();
             var service = new VaultService(context);
 
@@ -163,8 +171,10 @@ namespace CollectorsVault.Api.Tests.Unit
                 NeedsReplacement = true
             };
 
+            // Act
             var book = await service.AddBookAsync(request, userId: 1L);
 
+            // Assert
             Assert.Equal("Animorphs", book.SeriesName);
             Assert.Equal(1, book.SeriesNumber);
             Assert.Equal(BookFormat.Paperback, book.BookFormat);
@@ -172,21 +182,23 @@ namespace CollectorsVault.Api.Tests.Unit
         }
 
         [Fact]
-        public async Task AddBookAsync_NullableFieldsAreNullWhenNotProvided()
+        public async Task AddBookAsync_WhenCalled_NullableFieldsAreNullWhenNotProvided()
         {
+            // Arrange
             using var context = CreateInMemoryContext();
             var service = new VaultService(context);
 
+            // Act
             var book = await service.AddBookAsync(new BookRequest
             {
                 Title = "Minimal Book",
                 Authors = new List<string> { "Author" }
             }, userId: 1L);
 
+            // Assert
             Assert.Null(book.ISBN);
-            Assert.Null(book.PublicationYear);
             Assert.Null(book.Publisher);
-            Assert.Null(book.PublishUtcDate);
+            Assert.Null(book.PublishDateString);
             Assert.Null(book.CoverSmall);
             Assert.Null(book.CoverMedium);
             Assert.Null(book.CoverLarge);
@@ -198,11 +210,13 @@ namespace CollectorsVault.Api.Tests.Unit
         }
 
         [Fact]
-        public async Task AddBookAsync_ParsesBookFormatVariants()
+        public async Task AddBookAsync_WhenCalled_ParsesBookFormatVariants()
         {
+            // Arrange
             using var context = CreateInMemoryContext();
             var service = new VaultService(context);
 
+            // Act
             async Task<BookFormat?> GetFormat(string input)
             {
                 var book = await service.AddBookAsync(new BookRequest
@@ -214,6 +228,7 @@ namespace CollectorsVault.Api.Tests.Unit
                 return book.BookFormat;
             }
 
+            // Assert
             Assert.Equal(BookFormat.Hardcover, await GetFormat("Hardcover"));
             Assert.Equal(BookFormat.Paperback, await GetFormat("paperback"));
             Assert.Equal(BookFormat.MassMarketPaperback, await GetFormat("Mass Market Paperback"));
@@ -224,3 +239,4 @@ namespace CollectorsVault.Api.Tests.Unit
         }
     }
 }
+

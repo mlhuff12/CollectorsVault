@@ -16,7 +16,7 @@ namespace CollectorsVault.Server.Services
         /// </summary>
         /// <param name="isbn">ISBN-10 or ISBN-13 string.</param>
         /// <returns>A <see cref="BookLookupResult"/> or <c>null</c> if not found.</returns>
-        Task<BookLookupResult?> LookupByIsbnAsync(string isbn);
+        Task<BookLookupResult> LookupByIsbnAsync(string isbn);
 
         /// <summary>
         /// Searches for books matching the given title.

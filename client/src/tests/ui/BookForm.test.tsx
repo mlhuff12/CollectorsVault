@@ -82,8 +82,6 @@ describe('BookForm', () => {
         expect(screen.getByLabelText('Page Count:')).not.toHaveAttribute('readOnly');
         expect(screen.getByLabelText('Description:')).not.toHaveAttribute('readOnly');
         expect(screen.getByLabelText('Book URL:')).not.toHaveAttribute('readOnly');
-        expect(screen.getByLabelText('Year (optional):')).not.toHaveAttribute('readOnly');
-        expect(screen.getByLabelText('Genre (optional):')).not.toHaveAttribute('readOnly');
     });
 
     // ── Lookup button ─────────────────────────────────────────────────────────
@@ -283,7 +281,7 @@ describe('BookForm', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
 
         await waitFor(() => {
-            expect(screen.getByText(/couldn't determine the series details/i)).toBeInTheDocument();
+            expect(screen.getByText(/couldn't determine some of the series details/i)).toBeInTheDocument();
         });
         // Series name pre-filled but series number empty for user to fill
         expect(screen.getByLabelText('Series Name (optional):')).toHaveValue('Animorphs');
@@ -386,6 +384,35 @@ describe('BookForm', () => {
 
         await waitFor(() => {
             expect(screen.getByLabelText('Book Format (optional):')).toHaveValue('Paperback');
+        });
+    });
+
+    it('maps numeric lookup book format enum values to dropdown options', async () => {
+        const lookupData = {
+            title: 'The Hobbit',
+            authors: ['J.R.R. Tolkien'],
+            isbn: '9780547928227',
+            publisher: 'Houghton Mifflin',
+            publishDate: '1937',
+            pageCount: 310,
+            description: 'A fantasy novel.',
+            subjects: [],
+            coverSmall: '',
+            coverMedium: '',
+            coverLarge: '',
+            providerUrl: '',
+            seriesName: '',
+            seriesNotFound: false,
+            bookFormat: 1
+        };
+        mockLookupBookByIsbn.mockResolvedValue(lookupData as never);
+
+        render(<BookForm />);
+        fireEvent.change(screen.getByLabelText('ISBN:'), { target: { value: '9780547928227' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
+
+        await waitFor(() => {
+            expect(screen.getByLabelText('Book Format (optional):')).toHaveValue('Hardcover');
         });
     });
 });

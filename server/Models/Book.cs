@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 
 namespace CollectorsVault.Server.Models
@@ -8,11 +7,9 @@ namespace CollectorsVault.Server.Models
         /// <summary>List of author names.</summary>
         public List<string> Authors { get; set; } = new List<string>();
         public string? ISBN { get; set; }
-        public int? PublicationYear { get; set; }
-        public string Genre { get; set; } = string.Empty;
         public string? Publisher { get; set; }
-        /// <summary>UTC date/time of publication, parsed from the provider's publish date string.</summary>
-        public DateTime? PublishUtcDate { get; set; }
+        /// <summary>Publish date text as returned/provided (e.g. "September 21, 1937", "1997").</summary>
+        public string? PublishDateString { get; set; }
         public int? PageCount { get; set; }
         public string? CoverSmall { get; set; }
         public string? CoverMedium { get; set; }

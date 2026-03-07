@@ -25,19 +25,23 @@ namespace CollectorsVault.Api.Tests.Unit
         }
 
         [Fact]
-        public async Task GetAllUsers_ReturnsForbid_WhenNotAdmin()
+        public async Task GetAllUsers_WhenNotAdmin_ReturnsForbid()
         {
+            // Arrange
             var serviceMock = new Mock<IAdminService>();
             var controller = CreateController(serviceMock.Object, isAdmin: false);
 
+            // Act
             var result = await controller.GetAllUsers();
 
+            // Assert
             Assert.IsType<ForbidResult>(result.Result);
         }
 
         [Fact]
-        public async Task GetAllUsers_ReturnsOk_WithUserList_WhenAdmin()
+        public async Task GetAllUsers_WhenAdmin_ReturnsOk_WithUserList()
         {
+            // Arrange
             var users = new List<AdminUserResponse>
             {
                 new AdminUserResponse { Id = 1L, Username = "admin", IsAdmin = true, BookCount = 2, MovieCount = 1, GameCount = 0 },
@@ -49,59 +53,76 @@ namespace CollectorsVault.Api.Tests.Unit
 
             var controller = CreateController(serviceMock.Object, isAdmin: true);
 
+            // Act
             var result = await controller.GetAllUsers();
 
             var okResult = Assert.IsType<OkObjectResult>(result.Result);
             var payload = Assert.IsAssignableFrom<IEnumerable<AdminUserResponse>>(okResult.Value);
+
+            // Assert
             Assert.Equal(2, payload.Count());
         }
 
         [Fact]
-        public async Task DeleteUser_ReturnsForbid_WhenNotAdmin()
+        public async Task DeleteUser_WhenNotAdmin_ReturnsForbid()
         {
+            // Arrange
             var serviceMock = new Mock<IAdminService>();
             var controller = CreateController(serviceMock.Object, userId: 1, isAdmin: false);
 
+            // Act
             var result = await controller.DeleteUser(2L);
 
+            // Assert
             Assert.IsType<ForbidResult>(result);
         }
 
         [Fact]
-        public async Task DeleteUser_ReturnsForbid_WhenAdminDeletesSelf()
+        public async Task DeleteUser_WhenAdminDeletesSelf_ReturnsForbid()
         {
+            // Arrange
             var serviceMock = new Mock<IAdminService>();
             var controller = CreateController(serviceMock.Object, userId: 1, isAdmin: true);
 
+            // Act
             var result = await controller.DeleteUser(1L);
 
+            // Assert
             Assert.IsType<ForbidResult>(result);
         }
 
         [Fact]
-        public async Task DeleteUser_ReturnsNotFound_WhenUserDoesNotExist()
+        public async Task DeleteUser_WhenUserDoesNotExist_ReturnsNotFound()
         {
+            // Arrange
             var serviceMock = new Mock<IAdminService>();
             serviceMock.Setup(s => s.DeleteUserAsync(99L)).ReturnsAsync(false);
 
             var controller = CreateController(serviceMock.Object, userId: 1, isAdmin: true);
 
+            // Act
             var result = await controller.DeleteUser(99L);
 
+            // Assert
             Assert.IsType<NotFoundResult>(result);
         }
 
         [Fact]
-        public async Task DeleteUser_ReturnsNoContent_WhenUserDeleted()
+        public async Task DeleteUser_WhenUserDeleted_ReturnsNoContent()
         {
+            // Arrange
             var serviceMock = new Mock<IAdminService>();
             serviceMock.Setup(s => s.DeleteUserAsync(2L)).ReturnsAsync(true);
 
             var controller = CreateController(serviceMock.Object, userId: 1, isAdmin: true);
 
+            // Act
             var result = await controller.DeleteUser(2L);
 
+            // Assert
             Assert.IsType<NoContentResult>(result);
         }
     }
 }
+
+

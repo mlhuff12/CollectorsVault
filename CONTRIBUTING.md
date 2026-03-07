@@ -25,6 +25,14 @@ Thanks for your interest in improving CollectorsVault.
 - Avoid unrelated refactors in feature/fix PRs.
 - See [Documentation updates](#documentation-updates) for guidance on updating docs.
 
+### Unit test style
+
+- Name unit tests using `Method_Condition_Expected`.
+- Use `// Arrange`, `// Act`, and `// Assert` comments in each unit test.
+- Do not add a blank line immediately after `// Arrange`.
+- Include one blank line before `// Act`.
+- Include one blank line before `// Assert`.
+
 ## Documentation updates
 
 - Update relevant docs whenever behavior, architecture, or workflows change.

@@ -16,10 +16,15 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -173,21 +178,25 @@ using (var scope = app.Services.CreateScope())
             app.Logger.LogWarning(
                 "SQLite database is incompatible. Missing required tables: {MissingTables}. Recreating schema.",
                 string.Join(", ", missingTables));
-
-            var dbPath = sqliteConnectionBuilder.DataSource;
-            if (!string.IsNullOrWhiteSpace(dbPath) && File.Exists(dbPath))
-            {
-                var backupPath = $"{dbPath}.backup-{DateTime.UtcNow:yyyyMMddHHmmss}";
-                File.Copy(dbPath, backupPath, overwrite: true);
-                app.Logger.LogWarning("Backed up incompatible SQLite database to: {BackupPath}", backupPath);
-            }
-
-            dbContext.Database.EnsureDeleted();
-            dbContext.Database.EnsureCreated();
-            app.Logger.LogInformation("SQLite schema recreated successfully.");
+            RecreateSqliteSchema(dbContext, sqliteConnectionBuilder.DataSource, app.Logger);
         }
         else
         {
+            var legacyBookColumns = GetExistingColumns(dbContext, "Book")
+                .Where(name =>
+                    name.Equals("PublicationYear", StringComparison.OrdinalIgnoreCase) ||
+                    name.Equals("Genre", StringComparison.OrdinalIgnoreCase) ||
+                    name.Equals("PublishUtcDate", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (legacyBookColumns.Count > 0)
+            {
+                app.Logger.LogWarning(
+                    "SQLite database contains legacy Book columns: {LegacyColumns}. Recreating schema.",
+                    string.Join(", ", legacyBookColumns));
+                RecreateSqliteSchema(dbContext, sqliteConnectionBuilder.DataSource, app.Logger);
+            }
+
             // Tables exist — ensure any new columns added to existing tables are present.
             // ALTER TABLE ADD COLUMN preserves all existing data.
             var bookColumnsToAdd = new[]
@@ -200,8 +209,10 @@ using (var scope = app.Services.CreateScope())
                 // Model refactor: Authors stored as JSON array; Subjects stored as JSON array.
                 ("Authors",          "TEXT NOT NULL DEFAULT '[]'"),
                 ("Subjects",         "TEXT"),
-                // PublishUtcDate replaces the old string PublishDate column.
-                ("PublishUtcDate",   "TEXT"),
+                // PublishDateString stores the original publish date text for books.
+                ("PublishDateString", "TEXT"),
+                // Publisher added on Book but may be absent in older DB files.
+                ("Publisher",        "TEXT"),
                 // Cover images and book URL added with lookup feature.
                 ("CoverSmall",       "TEXT"),
                 ("CoverMedium",      "TEXT"),
@@ -290,6 +301,59 @@ static List<string> GetMissingTables(VaultDbContext dbContext, IEnumerable<strin
             command.Connection.Close();
         }
     }
+}
+
+static List<string> GetExistingColumns(VaultDbContext dbContext, string tableName)
+{
+    var connection = dbContext.Database.GetDbConnection();
+    using var command = connection.CreateCommand();
+    if (command.Connection is null)
+    {
+        return new List<string>();
+    }
+
+    var openedByMethod = false;
+    if (command.Connection.State != System.Data.ConnectionState.Open)
+    {
+        command.Connection.Open();
+        openedByMethod = true;
+    }
+
+    try
+    {
+        command.CommandText = $"PRAGMA table_info({tableName});";
+        var columns = new List<string>();
+        using (var reader = command.ExecuteReader())
+        {
+            while (reader.Read())
+            {
+                columns.Add(reader.GetString(1));
+            }
+        }
+
+        return columns;
+    }
+    finally
+    {
+        if (openedByMethod && command.Connection.State == System.Data.ConnectionState.Open)
+        {
+            command.Connection.Close();
+        }
+    }
+}
+
+static void RecreateSqliteSchema(VaultDbContext dbContext, string? dbPath, ILogger logger)
+{
+    if (!string.IsNullOrWhiteSpace(dbPath) && File.Exists(dbPath))
+    {
+        var backupPath = $"{dbPath}.backup-{DateTime.UtcNow:yyyyMMddHHmmss}";
+        File.Copy(dbPath, backupPath, overwrite: true);
+        logger.LogWarning("Backed up incompatible SQLite database to: {BackupPath}", backupPath);
+    }
+
+    dbContext.Database.EnsureDeleted();
+    dbContext.Database.EnsureCreated();
+    logger.LogInformation("SQLite schema recreated successfully.");
 }
 
 static void AddMissingColumns(VaultDbContext dbContext, string tableName,

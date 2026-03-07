@@ -23,8 +23,9 @@ namespace CollectorsVault.Api.Tests.Unit
         }
 
         [Fact]
-        public async Task GetVaultItems_ReturnsOkResult_WithItems()
+        public async Task GetVaultItems_WhenCalled_ReturnsOkResult_WithItems()
         {
+            // Arrange
             var expected = new List<VaultItemResponse>
             {
                 new VaultItemResponse { Id = 1L, Title = "Dune", Category = "book" },
@@ -37,23 +38,26 @@ namespace CollectorsVault.Api.Tests.Unit
 
             var controller = CreateControllerWithUser(serviceMock.Object, 1L);
 
+            // Act
             var result = await controller.GetVaultItems();
 
             var okResult = Assert.IsType<OkObjectResult>(result.Result);
             var payload = Assert.IsAssignableFrom<IEnumerable<VaultItemResponse>>(okResult.Value);
+
+            // Assert
             Assert.Equal(2, payload.Count());
         }
 
         [Fact]
-        public async Task AddBook_ReturnsCreatedAtAction_WithBook()
+        public async Task AddBook_WhenCalled_ReturnsCreatedAtAction_WithBook()
         {
+            // Arrange
             var request = new BookRequest
             {
                 Title = "The Hobbit",
                 Authors = new List<string> { "J.R.R. Tolkien" },
                 ISBN = "978-0547928227",
-                Year = 1937,
-                Genre = "Fantasy"
+                PublishDateString = "1937"
             };
 
             var created = new Book
@@ -62,8 +66,7 @@ namespace CollectorsVault.Api.Tests.Unit
                 Title = "The Hobbit",
                 Authors = new System.Collections.Generic.List<string> { "J.R.R. Tolkien" },
                 ISBN = "978-0547928227",
-                PublicationYear = 1937,
-                Genre = "Fantasy"
+                PublishDateString = "1937"
             };
 
             var serviceMock = new Mock<IVaultService>();
@@ -72,40 +75,51 @@ namespace CollectorsVault.Api.Tests.Unit
 
             var controller = CreateControllerWithUser(serviceMock.Object, 1L);
 
+            // Act
             var result = await controller.AddBook(request);
 
             var createdResult = Assert.IsType<CreatedAtActionResult>(result.Result);
+
+            // Assert
             Assert.Equal(nameof(VaultController.GetVaultItems), createdResult.ActionName);
             var payload = Assert.IsType<Book>(createdResult.Value);
             Assert.Equal(10L, payload.Id);
         }
 
         [Fact]
-        public async Task DeleteVaultItem_ReturnsNotFound_WhenItemDoesNotExist()
+        public async Task DeleteVaultItem_WhenItemDoesNotExist_ReturnsNotFound()
         {
+            // Arrange
             var serviceMock = new Mock<IVaultService>();
             serviceMock.Setup(service => service.DeleteVaultItemAsync(99L, 1L))
                 .ReturnsAsync(false);
 
             var controller = CreateControllerWithUser(serviceMock.Object, 1L);
 
+            // Act
             var result = await controller.DeleteVaultItem(99L);
 
+            // Assert
             Assert.IsType<NotFoundResult>(result);
         }
 
         [Fact]
-        public async Task DeleteVaultItem_ReturnsNoContent_WhenItemExists()
+        public async Task DeleteVaultItem_WhenItemExists_ReturnsNoContent()
         {
+            // Arrange
             var serviceMock = new Mock<IVaultService>();
             serviceMock.Setup(service => service.DeleteVaultItemAsync(2L, 1L))
                 .ReturnsAsync(true);
 
             var controller = CreateControllerWithUser(serviceMock.Object, 1L);
 
+            // Act
             var result = await controller.DeleteVaultItem(2L);
 
+            // Assert
             Assert.IsType<NoContentResult>(result);
         }
     }
 }
+
+

@@ -10,8 +10,54 @@ interface BookFormProps {
     onItemAdded?: () => void;
 }
 
-const toBookFormat = (value: string): BookFormat | '' => {
-    switch (value) {
+const bookFormatByEnumValue: Record<number, BookFormat> = {
+    0: 'Unknown',
+    1: 'Hardcover',
+    2: 'Paperback',
+    3: 'MassMarketPaperback',
+    4: 'TradePaperback',
+    5: 'BoardBook',
+    6: 'LibraryBinding',
+    7: 'SpiralBound',
+    8: 'EBook',
+    9: 'Audiobook',
+    10: 'Other'
+};
+
+const bookFormatEnumValues = Object.keys(bookFormatByEnumValue)
+    .map((key) => Number(key))
+    .filter((key) => Number.isInteger(key));
+const minBookFormatEnumValue = Math.min(...bookFormatEnumValues);
+const maxBookFormatEnumValue = Math.max(...bookFormatEnumValues);
+
+const toBookFormat = (value: unknown): BookFormat | '' => {
+    if (typeof value === 'number') {
+        if (!Number.isInteger(value) || value < minBookFormatEnumValue || value > maxBookFormatEnumValue) {
+            return '';
+        }
+
+        return bookFormatByEnumValue[value] ?? '';
+    }
+
+    if (typeof value !== 'string') {
+        return '';
+    }
+
+    const trimmed = value.trim();
+    if (!trimmed) {
+        return '';
+    }
+
+    if (/^\d+$/.test(trimmed)) {
+        const numericValue = Number(trimmed);
+        if (!Number.isInteger(numericValue) || numericValue < minBookFormatEnumValue || numericValue > maxBookFormatEnumValue) {
+            return '';
+        }
+
+        return bookFormatByEnumValue[numericValue] ?? '';
+    }
+
+    switch (trimmed) {
         case 'Unknown':
         case 'Hardcover':
         case 'Paperback':
@@ -23,7 +69,7 @@ const toBookFormat = (value: string): BookFormat | '' => {
         case 'EBook':
         case 'Audiobook':
         case 'Other':
-            return value;
+            return trimmed;
         default:
             return '';
     }
@@ -51,12 +97,10 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
     const [title, setTitle] = useState('');
     const [authors, setAuthors] = useState('');
     const [publisher, setPublisher] = useState('');
-    const [publishDate, setPublishDate] = useState('');
+    const [publishDateString, setPublishDateString] = useState('');
     const [pageCount, setPageCount] = useState('');
     const [description, setDescription] = useState('');
     const [bookUrl, setBookUrl] = useState('');
-    const [genre, setGenre] = useState('');
-    const [year, setYear] = useState('');
 
     // Series fields (always editable; pre-populated from lookup when available)
     const [seriesName, setSeriesName] = useState('');
@@ -87,7 +131,7 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
             setLookupResult(result);
             if (result.seriesName) setSeriesName(result.seriesName);
             if (result.seriesNumber != null) setSeriesNumber(result.seriesNumber.toString());
-            if (result.bookFormat) setBookFormat(result.bookFormat);
+            setBookFormat(toBookFormat(result.bookFormat));
         } catch {
             setLookupError('Book not found for the given ISBN. You may enter details manually.');
         } finally {
@@ -125,7 +169,7 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
             setLookupResult(result);
             if (result.seriesName) setSeriesName(result.seriesName);
             if (result.seriesNumber != null) setSeriesNumber(result.seriesNumber.toString());
-            if (result.bookFormat) setBookFormat(result.bookFormat);
+            setBookFormat(toBookFormat(result.bookFormat));
         } catch {
             setLookupError('Book not found for this barcode. You may enter details manually.');
         } finally {
@@ -138,17 +182,16 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
         setErrorMessage('');
 
         let newBook: Book;
-
         if (lookupResult) {
             newBook = {
                 title: lookupResult.title,
                 authors: lookupResult.authors,
                 isbn: lookupResult.isbn || isbn.trim() || undefined,
                 publisher: lookupResult.publisher || undefined,
-                publishDate: lookupResult.publishDate || undefined,
+                publishDateString: lookupResult.publishDate || undefined,
                 pageCount: lookupResult.pageCount,
                 description: lookupResult.description || undefined,
-                subjects: lookupResult.subjects.length > 0 ? lookupResult.subjects : undefined,
+                subjects: lookupResult.subjects.length > 0 ? lookupResult.subjects.map(s => s.key) : undefined,
                 coverSmall: lookupResult.coverSmall || undefined,
                 coverMedium: lookupResult.coverMedium || undefined,
                 coverLarge: lookupResult.coverLarge || undefined,
@@ -173,10 +216,8 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
                 title,
                 authors: parsedAuthors,
                 isbn: isbn.trim() || undefined,
-                year: year.trim() ? parseInt(year, 10) : undefined,
-                genre: genre.trim() || undefined,
                 publisher: publisher.trim() || undefined,
-                publishDate: publishDate.trim() || undefined,
+                publishDateString: publishDateString.trim() || undefined,
                 pageCount: pageCount.trim() ? parseInt(pageCount, 10) : undefined,
                 description: description.trim() || undefined,
                 bookUrl: bookUrl.trim() || undefined,
@@ -195,12 +236,10 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
             setTitle('');
             setAuthors('');
             setPublisher('');
-            setPublishDate('');
+            setPublishDateString('');
             setPageCount('');
             setDescription('');
             setBookUrl('');
-            setGenre('');
-            setYear('');
             setSeriesName('');
             setSeriesNumber('');
             setBookFormat('');
@@ -216,7 +255,7 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
     const displayTitle = lookupResult ? lookupResult.title : title;
     const displayAuthors = lookupResult ? lookupResult.authors.join(', ') : authors;
     const displayPublisher = lookupResult ? lookupResult.publisher : publisher;
-    const displayPublishDate = lookupResult ? lookupResult.publishDate : publishDate;
+    const displayPublishDate = lookupResult ? lookupResult.publishDate : publishDateString;
     const displayPageCount = lookupResult ? (lookupResult.pageCount?.toString() ?? '') : pageCount;
     const displayDescription = lookupResult ? lookupResult.description : description;
     const displayBookUrl = lookupResult ? lookupResult.providerUrl : bookUrl;
@@ -336,7 +375,7 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
                         type="text"
                         className="form-control"
                         value={displayPublishDate}
-                        onChange={(e) => { if (!isFromLookup) setPublishDate(e.target.value); }}
+                        onChange={(e) => { if (!isFromLookup) setPublishDateString(e.target.value); }}
                         readOnly={isFromLookup}
                     />
                 </div>
@@ -385,7 +424,7 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
                     <label htmlFor="book-series-name" className="form-label">Series Name (optional):</label>
                     {lookupResult?.seriesNotFound && (
                         <div className="form-text text-warning mb-1">
-                            This book appears to be part of a series, but we couldn't determine the series details. Please enter the Series Name and Series Number below.
+                            This book appears to be part of a series, but we couldn't determine some of the series details. Please enter the missing series information.
                         </div>
                     )}
                     <input
@@ -451,32 +490,6 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
                     />
                     <label htmlFor="book-needs-replacement" className="form-check-label">Needs Replacement</label>
                 </div>
-
-                {/* Manual-only fields (year and genre are not returned by lookup) */}
-                {!isFromLookup && (
-                    <>
-                        <div className="mb-3">
-                            <label htmlFor="book-year" className="form-label">Year (optional):</label>
-                            <input
-                                id="book-year"
-                                type="number"
-                                className="form-control"
-                                value={year}
-                                onChange={(e) => setYear(e.target.value)}
-                            />
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="book-genre" className="form-label">Genre (optional):</label>
-                            <input
-                                id="book-genre"
-                                type="text"
-                                className="form-control"
-                                value={genre}
-                                onChange={(e) => setGenre(e.target.value)}
-                            />
-                        </div>
-                    </>
-                )}
 
                 <button className="btn btn-primary" type="submit">Add Book</button>
             </form>

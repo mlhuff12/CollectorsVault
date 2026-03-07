@@ -15,11 +15,12 @@ namespace CollectorsVault.Api.Tests.Unit
         private static BookLookupController CreateController(IBookLookupService service)
             => new BookLookupController(service);
 
-        // ── GetByIsbn ──────────────────────────────────────────────────────────
+        // -- GetByIsbn ---------------------------------------------------------
 
         [Fact]
-        public async Task GetByIsbn_ReturnsOk_WhenBookFound()
+        public async Task GetByIsbn_WhenBookFound_ReturnsOk()
         {
+            // Arrange
             var expected = new BookLookupResult
             {
                 Title = "The Hobbit",
@@ -32,31 +33,38 @@ namespace CollectorsVault.Api.Tests.Unit
             var mock = new Mock<IBookLookupService>();
             mock.Setup(s => s.LookupByIsbnAsync("9780547928227")).ReturnsAsync(expected);
 
+            // Act
             var result = await CreateController(mock.Object).GetByIsbn("9780547928227");
 
             var ok = Assert.IsType<OkObjectResult>(result.Result);
             var payload = Assert.IsType<BookLookupResult>(ok.Value);
+
+            // Assert
             Assert.Equal("The Hobbit", payload.Title);
             Assert.Equal("In a hole in the ground there lived a hobbit.", payload.Description);
             Assert.Equal("https://covers.openlibrary.org/b/isbn/9780547928227-L.jpg", payload.CoverLarge);
         }
 
         [Fact]
-        public async Task GetByIsbn_ReturnsNotFound_WhenBookMissing()
+        public async Task GetByIsbn_WhenBookMissing_ReturnsNotFound()
         {
+            // Arrange
             var mock = new Mock<IBookLookupService>();
             mock.Setup(s => s.LookupByIsbnAsync("0000000000")).ReturnsAsync((BookLookupResult?)null);
 
+            // Act
             var result = await CreateController(mock.Object).GetByIsbn("0000000000");
 
+            // Assert
             Assert.IsType<NotFoundResult>(result.Result);
         }
 
-        // ── SearchByTitle ──────────────────────────────────────────────────────
+        // -- SearchByTitle ----------------------------------------------------
 
         [Fact]
-        public async Task SearchByTitle_ReturnsOk_WithResults()
+        public async Task SearchByTitle_WhenCalled_ReturnsOk_WithResults()
         {
+            // Arrange
             var expected = new List<BookLookupResult>
             {
                 new BookLookupResult { Title = "The Hobbit", Isbn = "9780547928227" },
@@ -66,31 +74,39 @@ namespace CollectorsVault.Api.Tests.Unit
             var mock = new Mock<IBookLookupService>();
             mock.Setup(s => s.SearchByTitleAsync("Hobbit")).ReturnsAsync(expected);
 
+            // Act
             var result = await CreateController(mock.Object).SearchByTitle("Hobbit");
 
             var ok = Assert.IsType<OkObjectResult>(result.Result);
             var payload = Assert.IsAssignableFrom<IEnumerable<BookLookupResult>>(ok.Value);
+
+            // Assert
             Assert.Equal(2, System.Linq.Enumerable.Count(payload));
         }
 
         [Fact]
-        public async Task SearchByTitle_ReturnsOk_WithEmptyList_WhenNoneFound()
+        public async Task SearchByTitle_WhenNoneFound_ReturnsOk_WithEmptyList()
         {
+            // Arrange
             var mock = new Mock<IBookLookupService>();
             mock.Setup(s => s.SearchByTitleAsync("xyzzy")).ReturnsAsync(new List<BookLookupResult>());
 
+            // Act
             var result = await CreateController(mock.Object).SearchByTitle("xyzzy");
 
             var ok = Assert.IsType<OkObjectResult>(result.Result);
             var payload = Assert.IsAssignableFrom<IEnumerable<BookLookupResult>>(ok.Value);
+
+            // Assert
             Assert.Empty(payload);
         }
 
-        // ── SearchByAuthor ─────────────────────────────────────────────────────
+        // -- SearchByAuthor ---------------------------------------------------
 
         [Fact]
-        public async Task SearchByAuthor_ReturnsOk_WithResults()
+        public async Task SearchByAuthor_WhenCalled_ReturnsOk_WithResults()
         {
+            // Arrange
             var expected = new List<BookLookupResult>
             {
                 new BookLookupResult { Title = "The Hobbit", Authors = new List<string> { "J.R.R. Tolkien" } },
@@ -100,24 +116,33 @@ namespace CollectorsVault.Api.Tests.Unit
             var mock = new Mock<IBookLookupService>();
             mock.Setup(s => s.SearchByAuthorAsync("Tolkien")).ReturnsAsync(expected);
 
+            // Act
             var result = await CreateController(mock.Object).SearchByAuthor("Tolkien");
 
             var ok = Assert.IsType<OkObjectResult>(result.Result);
             var payload = Assert.IsAssignableFrom<IEnumerable<BookLookupResult>>(ok.Value);
+
+            // Assert
             Assert.Equal(2, System.Linq.Enumerable.Count(payload));
         }
 
         [Fact]
-        public async Task SearchByAuthor_ReturnsOk_WithEmptyList_WhenNoneFound()
+        public async Task SearchByAuthor_WhenNoneFound_ReturnsOk_WithEmptyList()
         {
+            // Arrange
             var mock = new Mock<IBookLookupService>();
             mock.Setup(s => s.SearchByAuthorAsync("nobody")).ReturnsAsync(new List<BookLookupResult>());
 
+            // Act
             var result = await CreateController(mock.Object).SearchByAuthor("nobody");
 
             var ok = Assert.IsType<OkObjectResult>(result.Result);
             var payload = Assert.IsAssignableFrom<IEnumerable<BookLookupResult>>(ok.Value);
+
+            // Assert
             Assert.Empty(payload);
         }
     }
 }
+
+

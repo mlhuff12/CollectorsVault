@@ -25,74 +25,46 @@ namespace CollectorsVault.Server.Services
         }
 
         /// <inheritdoc/>
-        public async Task<BookLookupResult?> LookupByIsbnAsync(string isbn)
+        public async Task<BookLookupResult> LookupByIsbnAsync(string isbn)
         {
-            var url = $"/api/books?bibkeys=ISBN:{Uri.EscapeDataString(isbn)}&format=json&jscmd=data";
-            var response = await _httpClient.GetAsync(url);
+            BookLookupResult result = new BookLookupResult { Isbn = isbn };
 
-            using var doc = await JsonDocumentUtils.ParseResponseAsync(response);
-            if (doc == null)
+            // First fetch that contains subjects, image urls, and book url
+            var response = await _httpClient.GetAsync($"/api/books?bibkeys=ISBN:{Uri.EscapeDataString(isbn)}&format=json&jscmd=data");
+            await ParseOpenLibraryResponse(response, result);
+
+            // Second fetch by key (works id) - will sometime not contain much information
+            if (!string.IsNullOrEmpty(result.Key))
             {
-                return null;
+                response = await _httpClient.GetAsync($"{result.Key}.json");
+
+                // Resetting Key in order to get works key
+                result.Key = null;
+                await ParseOpenLibraryResponse(response, result);
+
+                // Fetch by Works key if missing expected information
+                if (!string.IsNullOrEmpty(result.Key) && string.IsNullOrEmpty(result.Description))
+                {
+                    response = await _httpClient.GetAsync($"{result.Key}.json");
+                    await ParseOpenLibraryResponse(response, result);
+                }
+            }
+            
+            if (!string.IsNullOrEmpty(result.SeriesUrl))
+            {
+                // Fetch series
+                response = await _httpClient.GetAsync($"{result.SeriesUrl}.json");
+                await ParseOpenLibraryResponse(response, result);
+
+                if (!string.IsNullOrEmpty(result.LendingEditionKey))
+                {
+                    // Fetch lending edition for series number if available
+                    response = await _httpClient.GetAsync($"/books/{result.LendingEditionKey}.json");
+                    await ParseOpenLibraryResponse(response, result);
+                } 
             }
 
-            var root = doc.RootElement;
-            if (root.ValueKind != JsonValueKind.Object)
-            {
-                return null;
-            }
-
-            foreach (var prop in root.EnumerateObject())
-            {
-                var result = ParseFromDataResponse(prop.Value, isbn);
-                var workKey = ExtractFirstWorkKey(prop.Value);
-
-                var editionSeries = await FetchEditionSeriesAsync(isbn);
-                if (editionSeries.HasValue)
-                {
-                    result.SeriesName = editionSeries.Value.Name;
-                    result.SeriesNumber = editionSeries.Value.Number;
-                }
-
-                if (!string.IsNullOrEmpty(workKey))
-                {
-                    var workData = await FetchWorkDataAsync(workKey);
-
-                    if (!string.IsNullOrEmpty(workData.Description))
-                    {
-                        result.Description = workData.Description;
-                    }
-
-                    if (string.IsNullOrEmpty(result.SeriesName) && !string.IsNullOrEmpty(workData.SeriesName))
-                    {
-                        result.SeriesName = workData.SeriesName;
-                        result.SeriesNumber = workData.SeriesNumber;
-                    }
-                }
-
-                // Last-resort: if still no series, look for a "series:{name}" subject tag.
-                if (string.IsNullOrEmpty(result.SeriesName) && result.Subjects != null)
-                {
-                    foreach (var subject in result.Subjects)
-                    {
-                        const string prefix = "series:";
-                        if (subject.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                        {
-                            var nameFromSubject = subject[prefix.Length..].Trim();
-                            if (!string.IsNullOrEmpty(nameFromSubject))
-                            {
-                                result.SeriesName = nameFromSubject;
-                                result.SeriesNotFound = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                return result;
-            }
-
-            return null;
+            return result;
         }
 
         /// <inheritdoc/>
@@ -130,90 +102,6 @@ namespace CollectorsVault.Server.Services
             }
 
             return results;
-        }
-
-        private static BookLookupResult ParseFromDataResponse(JsonElement el, string isbn)
-        {
-            var result = new BookLookupResult { Isbn = isbn };
-
-            if (el.TryGetProperty("title", out var title))
-            {
-                result.Title = title.GetString() ?? string.Empty;
-            }
-
-            if (el.TryGetProperty("authors", out var authors))
-            {
-                result.Authors = authors.EnumerateArray()
-                    .Where(a => a.TryGetProperty("name", out _))
-                    .Select(a => a.GetProperty("name").GetString() ?? string.Empty)
-                    .ToList();
-            }
-
-            if (el.TryGetProperty("number_of_pages", out var pages) && pages.ValueKind == JsonValueKind.Number)
-            {
-                result.PageCount = pages.GetInt32();
-            }
-
-            if (el.TryGetProperty("publish_date", out var pd))
-            {
-                result.PublishDate = pd.GetString() ?? string.Empty;
-            }
-
-            if (el.TryGetProperty("publishers", out var publishers))
-            {
-                result.Publisher = publishers.EnumerateArray()
-                    .Where(p => p.TryGetProperty("name", out _))
-                    .Select(p => p.GetProperty("name").GetString() ?? string.Empty)
-                    .FirstOrDefault() ?? string.Empty;
-            }
-
-            if (el.TryGetProperty("subjects", out var subjects))
-            {
-                result.Subjects = subjects.EnumerateArray()
-                    .Where(s => s.TryGetProperty("name", out _))
-                    .Select(s => s.GetProperty("name").GetString() ?? string.Empty)
-                    .ToList();
-            }
-
-            if (el.TryGetProperty("cover", out var cover))
-            {
-                if (cover.TryGetProperty("small", out var small))
-                {
-                    result.CoverSmall = small.GetString() ?? string.Empty;
-                }
-                if (cover.TryGetProperty("medium", out var medium))
-                {
-                    result.CoverMedium = medium.GetString() ?? string.Empty;
-                }
-                if (cover.TryGetProperty("large", out var large))
-                {
-                    result.CoverLarge = large.GetString() ?? string.Empty;
-                }
-            }
-
-            if (el.TryGetProperty("url", out var url))
-            {
-                result.ProviderUrl = url.GetString() ?? string.Empty;
-            }
-
-            if (el.TryGetProperty("physical_format", out var physicalFormat))
-            {
-                result.BookFormat = VaultService.ParseBookFormat(physicalFormat.GetString());
-            }
-
-            if (el.TryGetProperty("description", out var desc))
-            {
-                if (desc.ValueKind == JsonValueKind.String)
-                {
-                    result.Description = desc.GetString() ?? string.Empty;
-                }
-                else if (desc.ValueKind == JsonValueKind.Object && desc.TryGetProperty("value", out var descVal))
-                {
-                    result.Description = descVal.GetString() ?? string.Empty;
-                }
-            }
-
-            return result;
         }
 
         private static BookLookupResult ParseFromSearchDoc(JsonElement el)
@@ -258,9 +146,11 @@ namespace CollectorsVault.Server.Services
 
             if (el.TryGetProperty("subject", out var subjects))
             {
+                /*
                 result.Subjects = subjects.EnumerateArray()
                     .Select(s => s.GetString() ?? string.Empty)
                     .ToList();
+                    */
             }
 
             if (el.TryGetProperty("cover_i", out var coverId) && coverId.ValueKind == JsonValueKind.Number)
@@ -274,129 +164,20 @@ namespace CollectorsVault.Server.Services
             return result;
         }
 
-        private static string? ExtractFirstWorkKey(JsonElement el)
+        // ex. Animorphs -- 1, Animorphs 1, Animorphs:1
+        private static int? ParseNumberFromSeriesString(string series)
         {
-            if (!el.TryGetProperty("works", out var works))
+            var match = Regex.Match(series, @"(?:^|[^\d])(\d+)(?:$|[^\d])");
+            if (match.Success)
             {
-                return null;
-            }
-
-            foreach (var work in works.EnumerateArray())
-            {
-                if (work.TryGetProperty("key", out var key))
-                {
-                    return key.GetString();
-                }
+                return int.Parse(match.Groups[1].Value);
             }
 
             return null;
-        }
-
-        private async Task<(string Name, int? Number)?> FetchEditionSeriesAsync(string isbn)
-        {
-            var response = await _httpClient.GetAsync($"/isbn/{Uri.EscapeDataString(isbn)}.json");
-
-            using var doc = await JsonDocumentUtils.ParseResponseAsync(response);
-            if (doc == null)
-            {
-                return null;
-            }
-
-            var root = doc.RootElement;
-            if (!root.TryGetProperty("series", out var seriesArr) || seriesArr.ValueKind != JsonValueKind.Array)
-            {
-                return null;
-            }
-
-            foreach (var seriesEl in seriesArr.EnumerateArray())
-            {
-                if (seriesEl.ValueKind != JsonValueKind.String)
-                {
-                    continue;
-                }
-
-                var seriesStr = seriesEl.GetString() ?? string.Empty;
-                if (string.IsNullOrWhiteSpace(seriesStr))
-                {
-                    continue;
-                }
-
-                var (name, number) = ParseSeriesString(seriesStr);
-                if (!string.IsNullOrEmpty(name))
-                {
-                    return (name, number);
-                }
-            }
-
-            return null;
-        }
-
-        private async Task<WorkData> FetchWorkDataAsync(string workKey)
-        {
-            var response = await _httpClient.GetAsync($"{workKey}.json");
-
-            using var doc = await JsonDocumentUtils.ParseResponseAsync(response);
-            if (doc == null)
-            {
-                return new WorkData(string.Empty, string.Empty, null);
-            }
-
-            var root = doc.RootElement;
-
-            var description = string.Empty;
-            if (root.TryGetProperty("description", out var desc))
-            {
-                if (desc.ValueKind == JsonValueKind.String)
-                {
-                    description = desc.GetString() ?? string.Empty;
-                }
-                else if (desc.ValueKind == JsonValueKind.Object && desc.TryGetProperty("value", out var value))
-                {
-                    description = value.GetString() ?? string.Empty;
-                }
-            }
-
-            var seriesName = string.Empty;
-            int? seriesNumber = null;
-            if (root.TryGetProperty("series", out var seriesArr) && seriesArr.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var seriesEl in seriesArr.EnumerateArray())
-                {
-                    if (seriesEl.ValueKind != JsonValueKind.String)
-                    {
-                        continue;
-                    }
-
-                    var seriesStr = seriesEl.GetString() ?? string.Empty;
-                    if (string.IsNullOrEmpty(seriesStr))
-                    {
-                        continue;
-                    }
-
-                    (seriesName, seriesNumber) = ParseSeriesString(seriesStr);
-                    if (!string.IsNullOrEmpty(seriesName))
-                    {
-                        break;
-                    }
-                }
-            }
-
-            return new WorkData(description, seriesName, seriesNumber);
         }
 
         /// <summary>
         /// Parses a series string into a name and optional series number.
-        /// <para>
-        /// Handles the following formats documented in Open Library data:
-        /// <list type="bullet">
-        ///   <item><c>"Animorphs #1"</c> — hash prefix (<c>#N</c>)</item>
-        ///   <item><c>"Harry Potter ; 3"</c> — semicolon separator (<c>; N</c>)</item>
-        ///   <item><c>"Narnia ; bk. 1"</c> — semicolon + book abbreviation (<c>; bk. N</c>)</item>
-        ///   <item><c>"His Dark Materials, Book 1"</c> — comma + book word (<c>, Book N</c>)</item>
-        ///   <item><c>"Animorphs, 1"</c> — comma + bare number (<c>, N</c>)</item>
-        ///   <item><c>"Animorphs"</c> — name only, no number</item>
-        /// </list>
-        /// </para>
         /// </summary>
         public static (string Name, int? Number) ParseSeriesString(string series)
         {
@@ -415,6 +196,182 @@ namespace CollectorsVault.Server.Services
             return (series.Trim(), null);
         }
 
-        private record WorkData(string Description, string SeriesName, int? SeriesNumber);
+        /// <summary>
+        /// Parses the Open Library API response and sets properties on the provided BookLookupResult if they are not already set.
+        /// </summary>
+        /// <param name="response">The HTTP response from the Open Library API.</param>
+        /// <param name="result">The BookLookupResult to populate with data from the API response.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        private static async Task ParseOpenLibraryResponse(HttpResponseMessage response, BookLookupResult result)
+        {
+            // TODO : Refactor so that the Book object is returned instead and not passing the extra data it doesn't need
+            using (var doc = await JsonDocumentUtils.ParseResponseAsync(response))
+            {
+                if (doc == null)
+                {
+                    return;
+                }
+
+                var root = doc.RootElement;
+
+                if (root.TryGetProperty($"ISBN:{result.Isbn}", out var bookEl))
+                {
+                    root = bookEl;
+                }
+
+                // Iterate through all properties of BookLookupResult and try to set property if not already set
+                if (string.IsNullOrEmpty(result.Title) && root.TryGetProperty("title", out var title))
+                {
+                    result.Title = title.GetString();
+                }
+                if ((result.Authors == null || result.Authors.Count == 0) && root.TryGetProperty("authors", out var authors))
+                {
+                    result.Authors = authors.EnumerateArray()
+                        .Where(a => a.TryGetProperty("name", out _))
+                        .Select(a => a.GetProperty("name").GetString() ?? string.Empty)
+                        .ToList();
+                }
+                // TODO : Refactor to change Publisher to be Publishers (List<string>) in API, UI, and Database
+                if (string.IsNullOrEmpty(result.Publisher) && root.TryGetProperty("publishers", out var publishers))
+                {
+                    result.Publisher = publishers.EnumerateArray()
+                        .Where(p => p.TryGetProperty("name", out _))
+                        .Select(p => p.GetProperty("name").GetString() ?? string.Empty)
+                        .FirstOrDefault() ?? string.Empty;
+                }
+                // TODO : Investigate if we can set to DateOnly
+                if (string.IsNullOrEmpty(result.PublishDate) && root.TryGetProperty("publish_date", out var pd))
+                {
+                    result.PublishDate = pd.GetString() ?? string.Empty;
+                }
+                if (!result.PageCount.HasValue && root.TryGetProperty("number_of_pages", out var pages) && pages.ValueKind == JsonValueKind.Number)
+                {
+                    result.PageCount = pages.GetInt32();
+                }
+                if (string.IsNullOrEmpty(result.Description) && root.TryGetProperty("description", out var desc))
+                {
+                    // TODO : Investigate if ever object for description
+                    if (desc.ValueKind == JsonValueKind.String)
+                    {
+                        result.Description = desc.GetString() ?? string.Empty;
+                    }
+                    else if (desc.ValueKind == JsonValueKind.Object && desc.TryGetProperty("value", out var descVal))
+                    {
+                        result.Description = descVal.GetString() ?? string.Empty;
+                    }
+                }
+                if ((result.Subjects == null || result.Subjects.Count == 0) && root.TryGetProperty("subjects", out var subjects))
+                {
+                    result.Subjects = subjects.EnumerateArray()
+                        .Where(s => s.TryGetProperty("name", out _))
+                        .Select(s => new KeyValuePair<string, string>(
+                            s.GetProperty("name").GetString() ?? string.Empty,
+                            s.TryGetProperty("url", out var url) ? url.GetString() ?? string.Empty : string.Empty))
+                        .ToList();
+                }
+                if (string.IsNullOrEmpty(result.CoverSmall) && root.TryGetProperty("cover", out var cover))
+                {
+                    if (cover.TryGetProperty("small", out var small))
+                    {
+                        result.CoverSmall = small.GetString() ?? string.Empty;
+                    }
+                    if (cover.TryGetProperty("medium", out var medium))
+                    {
+                        result.CoverMedium = medium.GetString() ?? string.Empty;
+                    }
+                    if (cover.TryGetProperty("large", out var large))
+                    {
+                        result.CoverLarge = large.GetString() ?? string.Empty;
+                    }
+                }
+                // TODO : Refactor to change property name to BookUrl in API, UI, and Database
+                if (string.IsNullOrEmpty(result.ProviderUrl) && root.TryGetProperty("url", out var url))
+                {
+                    result.ProviderUrl = url.GetString() ?? string.Empty;
+                }
+                // Get Series Name from subjects if not already set, looking for "series:{name}" pattern
+                if (string.IsNullOrEmpty(result.SeriesName) && result.Subjects != null)
+                {
+                    const string prefix = "series:";
+                    var seriesSubject = result.Subjects.FirstOrDefault(s => s.Key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+
+                    if (seriesSubject.Key != null)
+                    {
+                        var nameFromSubject = seriesSubject.Key[prefix.Length..].Trim();
+                        if (!string.IsNullOrEmpty(nameFromSubject))
+                        {
+                            result.SeriesName = nameFromSubject;
+                            result.SeriesUrl = seriesSubject.Value;
+                        }
+                    }
+                }
+                // Get Series Number if not already set
+                if (!result.SeriesNumber.HasValue && !string.IsNullOrEmpty(result.SeriesName) && root.TryGetProperty("series", out var seriesArr) && seriesArr.ValueKind == JsonValueKind.Array)
+                {
+                    result.SeriesNumber = ParseNumberFromSeriesString(seriesArr[0].ToString());
+
+                    if (result.SeriesNumber == null)
+                    {
+                        result.SeriesNotFound = true;
+                    }
+                }
+                // Get BookFormat if not already set
+                if (!result.BookFormat.HasValue && root.TryGetProperty("physical_format", out var physicalFormat))
+                {
+                    result.BookFormat = VaultService.ParseBookFormat(physicalFormat.GetString());
+                }
+                // Get Works key if not already set
+                if (string.IsNullOrEmpty(result.Key) && root.TryGetProperty("works", out var works) && works.ValueKind == JsonValueKind.Array && works.GetArrayLength() > 0)
+                {
+                    var firstWork = works.EnumerateArray().First();
+                    if (firstWork.TryGetProperty("key", out var workKey))
+                    {
+                        result.Key = workKey.GetString();
+                    }
+                }
+                // Get Books key if not already set
+                if (string.IsNullOrEmpty(result.Key) && root.TryGetProperty("key", out var key))
+                {
+                    result.Key = key.GetString();
+                }   
+                // Get lending edition from the matching work entry.
+                if (string.IsNullOrEmpty(result.LendingEditionKey) && root.TryGetProperty("works", out var worksArr) 
+                    && worksArr.ToString().Contains("lending_edition", StringComparison.OrdinalIgnoreCase) && worksArr.ValueKind == JsonValueKind.Array)
+                {
+                    var matchedWork = worksArr.EnumerateArray().FirstOrDefault(w =>
+                    {
+                        var keyMatches =
+                            !string.IsNullOrWhiteSpace(result.Key) &&
+                            w.TryGetProperty("key", out var workKey) &&
+                            string.Equals(workKey.GetString(), result.Key, StringComparison.Ordinal);
+
+                        var titleMatches =
+                            !string.IsNullOrWhiteSpace(result.Title) &&
+                            w.TryGetProperty("title", out var workTitle) &&
+                            string.Equals(workTitle.GetString(), result.Title, StringComparison.OrdinalIgnoreCase);
+
+                        return keyMatches || titleMatches;
+                    });
+
+                    if (matchedWork.ValueKind != JsonValueKind.Undefined)
+                    {
+                        if (matchedWork.TryGetProperty("lending_edition", out var lendingEdition) && lendingEdition.ValueKind == JsonValueKind.String)
+                        {
+                            result.LendingEditionKey = lendingEdition.GetString() ?? string.Empty;
+                        }
+
+                        // Some Open Library responses leave lending_edition blank but expose availability.openlibrary_edition.
+                        if (string.IsNullOrEmpty(result.LendingEditionKey) &&
+                            matchedWork.TryGetProperty("availability", out var availability) &&
+                            availability.ValueKind == JsonValueKind.Object &&
+                            availability.TryGetProperty("openlibrary_edition", out var openlibraryEdition) &&
+                            openlibraryEdition.ValueKind == JsonValueKind.String)
+                        {
+                            result.LendingEditionKey = openlibraryEdition.GetString() ?? string.Empty;
+                        }
+                    }
+                }
+            }
+        }
     }
 }

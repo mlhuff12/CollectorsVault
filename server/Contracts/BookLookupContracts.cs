@@ -30,7 +30,7 @@ namespace CollectorsVault.Server.Contracts
         public string Description { get; set; } = string.Empty;
 
         /// <summary>Subject / genre tags.</summary>
-        public List<string> Subjects { get; set; } = new List<string>();
+        public List<KeyValuePair<string, string>> Subjects { get; set; } = new List<KeyValuePair<string, string>>();
 
         /// <summary>URL to the small cover image.</summary>
         public string CoverSmall { get; set; } = string.Empty;
@@ -47,6 +47,8 @@ namespace CollectorsVault.Server.Contracts
         /// <summary>Name of the series this book belongs to, if available from the lookup provider.</summary>
         public string SeriesName { get; set; } = string.Empty;
 
+        /// <summary>URL to the series page on the provider's website, if available.</summary>
+        public string SeriesUrl { get; set; } = string.Empty;
         /// <summary>Position of this book within its series, if available from the lookup provider.</summary>
         public int? SeriesNumber { get; set; }
 
@@ -58,5 +60,9 @@ namespace CollectorsVault.Server.Contracts
 
         /// <summary>Physical or digital format of the book, if available from the lookup provider.</summary>
         public BookFormat? BookFormat { get; set; }
+
+        public string? Key { get; set; } = string.Empty;
+
+        public string? LendingEditionKey { get; set; } = string.Empty;
     }
 }
