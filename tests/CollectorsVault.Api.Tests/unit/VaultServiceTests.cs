@@ -6,31 +6,45 @@ using CollectorsVault.Server.Data;
 using CollectorsVault.Server.Models;
 using CollectorsVault.Server.Services;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using Xunit;
 
 namespace CollectorsVault.Api.Tests.Unit
 {
     /// <summary>
-    /// Unit tests for <see cref="VaultService.AddBookAsync"/> using an in-memory database.
-    /// No changes are persisted to an external database.
+    /// Unit tests for <see cref="VaultService.AddBookAsync"/> using Moq-backed collaborators.
     /// </summary>
     [Trait("Category", "Unit")]
     public class VaultServiceTests
     {
-        private static VaultDbContext CreateInMemoryContext()
+        private static (VaultService service, Func<Book?> getCapturedBook) CreateService()
         {
             var options = new DbContextOptionsBuilder<VaultDbContext>()
-                .UseInMemoryDatabase($"VaultServiceTests_{Guid.NewGuid()}")
                 .Options;
-            return new VaultDbContext(options);
+
+            var contextMock = new Mock<VaultDbContext>(options) { CallBase = true };
+            var booksSetMock = new Mock<DbSet<Book>>();
+
+            Book? capturedBook = null;
+
+            booksSetMock
+                .Setup(set => set.Add(It.IsAny<Book>()))
+                .Callback<Book>(book => capturedBook = book);
+
+            contextMock.Object.Books = booksSetMock.Object;
+            contextMock
+                .Setup(context => context.SaveChangesAsync(It.IsAny<System.Threading.CancellationToken>()))
+                .ReturnsAsync(1);
+
+            var service = new VaultService(contextMock.Object);
+            return (service, () => capturedBook);
         }
 
         [Fact]
         public async Task AddBookAsync_WhenCalled_PersistsAllBasicFields()
         {
             // Arrange
-            using var context = CreateInMemoryContext();
-            var service = new VaultService(context);
+            var (service, getCapturedBook) = CreateService();
 
             var request = new BookRequest
             {
@@ -40,7 +54,9 @@ namespace CollectorsVault.Api.Tests.Unit
             };
 
             // Act
-            var book = await service.AddBookAsync(request, userId: 1L);
+            await service.AddBookAsync(request, userId: 1L);
+
+            var book = Assert.IsType<Book>(getCapturedBook());
 
             // Assert
             Assert.Equal("Dune", book.Title);
@@ -53,8 +69,7 @@ namespace CollectorsVault.Api.Tests.Unit
         public async Task AddBookAsync_WhenCalled_PersistsLookupFields()
         {
             // Arrange
-            using var context = CreateInMemoryContext();
-            var service = new VaultService(context);
+            var (service, getCapturedBook) = CreateService();
 
             var request = new BookRequest
             {
@@ -73,7 +88,9 @@ namespace CollectorsVault.Api.Tests.Unit
             };
 
             // Act
-            var book = await service.AddBookAsync(request, userId: 2L);
+            await service.AddBookAsync(request, userId: 2L);
+
+            var book = Assert.IsType<Book>(getCapturedBook());
 
             // Assert
             Assert.Equal("The Hobbit", book.Title);
@@ -94,8 +111,7 @@ namespace CollectorsVault.Api.Tests.Unit
         public async Task AddBookAsync_WhenCalled_StoresMultipleAuthors()
         {
             // Arrange
-            using var context = CreateInMemoryContext();
-            var service = new VaultService(context);
+            var (service, getCapturedBook) = CreateService();
 
             var request = new BookRequest
             {
@@ -104,7 +120,9 @@ namespace CollectorsVault.Api.Tests.Unit
             };
 
             // Act
-            var book = await service.AddBookAsync(request, userId: 1L);
+            await service.AddBookAsync(request, userId: 1L);
+
+            var book = Assert.IsType<Book>(getCapturedBook());
 
             // Assert
             Assert.Equal(new List<string> { "Terry Pratchett", "Neil Gaiman" }, book.Authors);
@@ -114,8 +132,7 @@ namespace CollectorsVault.Api.Tests.Unit
         public async Task AddBookAsync_WhenCalled_IgnoresBlankAuthors()
         {
             // Arrange
-            using var context = CreateInMemoryContext();
-            var service = new VaultService(context);
+            var (service, getCapturedBook) = CreateService();
 
             var request = new BookRequest
             {
@@ -124,7 +141,9 @@ namespace CollectorsVault.Api.Tests.Unit
             };
 
             // Act
-            var book = await service.AddBookAsync(request, userId: 1L);
+            await service.AddBookAsync(request, userId: 1L);
+
+            var book = Assert.IsType<Book>(getCapturedBook());
 
             // Assert
             Assert.Equal(new List<string> { "Valid Author" }, book.Authors);
@@ -134,17 +153,18 @@ namespace CollectorsVault.Api.Tests.Unit
         public async Task AddBookAsync_WhenCalled_SetsTimestamps()
         {
             // Arrange
-            using var context = CreateInMemoryContext();
-            var service = new VaultService(context);
+            var (service, getCapturedBook) = CreateService();
 
             // Act
             var before = DateTime.UtcNow;
 
-            var book = await service.AddBookAsync(new BookRequest
+            await service.AddBookAsync(new BookRequest
             {
                 Title = "Timestamp Test",
                 Authors = new List<string> { "Author" }
             }, userId: 1L);
+
+            var book = Assert.IsType<Book>(getCapturedBook());
 
             var after = DateTime.UtcNow;
 
@@ -157,8 +177,7 @@ namespace CollectorsVault.Api.Tests.Unit
         public async Task AddBookAsync_WhenCalled_PersistsSeriesAndFormatFields()
         {
             // Arrange
-            using var context = CreateInMemoryContext();
-            var service = new VaultService(context);
+            var (service, getCapturedBook) = CreateService();
 
             var request = new BookRequest
             {
@@ -172,7 +191,9 @@ namespace CollectorsVault.Api.Tests.Unit
             };
 
             // Act
-            var book = await service.AddBookAsync(request, userId: 1L);
+            await service.AddBookAsync(request, userId: 1L);
+
+            var book = Assert.IsType<Book>(getCapturedBook());
 
             // Assert
             Assert.Equal("Animorphs", book.SeriesName);
@@ -185,15 +206,16 @@ namespace CollectorsVault.Api.Tests.Unit
         public async Task AddBookAsync_WhenCalled_NullableFieldsAreNullWhenNotProvided()
         {
             // Arrange
-            using var context = CreateInMemoryContext();
-            var service = new VaultService(context);
+            var (service, getCapturedBook) = CreateService();
 
             // Act
-            var book = await service.AddBookAsync(new BookRequest
+            await service.AddBookAsync(new BookRequest
             {
                 Title = "Minimal Book",
                 Authors = new List<string> { "Author" }
             }, userId: 1L);
+
+            var book = Assert.IsType<Book>(getCapturedBook());
 
             // Assert
             Assert.Null(book.ISBN);
@@ -213,8 +235,7 @@ namespace CollectorsVault.Api.Tests.Unit
         public async Task AddBookAsync_WhenCalled_ParsesBookFormatVariants()
         {
             // Arrange
-            using var context = CreateInMemoryContext();
-            var service = new VaultService(context);
+            var (service, _) = CreateService();
 
             // Act
             async Task<BookFormat?> GetFormat(string input)
