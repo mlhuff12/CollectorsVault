@@ -212,3 +212,30 @@ dotnet test tests/CollectorsVault.Api.Tests/CollectorsVault.Api.Tests.csproj
 ```
 
 Tests mock `IVaultService` with Moq and do not hit SQLite/database.
+
+### Unit test style
+
+When adding new API unit tests, follow this pattern consistently:
+
+- Method names must use `Method_Condition_Expected`.
+- Test bodies must use `// Arrange`, `// Act`, and `// Assert` comments.
+- Do not add a blank line immediately after `// Arrange`.
+- Include one blank line before `// Act`.
+- Include one blank line before `// Assert`.
+
+Example:
+
+```csharp
+[Fact]
+public async Task LookupByIsbnAsync_WhenNoWorksKey_UsesEditionDescription()
+{
+	// Arrange
+	var (service, _) = CreateService(("/api/books", Ok("{}")));
+
+	// Act
+	var result = await service.LookupByIsbnAsync("9780547928227");
+
+	// Assert
+	Assert.NotNull(result);
+}
+```

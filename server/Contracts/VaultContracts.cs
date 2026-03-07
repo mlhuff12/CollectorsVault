@@ -8,15 +8,12 @@ namespace CollectorsVault.Server.Contracts
         public string Title { get; set; } = string.Empty;
         public List<string> Authors { get; set; } = new List<string>();
         public string? ISBN { get; set; }
-        public int? Year { get; set; }
-        public string? Genre { get; set; }
         public string? Publisher { get; set; }
         /// <summary>
         /// Publish date string as sent by the client or returned from the lookup provider
         /// (e.g. "September 21, 1937", "1997", "October 1, 1996").
-        /// The server parses this to a UTC DateTime when storing the book.
         /// </summary>
-        public string? PublishDate { get; set; }
+        public string? PublishDateString { get; set; }
         public int? PageCount { get; set; }
         public string? Description { get; set; }
         public List<string>? Subjects { get; set; }

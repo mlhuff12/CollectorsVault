@@ -19,7 +19,7 @@ export interface BookLookupResult {
     publishDate: string;
     pageCount?: number;
     description: string;
-    subjects: string[];
+    subjects: { key: string; value: string }[];
     coverSmall: string;
     coverMedium: string;
     coverLarge: string;
@@ -34,10 +34,8 @@ export interface Book {
     title: string;
     authors: string[];
     isbn?: string;
-    year?: number;
-    genre?: string;
     publisher?: string;
-    publishDate?: string;
+    publishDateString?: string;
     pageCount?: number;
     description?: string;
     subjects?: string[];
