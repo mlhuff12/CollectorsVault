@@ -50,7 +50,7 @@ Sensitive values (`Jwt:Key` and optionally `ConnectionStrings:DefaultConnection`
 via [.NET User Secrets](https://learn.microsoft.com/en-us/aspnet/core/security/app-secrets)
 and are **never committed to the repository**.
 
-### First-time setup
+### First-Time Setup
 
 ```bash
 cd server
@@ -59,7 +59,7 @@ dotnet user-secrets set "Jwt:Key" "<your-strong-secret-key>"
 dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Data Source=Data/collectorsvault.db"
 ```
 
-### HTTPS dev certificate
+### HTTPS Dev Certificate
 
 The API serves HTTPS on `https://localhost:5000`. Trust the .NET development certificate
 once per machine so browsers do not show certificate warnings:
@@ -71,7 +71,7 @@ dotnet dev-certs https --trust
 See `secrets.json.example` for the expected structure. Share values with teammates via a
 password manager or secrets vault rather than in the repo.
 
-### How it works
+### How It Works
 
 - `appsettings.json` contains non-sensitive defaults (logging, CORS, JWT issuer, DB path).
 - User Secrets (stored outside the repo in `%APPDATA%\Microsoft\UserSecrets\collectorsvault-server-secrets\secrets.json`) override `appsettings.json` at runtime in the `Development` environment.
