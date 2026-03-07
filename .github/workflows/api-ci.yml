@@ -31,7 +31,7 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Build API
-        run: dotnet build CollectorsVault.sln --configuration Release && dotnet build tests/CollectorsVault.Api.Tests/CollectorsVault.Api.Tests.csproj --configuration Release
+      - name: Build API and Test Projects
+        run: dotnet build CollectorsVault.sln --configuration Release
       - name: Run API unit tests
-        run: dotnet test tests/CollectorsVault.Api.Tests/CollectorsVault.Api.Tests.csproj --no-build --configuration Release --filter "Category=Unit"
+        run: dotnet test tests/CollectorsVault.Api.Tests/CollectorsVault.Api.Tests.csproj --configuration Release --filter "Category=Unit"
