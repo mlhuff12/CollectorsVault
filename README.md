@@ -11,7 +11,7 @@ Collectors Vault is a full-stack app for managing personal collections of books,
 - [Current Features](#current-features)
 - [Quick Start](#quick-start)
 - [Testing](#testing)
-- [Debugging in VS Code](#debugging-in-vs-code)
+- [Debug in VS Code](#debug-in-vs-code)
 - [Local Phone Testing (LAN)](#local-phone-testing-lan)
 - [Persistence](#persistence)
 - [Project Structure](#project-structure)
@@ -38,7 +38,7 @@ API base URL: `https://localhost:5000`
 
 Swagger UI: `https://localhost:5000/swagger`
 
-### 2) Run the client
+### 2) Run the Client
 
 From `client`:
 
@@ -49,10 +49,12 @@ npm start
 
 Client URL (default): `https://localhost:3000`
 
-### 3) Run tests
+### 3) Run Tests
+
+See [Testing](#testing) for more details.
 ## Testing
 
-### Client tests
+### Client Tests
 
 From `client`:
 
@@ -60,7 +62,7 @@ From `client`:
 npm run test:ci
 ```
 
-### 4) Run lint checks
+### 4) Run Lint Checks
 
 From `client`:
 
@@ -74,11 +76,11 @@ From the repository root (server):
 dotnet format CollectorsVault.sln --verify-no-changes
 ```
 
-### 5) Run Vite validation pipeline (Phase 4)
+### 5) Run Vite Validation Pipeline (Phase 4)
 See [docs/testing-guidelines.md](docs/testing-guidelines.md) for full test commands, conventions, and Swagger samples.
 UI tests mock API service calls (`client/src/services/api.ts`) and do not hit the backend.
 
-### Client Vite validation pipeline
+### Client Vite Validation Pipeline
 
 From `client`:
 
@@ -88,7 +90,7 @@ npm run verify:vite
 
 This runs the Vite production build plus the Vitest suite.
 
-### API unit tests
+### API Unit Tests
 
 From repository root:
 
@@ -99,7 +101,7 @@ dotnet test tests/CollectorsVault.Api.Tests/CollectorsVault.Api.Tests.csproj --f
 API unit tests follow a Moq-first pattern for arranging dependencies and behavior.
 When a unit under test has collaborators, use `Moq` for setup and verification instead of in-memory database wiring or handwritten fakes.
 
-## Debugging in VS Code
+## Debug in VS Code
 
 This repository includes preconfigured VS Code debug files:
 
@@ -119,7 +121,7 @@ Use **Run and Debug** and choose one of:
 
 Use this when testing the app from a phone on your local Wi-Fi.
 
-### 1) Start API + client with LAN binding
+### 1) Start API + Client with LAN Binding
 
 From VS Code, run task:
 
@@ -130,7 +132,7 @@ The workspace tasks are configured to bind:
 - API to `https://0.0.0.0:5000`
 - Client dev server to `0.0.0.0:3000`
 
-### 2) Find your computer's local IPv4 address
+### 2) Find Your Computer's Local IPv4 Address
 
 On Windows PowerShell:
 
@@ -140,7 +142,7 @@ ipconfig
 
 Look for your active adapter's `IPv4 Address` (example: `192.168.50.53`).
 
-### 3) Open from phone
+### 3) Open from Phone
 
 On your phone browser (same Wi-Fi network):
 
@@ -149,11 +151,11 @@ On your phone browser (same Wi-Fi network):
 
 If Swagger opens on phone, API networking is working.
 
-### 4) Firewall check (if phone cannot connect)
+### 4) Firewall Check (If Phone Cannot Connect)
 
 Allow inbound TCP on ports `3000` and `5000` in Windows Defender Firewall (Private network).
 
-### 5) Generate a trusted LAN HTTPS cert (recommended)
+### 5) Generate a Trusted LAN HTTPS Cert (Recommended)
 
 Run VS Code task:
 
@@ -178,7 +180,7 @@ Important for phone trust:
 - To remove HTTPS warnings on your phone, install the generated `rootCA.pem` from `$(mkcert -CAROOT)` on the phone and trust it for apps/VPN.
 - Use task `API: Export Phone Trust CA` to copy it into `server/.certs/phone-trust/rootCA.pem` for easy transfer.
 
-### 6) Notes about API base URL
+### 6) Notes About API Base URL
 
 `client/src/services/api.ts` rewrites `localhost` API URLs to the current browser host when opened from another device on LAN. This lets the same local config work on both desktop and phone.
 
