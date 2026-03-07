@@ -49,6 +49,17 @@ Follow the conventions in [docs/testing-guidelines.md](docs/testing-guidelines.m
 - Do not use EF in-memory setup in API unit tests when a mocked collaborator can cover the scenario.
 - Use `tests/CollectorsVault.Api.Tests/unit/API_UNIT_TEST_TEMPLATE.md` as the baseline pattern for test naming and `// Arrange`, `// Act`, `// Assert` structure.
 
+These rules are enforced automatically by the `api-unit-test-style` CI job
+(see `.github/workflows/api-ci.yml`), which runs `scripts/check-unit-test-style.py`
+on every PR that touches `tests/CollectorsVault.Api.Tests/unit/`.
+The CI job fails if any `[Fact]` or `[Theory]` test violates the naming
+convention or is missing one of the required AAA comments.
+
+## Documentation updates
+
+- Update relevant docs whenever behavior, architecture, or workflows change.
+- Keep API endpoint docs aligned with actual request/response contracts.
+- If UI behavior changes, update user-facing docs with route and usage details.
 ## Validation Before PR
 
 See [docs/testing-guidelines.md](docs/testing-guidelines.md) for all test commands, conventions, and the pre-PR checklist.
