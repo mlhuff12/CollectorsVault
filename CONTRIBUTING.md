@@ -33,6 +33,12 @@ Thanks for your interest in improving CollectorsVault.
 - Include one blank line before `// Act`.
 - Include one blank line before `// Assert`.
 
+These rules are enforced automatically by the `api-unit-test-style` CI job
+(see `.github/workflows/api-ci.yml`), which runs `scripts/check-unit-test-style.py`
+on every PR that touches `tests/CollectorsVault.Api.Tests/unit/`.
+The CI job fails if any `[Fact]` or `[Theory]` test violates the naming
+convention or is missing one of the required AAA comments.
+
 ## Documentation updates
 
 - Update relevant docs whenever behavior, architecture, or workflows change.

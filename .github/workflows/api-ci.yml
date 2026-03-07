@@ -25,6 +25,7 @@ jobs:
             api:
               - 'server/**'
               - 'tests/**'
+              - 'scripts/check-unit-test-style.py'
               - 'CollectorsVault.sln'
               - '.github/workflows/api-ci.yml'
 
@@ -59,9 +60,23 @@ jobs:
       - name: Skip API CI when no API changes
         run: echo "No API-related changes detected. Skipping API build/tests."
 
+  api-unit-test-style:
+    needs: detect-api-changes
+    if: needs.detect-api-changes.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check unit test naming and AAA comment patterns
+        run: python3 scripts/check-unit-test-style.py
+
   api-ci-gate:
     needs:
       - api-build-and-unit-tests
+      - api-unit-test-style
       - api-not-applicable
     if: always()
     runs-on: ubuntu-latest
@@ -72,4 +87,5 @@ jobs:
         run: |
           echo "API CI gate completed."
           echo "build_and_tests_result=${{ needs.api-build-and-unit-tests.result }}"
+          echo "unit_test_style_result=${{ needs.api-unit-test-style.result }}"
           echo "not_applicable_result=${{ needs.api-not-applicable.result }}"
