@@ -2,23 +2,39 @@ name: Client Vite CI
 
 on:
   pull_request:
-    paths:
-      - 'client/**'
-      - '.github/workflows/client-vite-ci.yml'
   push:
     branches:
       - main
-    paths:
-      - 'client/**'
-      - '.github/workflows/client-vite-ci.yml'
 
 jobs:
-  vite-build-and-vitest:
+  detect-client-changes:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      client: ${{ steps.filter.outputs.client }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect client-related changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            client:
+              - 'client/**'
+              - '.github/workflows/client-vite-ci.yml'
+
+  vite-build-and-vitest:
+    needs: detect-client-changes
+    if: needs.detect-client-changes.outputs.client == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: client
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,3 +51,28 @@ jobs:
 
       - name: Verify Vite build and Vitest tests
         run: npm run verify:vite
+
+  client-not-applicable:
+    needs: detect-client-changes
+    if: needs.detect-client-changes.outputs.client != 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Skip client CI when no client changes
+        run: echo "No client-related changes detected. Skipping Vite build/tests."
+
+  client-vite-ci-gate:
+    needs:
+      - vite-build-and-vitest
+      - client-not-applicable
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Final required gate
+        run: |
+          echo "Client Vite CI gate completed."
+          echo "vite_result=${{ needs.vite-build-and-vitest.result }}"
+          echo "not_applicable_result=${{ needs.client-not-applicable.result }}"
