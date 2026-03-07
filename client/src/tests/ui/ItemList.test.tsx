@@ -1,6 +1,6 @@
-import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import ItemList from '../../components/ItemList';
+import type { VaultItem } from '../../models';
 import * as api from '../../services/api';
 
 vi.mock('../../services/api', () => ({
@@ -25,7 +25,7 @@ describe('ItemList', () => {
         mockFetchItems.mockResolvedValue([
             { id: 1, title: 'Dune', category: 'book' },
             { id: 2, title: 'Inception', category: 'movie' }
-        ] as any);
+        ] as VaultItem[]);
 
         render(<ItemList />);
 
@@ -38,7 +38,7 @@ describe('ItemList', () => {
         mockFetchItems.mockResolvedValue([
             { id: 1, title: 'Dune', category: 'book' },
             { id: 2, title: 'Inception', category: 'movie' }
-        ] as any);
+        ] as VaultItem[]);
 
         render(<ItemList categoryFilter="book" title="Books" />);
 
@@ -50,7 +50,7 @@ describe('ItemList', () => {
     it('deletes item when confirmed', async () => {
         mockFetchItems.mockResolvedValue([
             { id: 1, title: 'Dune', category: 'book' }
-        ] as any);
+        ] as VaultItem[]);
         mockDeleteItem.mockResolvedValue();
 
         render(<ItemList />);

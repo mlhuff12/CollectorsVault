@@ -60,6 +60,21 @@ From `client`:
 npm run test:ci
 ```
 
+### 4) Run lint checks
+
+From `client`:
+
+```bash
+npm run lint
+```
+
+From the repository root (server):
+
+```bash
+dotnet format CollectorsVault.sln --verify-no-changes
+```
+
+### 5) Run Vite validation pipeline (Phase 4)
 See [docs/testing-guidelines.md](docs/testing-guidelines.md) for full test commands, conventions, and Swagger samples.
 UI tests mock API service calls (`client/src/services/api.ts`) and do not hit the backend.
 

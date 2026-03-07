@@ -58,7 +58,7 @@ const GameForm: React.FC<GameFormProps> = ({ onItemAdded }) => {
             setToastMessage('Game added successfully!');
             setToastType('success');
             onItemAdded?.();
-        } catch (err) {
+        } catch (_err) {
             setError('Failed to add game. Please try again.');
         }
     };

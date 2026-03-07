@@ -66,7 +66,7 @@ const MovieForm: React.FC<MovieFormProps> = ({ onItemAdded }) => {
             setToastMessage('Movie added successfully!');
             setToastType('success');
             onItemAdded?.();
-        } catch (err) {
+        } catch (_err) {
             setError('Failed to add movie');
         }
     };

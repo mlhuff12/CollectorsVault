@@ -47,6 +47,9 @@ jobs:
       - name: Build API and Test Projects
         run: dotnet build CollectorsVault.sln --configuration Release
 
+      - name: Check server formatting
+        run: dotnet format CollectorsVault.sln --verify-no-changes
+
       - name: Run API Unit Tests
         run: dotnet test tests/CollectorsVault.Api.Tests/CollectorsVault.Api.Tests.csproj --configuration Release --filter "Category=Unit"
 
