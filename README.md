@@ -50,6 +50,8 @@ npm start
 Client URL (default): `https://localhost:3000`
 
 ### 3) Run Tests
+
+See [Testing](#testing) for more details.
 ## Testing
 
 ### Client Tests
