@@ -61,8 +61,10 @@ namespace CollectorsVault.Server.Contracts
         /// <summary>Physical or digital format of the book, if available from the lookup provider.</summary>
         public BookFormat? BookFormat { get; set; }
 
+        /// <summary>Provider-specific key for this work or book record, if exposed by the lookup provider.</summary>
         public string? Key { get; set; } = string.Empty;
 
+        /// <summary>Provider-specific key identifying the lending edition of this book, if available.</summary>
         public string? LendingEditionKey { get; set; } = string.Empty;
     }
 }
