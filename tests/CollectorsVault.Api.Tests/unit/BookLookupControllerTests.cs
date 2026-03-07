@@ -46,17 +46,25 @@ namespace CollectorsVault.Api.Tests.Unit
         }
 
         [Fact]
-        public async Task GetByIsbn_WhenBookMissing_ReturnsNotFound()
+        public async Task GetByIsbn_WhenBookMissing_ReturnsOkWithEmptyResult()
         {
             // Arrange
             var mock = new Mock<IBookLookupService>();
-            mock.Setup(s => s.LookupByIsbnAsync("0000000000")).ReturnsAsync((BookLookupResult?)null);
+            var notFoundResult = new BookLookupResult
+            {
+                Isbn = "0000000000",
+                Title = string.Empty
+            };
+            mock.Setup(s => s.LookupByIsbnAsync("0000000000")).ReturnsAsync(notFoundResult);
 
             // Act
             var result = await CreateController(mock.Object).GetByIsbn("0000000000");
 
+            var ok = Assert.IsType<OkObjectResult>(result.Result);
+            var payload = Assert.IsType<BookLookupResult>(ok.Value);
+
             // Assert
-            Assert.IsType<NotFoundResult>(result.Result);
+            Assert.Equal(string.Empty, payload.Title);
         }
 
         // -- SearchByTitle ----------------------------------------------------
