@@ -15,7 +15,7 @@ namespace CollectorsVault.Server.Services
         /// (including cover images).
         /// </summary>
         /// <param name="isbn">ISBN-10 or ISBN-13 string.</param>
-        /// <returns>A <see cref="BookLookupResult"/> or <c>null</c> if not found.</returns>
+        /// <returns>A <see cref="BookLookupResult"/>. When the ISBN is not found, this contains default/empty values (for example, an empty <c>Title</c>).</returns>
         Task<BookLookupResult> LookupByIsbnAsync(string isbn);
 
         /// <summary>
