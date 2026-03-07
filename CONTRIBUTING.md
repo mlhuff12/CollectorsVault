@@ -37,6 +37,8 @@ Thanks for your interest in improving CollectorsVault.
 
 ### API Unit Test Style (`tests/CollectorsVault.Api.Tests/unit`)
 
+Follow the conventions in [docs/testing-guidelines.md](docs/testing-guidelines.md):
+
 - Name unit tests using `Method_Condition_Expected`.
 - Use `// Arrange`, `// Act`, and `// Assert` comments in each unit test.
 - Do not add a blank line immediately after `// Arrange`.
@@ -48,6 +50,8 @@ Thanks for your interest in improving CollectorsVault.
 - Use `tests/CollectorsVault.Api.Tests/unit/API_UNIT_TEST_TEMPLATE.md` as the baseline pattern for test naming and `// Arrange`, `// Act`, `// Assert` structure.
 
 ## Validation Before PR
+
+See [docs/testing-guidelines.md](docs/testing-guidelines.md) for all test commands, conventions, and the pre-PR checklist.
 
 - Run and report checks related to your change before opening a PR.
 - At minimum, include results for:

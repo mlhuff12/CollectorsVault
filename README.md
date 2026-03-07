@@ -49,6 +49,7 @@ npm start
 
 Client URL (default): `https://localhost:3000`
 
+### 3) Run tests
 ## Testing
 
 ### Client tests
@@ -59,6 +60,7 @@ From `client`:
 npm run test:ci
 ```
 
+See [docs/testing-guidelines.md](docs/testing-guidelines.md) for full test commands, conventions, and Swagger samples.
 UI tests mock API service calls (`client/src/services/api.ts`) and do not hit the backend.
 
 ### Client Vite validation pipeline
@@ -184,3 +186,4 @@ For module-level details, see:
 - `client/README.md`
 - `server/README.md`
 - `docs/lan-https-certificate-setup.md`
+- `docs/testing-guidelines.md`
