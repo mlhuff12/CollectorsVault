@@ -43,7 +43,7 @@ npm start
 
 Client URL (default): `https://localhost:3000`
 
-### 3) Run UI tests
+### 3) Run tests
 
 From `client`:
 
@@ -51,17 +51,7 @@ From `client`:
 npm run test:ci
 ```
 
-### 4) Run Vite validation pipeline (Phase 4)
-
-From `client`:
-
-```bash
-npm run verify:vite
-```
-
-This runs the Vite production build plus the Vitest suite.
-
-UI tests mock API service calls (`client/src/services/api.ts`) and do not hit the backend.
+See [docs/testing-guidelines.md](docs/testing-guidelines.md) for full test commands, conventions, and Swagger samples.
 
 ## Debugging in VS Code
 
@@ -165,3 +155,4 @@ For module-level details, see:
 - `client/README.md`
 - `server/README.md`
 - `docs/lan-https-certificate-setup.md`
+- `docs/testing-guidelines.md`

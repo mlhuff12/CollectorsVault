@@ -27,6 +27,8 @@ Thanks for your interest in improving CollectorsVault.
 
 ### Unit test style
 
+Follow the conventions in [docs/testing-guidelines.md](docs/testing-guidelines.md):
+
 - Name unit tests using `Method_Condition_Expected`.
 - Use `// Arrange`, `// Act`, and `// Assert` comments in each unit test.
 - Do not add a blank line immediately after `// Arrange`.
@@ -40,6 +42,8 @@ Thanks for your interest in improving CollectorsVault.
 - If UI behavior changes, update user-facing docs with route and usage details.
 
 ## Tests and validation
+
+See [docs/testing-guidelines.md](docs/testing-guidelines.md) for all test commands, conventions, and the pre-PR checklist.
 
 - Run and report checks related to your change before opening a PR.
 - At minimum, include results for:
