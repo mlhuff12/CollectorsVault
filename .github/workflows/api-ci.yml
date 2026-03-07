@@ -27,7 +27,26 @@ jobs:
               - 'tests/**'
               - 'scripts/check-unit-test-style.py'
               - 'CollectorsVault.sln'
+              - '.editorconfig'
               - '.github/workflows/api-ci.yml'
+
+  server-lint:
+    needs: detect-api-changes
+    if: needs.detect-api-changes.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Check server formatting
+        run: dotnet format CollectorsVault.sln --verify-no-changes
 
   api-build-and-unit-tests:
     needs: detect-api-changes
@@ -46,9 +65,6 @@ jobs:
 
       - name: Build API and Test Projects
         run: dotnet build CollectorsVault.sln --configuration Release
-
-      - name: Check server formatting
-        run: dotnet format CollectorsVault.sln --verify-no-changes
 
       - name: Run API Unit Tests
         run: dotnet test tests/CollectorsVault.Api.Tests/CollectorsVault.Api.Tests.csproj --configuration Release --filter "Category=Unit"
@@ -78,6 +94,7 @@ jobs:
 
   api-ci-gate:
     needs:
+      - server-lint
       - api-build-and-unit-tests
       - api-unit-test-style
       - api-not-applicable
@@ -88,7 +105,14 @@ jobs:
     steps:
       - name: Final required gate
         run: |
-          echo "API CI gate completed."
+          echo "server_lint_result=${{ needs.server-lint.result }}"
           echo "build_and_tests_result=${{ needs.api-build-and-unit-tests.result }}"
           echo "unit_test_style_result=${{ needs.api-unit-test-style.result }}"
           echo "not_applicable_result=${{ needs.api-not-applicable.result }}"
+          if [ "${{ needs.server-lint.result }}" = "failure" ] || \
+             [ "${{ needs.api-build-and-unit-tests.result }}" = "failure" ] || \
+             [ "${{ needs.api-unit-test-style.result }}" = "failure" ]; then
+            echo "One or more required API CI jobs failed."
+            exit 1
+          fi
+          echo "API CI gate passed."
