@@ -30,7 +30,7 @@ namespace CollectorsVault.Api.Tests.Unit
                 IgdbId = 12345L
             };
 
-            var mock = new Mock<IGameLookupService>();
+            var mock = new Mock<IGameLookupService>(MockBehavior.Strict);
             mock.Setup(s => s.LookupByUpcAsync("093155176577")).ReturnsAsync(expected);
 
             // Act
@@ -49,7 +49,7 @@ namespace CollectorsVault.Api.Tests.Unit
         public async Task GetByUpc_WhenGameMissing_ReturnsNotFound()
         {
             // Arrange
-            var mock = new Mock<IGameLookupService>();
+            var mock = new Mock<IGameLookupService>(MockBehavior.Strict);
             mock.Setup(s => s.LookupByUpcAsync("000000000000")).ReturnsAsync((GameLookupResult?)null);
 
             // Act
@@ -69,7 +69,7 @@ namespace CollectorsVault.Api.Tests.Unit
                 new GameLookupResult { Title = "Halo 5: Guardians", ReleaseYear = 2015 }
             };
 
-            var mock = new Mock<IGameLookupService>();
+            var mock = new Mock<IGameLookupService>(MockBehavior.Strict);
             mock.Setup(s => s.SearchByTitleAsync("Halo")).ReturnsAsync(expected);
 
             // Act
@@ -86,7 +86,7 @@ namespace CollectorsVault.Api.Tests.Unit
         public async Task SearchByTitle_WhenNoneFound_ReturnsOk_WithEmptyList()
         {
             // Arrange
-            var mock = new Mock<IGameLookupService>();
+            var mock = new Mock<IGameLookupService>(MockBehavior.Strict);
             mock.Setup(s => s.SearchByTitleAsync("xyzzy")).ReturnsAsync(new List<GameLookupResult>());
 
             // Act
