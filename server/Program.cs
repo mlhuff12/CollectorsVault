@@ -182,21 +182,6 @@ using (var scope = app.Services.CreateScope())
         }
         else
         {
-            var legacyBookColumns = GetExistingColumns(dbContext, "Book")
-                .Where(name =>
-                    name.Equals("PublicationYear", StringComparison.OrdinalIgnoreCase) ||
-                    name.Equals("Genre", StringComparison.OrdinalIgnoreCase) ||
-                    name.Equals("PublishUtcDate", StringComparison.OrdinalIgnoreCase))
-                .ToList();
-
-            if (legacyBookColumns.Count > 0)
-            {
-                app.Logger.LogWarning(
-                    "SQLite database contains legacy Book columns: {LegacyColumns}. Recreating schema.",
-                    string.Join(", ", legacyBookColumns));
-                RecreateSqliteSchema(dbContext, sqliteConnectionBuilder.DataSource, app.Logger);
-            }
-
             // Tables exist — ensure any new columns added to existing tables are present.
             // ALTER TABLE ADD COLUMN preserves all existing data.
             var bookColumnsToAdd = new[]
@@ -222,9 +207,6 @@ using (var scope = app.Services.CreateScope())
                 ("PageCount",        "INTEGER"),
             };
             AddMissingColumns(dbContext, "Book", bookColumnsToAdd, app.Logger);
-
-            // Migrate Authors from legacy comma-separated Author column when Authors is still empty.
-            MigrateAuthorToAuthors(dbContext, app.Logger);
         }
     }
 
@@ -303,45 +285,6 @@ static List<string> GetMissingTables(VaultDbContext dbContext, IEnumerable<strin
     }
 }
 
-static List<string> GetExistingColumns(VaultDbContext dbContext, string tableName)
-{
-    var connection = dbContext.Database.GetDbConnection();
-    using var command = connection.CreateCommand();
-    if (command.Connection is null)
-    {
-        return new List<string>();
-    }
-
-    var openedByMethod = false;
-    if (command.Connection.State != System.Data.ConnectionState.Open)
-    {
-        command.Connection.Open();
-        openedByMethod = true;
-    }
-
-    try
-    {
-        command.CommandText = $"PRAGMA table_info({tableName});";
-        var columns = new List<string>();
-        using (var reader = command.ExecuteReader())
-        {
-            while (reader.Read())
-            {
-                columns.Add(reader.GetString(1));
-            }
-        }
-
-        return columns;
-    }
-    finally
-    {
-        if (openedByMethod && command.Connection.State == System.Data.ConnectionState.Open)
-        {
-            command.Connection.Close();
-        }
-    }
-}
-
 static void RecreateSqliteSchema(VaultDbContext dbContext, string? dbPath, ILogger logger)
 {
     if (!string.IsNullOrWhiteSpace(dbPath) && File.Exists(dbPath))
@@ -409,92 +352,6 @@ static void AddMissingColumns(VaultDbContext dbContext, string tableName,
             command.ExecuteNonQuery();
             logger.LogInformation("Added missing column '{Column}' to table '{Table}'.", name, tableName);
         }
-    }
-    finally
-    {
-        if (openedByMethod && command.Connection.State == System.Data.ConnectionState.Open)
-        {
-            command.Connection.Close();
-        }
-    }
-}
-
-static void MigrateAuthorToAuthors(VaultDbContext dbContext, ILogger logger)
-{
-    // When upgrading from a database that has the old single-string "Author" column,
-    // populate the new JSON-array "Authors" column for any rows that still have '[]'.
-    var connection = dbContext.Database.GetDbConnection();
-    using var command = connection.CreateCommand();
-    if (command.Connection is null)
-    {
-        return;
-    }
-
-    var openedByMethod = false;
-    if (command.Connection.State != System.Data.ConnectionState.Open)
-    {
-        command.Connection.Open();
-        openedByMethod = true;
-    }
-
-    try
-    {
-        // Check whether the legacy Author column still exists.
-        command.CommandText = "PRAGMA table_info(Book);";
-        var existingColumns = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        using (var reader = command.ExecuteReader())
-        {
-            while (reader.Read())
-            {
-                existingColumns.Add(reader.GetString(1));
-            }
-        }
-
-        if (!existingColumns.Contains("Author"))
-        {
-            return; // No legacy column to migrate.
-        }
-
-        // Read all rows that need migration and update them with properly serialized JSON.
-        command.CommandText = "SELECT Id, Author FROM Book WHERE (Authors IS NULL OR Authors = '[]') AND Author IS NOT NULL AND Author != '';";
-        var rows = new System.Collections.Generic.List<(long Id, string Author)>();
-        using (var reader = command.ExecuteReader())
-        {
-            while (reader.Read())
-            {
-                rows.Add((reader.GetInt64(0), reader.GetString(1)));
-            }
-        }
-
-        if (rows.Count == 0)
-        {
-            return;
-        }
-
-        using var updateCommand = connection.CreateCommand();
-        if (updateCommand.Connection is null)
-        {
-            return;
-        }
-        updateCommand.CommandText = "UPDATE Book SET Authors = @authors WHERE Id = @id;";
-        var authorsParam = updateCommand.CreateParameter();
-        authorsParam.ParameterName = "@authors";
-        updateCommand.Parameters.Add(authorsParam);
-        var idParam = updateCommand.CreateParameter();
-        idParam.ParameterName = "@id";
-        updateCommand.Parameters.Add(idParam);
-
-        foreach (var (id, author) in rows)
-        {
-            // Split on ", " to match the original join logic; trim each part.
-            var authors = author
-                .Split(new[] { ", " }, System.StringSplitOptions.RemoveEmptyEntries);
-            authorsParam.Value = System.Text.Json.JsonSerializer.Serialize(authors);
-            idParam.Value = id;
-            updateCommand.ExecuteNonQuery();
-        }
-
-        logger.LogInformation("Migrated {Count} book(s) from legacy Author column to Authors JSON array.", rows.Count);
     }
     finally
     {
