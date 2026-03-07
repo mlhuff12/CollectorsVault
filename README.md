@@ -6,15 +6,21 @@ Collectors Vault is a full-stack app for managing personal collections of books,
 - Backend: ASP.NET Core Web API (.NET 8)
 - Database: SQLite (file-based persistence)
 
+## Table of Contents
+
+- [Current Features](#current-features)
+- [Quick Start](#quick-start)
+- [Testing](#testing)
+- [Debugging in VS Code](#debugging-in-vs-code)
+- [Local Phone Testing (LAN)](#local-phone-testing-lan)
+- [Persistence](#persistence)
+- [Project Structure](#project-structure)
+
 ## Current Features
 
 - Add books, movies, and games.
 - View all items from `Home`.
-- Filtered tabs and routes for each category:
-	- `/`
-	- `/books`
-	- `/movies`
-	- `/games`
+- Browse by category routes: `/`, `/books`, `/movies`, `/games`.
 - Delete items from any tab.
 - Swagger UI for interactive API testing.
 
@@ -43,7 +49,9 @@ npm start
 
 Client URL (default): `https://localhost:3000`
 
-### 3) Run UI tests
+## Testing
+
+### Client tests
 
 From `client`:
 
@@ -51,7 +59,9 @@ From `client`:
 npm run test:ci
 ```
 
-### 4) Run Vite validation pipeline (Phase 4)
+UI tests mock API service calls (`client/src/services/api.ts`) and do not hit the backend.
+
+### Client Vite validation pipeline
 
 From `client`:
 
@@ -61,7 +71,16 @@ npm run verify:vite
 
 This runs the Vite production build plus the Vitest suite.
 
-UI tests mock API service calls (`client/src/services/api.ts`) and do not hit the backend.
+### API unit tests
+
+From repository root:
+
+```bash
+dotnet test tests/CollectorsVault.Api.Tests/CollectorsVault.Api.Tests.csproj --filter "Category=Unit"
+```
+
+API unit tests follow a Moq-first pattern for arranging dependencies and behavior.
+When a unit under test has collaborators, use `Moq` for setup and verification instead of in-memory database wiring or handwritten fakes.
 
 ## Debugging in VS Code
 
