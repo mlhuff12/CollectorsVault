@@ -16,7 +16,7 @@ namespace CollectorsVault.Api.Tests.Unit
     {
         private static VaultController CreateControllerWithUser(IVaultService service, long userId = 1)
         {
-            var userServiceMock = new Mock<IUserService>();
+            var userServiceMock = new Mock<IUserService>(MockBehavior.Strict);
             userServiceMock.Setup(s => s.GetCurrentUserId()).Returns(userId);
             var controller = new VaultController(service, userServiceMock.Object);
             return controller;
@@ -32,7 +32,7 @@ namespace CollectorsVault.Api.Tests.Unit
                 new VaultItemResponse { Id = 2L, Title = "Inception", Category = "movie" }
             };
 
-            var serviceMock = new Mock<IVaultService>();
+            var serviceMock = new Mock<IVaultService>(MockBehavior.Strict);
             serviceMock.Setup(service => service.GetVaultItemsAsync(1L))
                 .ReturnsAsync(expected);
 
@@ -69,7 +69,7 @@ namespace CollectorsVault.Api.Tests.Unit
                 PublishDateString = "1937"
             };
 
-            var serviceMock = new Mock<IVaultService>();
+            var serviceMock = new Mock<IVaultService>(MockBehavior.Strict);
             serviceMock.Setup(service => service.AddBookAsync(request, 1L))
                 .ReturnsAsync(created);
 
@@ -90,7 +90,7 @@ namespace CollectorsVault.Api.Tests.Unit
         public async Task DeleteVaultItem_WhenItemDoesNotExist_ReturnsNotFound()
         {
             // Arrange
-            var serviceMock = new Mock<IVaultService>();
+            var serviceMock = new Mock<IVaultService>(MockBehavior.Strict);
             serviceMock.Setup(service => service.DeleteVaultItemAsync(99L, 1L))
                 .ReturnsAsync(false);
 
@@ -107,7 +107,7 @@ namespace CollectorsVault.Api.Tests.Unit
         public async Task DeleteVaultItem_WhenItemExists_ReturnsNoContent()
         {
             // Arrange
-            var serviceMock = new Mock<IVaultService>();
+            var serviceMock = new Mock<IVaultService>(MockBehavior.Strict);
             serviceMock.Setup(service => service.DeleteVaultItemAsync(2L, 1L))
                 .ReturnsAsync(true);
 

@@ -81,6 +81,29 @@ Test classes are categorized using xUnit `[Trait]` attributes:
 - `[Trait("Category", "Unit")]` — unit tests in `tests/CollectorsVault.Api.Tests/unit/`
 - `[Trait("Category", "Integration")]` — integration tests in `tests/CollectorsVault.Api.Tests/integration/`
 
+### Mock Behavior Policy
+
+Use `MockBehavior.Strict` for all Moq mocks in API unit tests by default. Strict mode causes the test to fail immediately on any unexpected call, which keeps tests precise and avoids accidentally relying on lenient default behavior.
+
+```csharp
+var serviceMock = new Mock<IBookLookupService>(MockBehavior.Strict);
+serviceMock.Setup(s => s.LookupByIsbnAsync("9780547928227")).ReturnsAsync(expected);
+```
+
+#### Exceptions
+
+Do **not** use `MockBehavior.Strict` in the following cases:
+
+- **Mocks configured with `CallBase = true`** — `CallBase` routes un-setup calls to the real implementation. Combining `CallBase = true` with `MockBehavior.Strict` would require setting up every method touched by the real class, which is impractical. The `VaultServiceTests` EF Core `DbContext` mock is the canonical example:
+
+  ```csharp
+  // CallBase = true delegates un-setup property/method access to the real DbContext.
+  // MockBehavior.Strict is intentionally omitted here.
+  var contextMock = new Mock<VaultDbContext>(options) { CallBase = true };
+  ```
+
+If you believe your test needs another exception, add a comment explaining why `MockBehavior.Strict` cannot be used.
+
 ### API unit tests (Moq, no database)
 
 API unit tests are in `tests/CollectorsVault.Api.Tests`. They mock `IVaultService` with Moq and do not hit SQLite or the database.

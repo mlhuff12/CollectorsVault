@@ -10,6 +10,7 @@ Use this template for API unit tests in `tests/CollectorsVault.Api.Tests/unit`.
 - Do not add a blank line immediately after `// Arrange`.
 - Include one blank line before `// Act`.
 - Include one blank line before `// Assert`.
+- Use `MockBehavior.Strict` for all mocks (default policy). The only recognized exception is mocks that also set `CallBase = true` (e.g., EF Core `DbContext` subclass mocks). See [docs/testing-guidelines.md](../../../docs/testing-guidelines.md) for details.
 
 ## Example
 

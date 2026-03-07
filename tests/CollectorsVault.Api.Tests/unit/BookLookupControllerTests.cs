@@ -30,7 +30,7 @@ namespace CollectorsVault.Api.Tests.Unit
                 CoverLarge = "https://covers.openlibrary.org/b/isbn/9780547928227-L.jpg"
             };
 
-            var mock = new Mock<IBookLookupService>();
+            var mock = new Mock<IBookLookupService>(MockBehavior.Strict);
             mock.Setup(s => s.LookupByIsbnAsync("9780547928227")).ReturnsAsync(expected);
 
             // Act
@@ -49,7 +49,7 @@ namespace CollectorsVault.Api.Tests.Unit
         public async Task GetByIsbn_WhenBookMissing_ReturnsOkWithEmptyResult()
         {
             // Arrange
-            var mock = new Mock<IBookLookupService>();
+            var mock = new Mock<IBookLookupService>(MockBehavior.Strict);
             var notFoundResult = new BookLookupResult
             {
                 Isbn = "0000000000",
@@ -79,7 +79,7 @@ namespace CollectorsVault.Api.Tests.Unit
                 new BookLookupResult { Title = "The Hobbit: An Unexpected Journey", Isbn = "9780007488940" }
             };
 
-            var mock = new Mock<IBookLookupService>();
+            var mock = new Mock<IBookLookupService>(MockBehavior.Strict);
             mock.Setup(s => s.SearchByTitleAsync("Hobbit")).ReturnsAsync(expected);
 
             // Act
@@ -96,7 +96,7 @@ namespace CollectorsVault.Api.Tests.Unit
         public async Task SearchByTitle_WhenNoneFound_ReturnsOk_WithEmptyList()
         {
             // Arrange
-            var mock = new Mock<IBookLookupService>();
+            var mock = new Mock<IBookLookupService>(MockBehavior.Strict);
             mock.Setup(s => s.SearchByTitleAsync("xyzzy")).ReturnsAsync(new List<BookLookupResult>());
 
             // Act
@@ -121,7 +121,7 @@ namespace CollectorsVault.Api.Tests.Unit
                 new BookLookupResult { Title = "The Fellowship of the Ring", Authors = new List<string> { "J.R.R. Tolkien" } }
             };
 
-            var mock = new Mock<IBookLookupService>();
+            var mock = new Mock<IBookLookupService>(MockBehavior.Strict);
             mock.Setup(s => s.SearchByAuthorAsync("Tolkien")).ReturnsAsync(expected);
 
             // Act
@@ -138,7 +138,7 @@ namespace CollectorsVault.Api.Tests.Unit
         public async Task SearchByAuthor_WhenNoneFound_ReturnsOk_WithEmptyList()
         {
             // Arrange
-            var mock = new Mock<IBookLookupService>();
+            var mock = new Mock<IBookLookupService>(MockBehavior.Strict);
             mock.Setup(s => s.SearchByAuthorAsync("nobody")).ReturnsAsync(new List<BookLookupResult>());
 
             // Act
