@@ -6,11 +6,12 @@ using System.Threading.Tasks;
 using CollectorsVault.Server.Utils;
 using Xunit;
 
-namespace CollectorsVault.Api.Tests
+namespace CollectorsVault.Api.Tests.Unit
 {
     /// <summary>
     /// Unit tests for <see cref="JsonDocumentUtils"/>.
     /// </summary>
+    [Trait("Category", "Unit")]
     public class JsonDocumentUtilsTests
     {
         // ── TryParseJson ──────────────────────────────────────────────────────

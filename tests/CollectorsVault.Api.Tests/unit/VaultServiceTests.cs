@@ -8,12 +8,13 @@ using CollectorsVault.Server.Services;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
-namespace CollectorsVault.Api.Tests
+namespace CollectorsVault.Api.Tests.Unit
 {
     /// <summary>
     /// Unit tests for <see cref="VaultService.AddBookAsync"/> using an in-memory database.
     /// No changes are persisted to an external database.
     /// </summary>
+    [Trait("Category", "Unit")]
     public class VaultServiceTests
     {
         private static VaultDbContext CreateInMemoryContext()

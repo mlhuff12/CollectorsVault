@@ -7,8 +7,9 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Xunit;
 
-namespace CollectorsVault.Api.Tests
+namespace CollectorsVault.Api.Tests.Unit
 {
+    [Trait("Category", "Unit")]
     public class GameLookupControllerTests
     {
         private static GameLookupController CreateController(IGameLookupService service)

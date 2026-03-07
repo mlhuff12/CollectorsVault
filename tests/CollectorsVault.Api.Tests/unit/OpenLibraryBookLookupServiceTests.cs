@@ -7,12 +7,13 @@ using Moq;
 using Moq.Protected;
 using Xunit;
 
-namespace CollectorsVault.Api.Tests
+namespace CollectorsVault.Api.Tests.Unit
 {
     /// <summary>
     /// Unit tests for <see cref="OpenLibraryBookLookupService"/> that verify HTTP-level behaviour
     /// by mocking <see cref="HttpMessageHandler"/>.
     /// </summary>
+    [Trait("Category", "Unit")]
     public class OpenLibraryBookLookupServiceTests
     {
         // ── helpers ────────────────────────────────────────────────────────────

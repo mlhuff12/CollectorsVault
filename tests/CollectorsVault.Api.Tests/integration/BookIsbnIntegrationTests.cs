@@ -13,13 +13,14 @@ using Microsoft.Extensions.DependencyInjection;
 using CollectorsVault.Server.Data;
 using Xunit;
 
-namespace CollectorsVault.Api.Tests
+namespace CollectorsVault.Api.Tests.Integration
 {
     /// <summary>
     /// Integration tests covering the full Create-Book flow:
     /// ISBN lookup (via the /api/booklookup endpoint) → save book → delete book.
     /// These tests use an in-memory database so no changes are made to a real database.
     /// </summary>
+    [Trait("Category", "Integration")]
     public class BookIsbnIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
     {
         private readonly WebApplicationFactory<Program> _factory;

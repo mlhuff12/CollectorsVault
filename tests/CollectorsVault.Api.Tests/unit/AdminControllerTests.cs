@@ -8,8 +8,9 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Xunit;
 
-namespace CollectorsVault.Api.Tests
+namespace CollectorsVault.Api.Tests.Unit
 {
+    [Trait("Category", "Unit")]
     public class AdminControllerTests
     {
         private static AdminController CreateController(

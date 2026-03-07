@@ -4,8 +4,9 @@ using Microsoft.AspNetCore.Http;
 using Moq;
 using Xunit;
 
-namespace CollectorsVault.Api.Tests
+namespace CollectorsVault.Api.Tests.Unit
 {
+    [Trait("Category", "Unit")]
     public class UserServiceTests
     {
         private static UserService CreateService(string? userIdClaimValue)

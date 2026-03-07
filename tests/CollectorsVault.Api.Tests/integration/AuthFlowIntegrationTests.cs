@@ -13,8 +13,9 @@ using Microsoft.Extensions.DependencyInjection;
 using CollectorsVault.Server.Data;
 using Xunit;
 
-namespace CollectorsVault.Api.Tests
+namespace CollectorsVault.Api.Tests.Integration
 {
+    [Trait("Category", "Integration")]
     public class AuthFlowIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
     {
         private readonly WebApplicationFactory<Program> _factory;

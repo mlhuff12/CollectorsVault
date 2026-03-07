@@ -9,8 +9,9 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Xunit;
 
-namespace CollectorsVault.Api.Tests
+namespace CollectorsVault.Api.Tests.Unit
 {
+    [Trait("Category", "Unit")]
     public class VaultControllerTests
     {
         private static VaultController CreateControllerWithUser(IVaultService service, long userId = 1)
