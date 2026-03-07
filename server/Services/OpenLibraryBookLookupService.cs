@@ -49,7 +49,7 @@ namespace CollectorsVault.Server.Services
                     await ParseOpenLibraryResponse(response, result);
                 }
             }
-            
+
             if (!string.IsNullOrEmpty(result.SeriesUrl))
             {
                 // Fetch series
@@ -61,7 +61,7 @@ namespace CollectorsVault.Server.Services
                     // Fetch lending edition for series number if available
                     response = await _httpClient.GetAsync($"/books/{result.LendingEditionKey}.json");
                     await ParseOpenLibraryResponse(response, result);
-                } 
+                }
             }
 
             return result;
@@ -333,9 +333,9 @@ namespace CollectorsVault.Server.Services
                 if (string.IsNullOrEmpty(result.Key) && root.TryGetProperty("key", out var key))
                 {
                     result.Key = key.GetString();
-                }   
+                }
                 // Get lending edition from the matching work entry.
-                if (string.IsNullOrEmpty(result.LendingEditionKey) && root.TryGetProperty("works", out var worksArr) 
+                if (string.IsNullOrEmpty(result.LendingEditionKey) && root.TryGetProperty("works", out var worksArr)
                     && worksArr.ToString().Contains("lending_edition", StringComparison.OrdinalIgnoreCase) && worksArr.ValueKind == JsonValueKind.Array)
                 {
                     var matchedWork = worksArr.EnumerateArray().FirstOrDefault(w =>

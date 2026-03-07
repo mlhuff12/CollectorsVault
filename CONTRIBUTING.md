@@ -50,6 +50,25 @@ Thanks for your interest in improving CollectorsVault.
    - `npm run verify:vite` in `client`
 - Include any manual test steps performed (for example: create, list, delete flows).
 
+## Linting
+
+Run lint checks locally before opening a PR to catch style and code-quality issues early.
+
+- Client (from `client`):
+  ```bash
+  npm run lint
+  ```
+- Server (from the repository root):
+  ```bash
+  dotnet format CollectorsVault.sln --verify-no-changes
+  ```
+  To auto-fix server formatting issues before committing:
+  ```bash
+  dotnet format CollectorsVault.sln
+  ```
+
+CI runs both lint checks on every pull request and fails if violations are present.
+
 ## README updates
 
 - Update `README.md` files when setup commands, routes, persistence, or API usage changes.

@@ -51,7 +51,21 @@ From `client`:
 npm run test:ci
 ```
 
-### 4) Run Vite validation pipeline (Phase 4)
+### 4) Run lint checks
+
+From `client`:
+
+```bash
+npm run lint
+```
+
+From the repository root (server):
+
+```bash
+dotnet format CollectorsVault.sln --verify-no-changes
+```
+
+### 5) Run Vite validation pipeline (Phase 4)
 
 From `client`:
 

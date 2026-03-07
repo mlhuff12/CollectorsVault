@@ -1,4 +1,4 @@
-import React from 'react';
+import type { ReactNode } from 'react';
 import { render, screen } from '@testing-library/react';
 
 let mockIsAuthenticated = false;
@@ -13,13 +13,10 @@ vi.mock('../../pages/VaultPage', () => ({
     default: () => <div>Vault Page Mock</div>
 }));
 
-vi.mock('../../context/AuthContext', () => {
-    const React = require('react');
-    return {
-        AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-        useAuth: () => ({ isAuthenticated: mockIsAuthenticated })
-    };
-});
+vi.mock('../../context/AuthContext', () => ({
+    AuthProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
+    useAuth: () => ({ isAuthenticated: mockIsAuthenticated })
+}));
 
 import App from '../../App';
 

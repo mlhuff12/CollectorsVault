@@ -47,7 +47,7 @@ const ItemList: React.FC<ItemListProps> = ({ refreshKey = 0, title = "Collector'
         : items;
 
     const handleDelete = async (item: VaultItem) => {
-        const confirmed = window.confirm(`Delete \"${item.title}\"?`);
+        const confirmed = window.confirm(`Delete "${item.title}"?`);
 
         if (!confirmed) {
             return;
