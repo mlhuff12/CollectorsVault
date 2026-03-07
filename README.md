@@ -15,6 +15,7 @@ Collectors Vault is a full-stack app for managing personal collections of books,
 - [Local Phone Testing (LAN)](#local-phone-testing-lan)
 - [Persistence](#persistence)
 - [Project Structure](#project-structure)
+- [Contributing](#contributing)
 
 ## Current Features
 
@@ -100,6 +101,7 @@ dotnet test tests/CollectorsVault.Api.Tests/CollectorsVault.Api.Tests.csproj --f
 
 API unit tests follow a Moq-first pattern for arranging dependencies and behavior.
 When a unit under test has collaborators, use `Moq` for setup and verification instead of in-memory database wiring or handwritten fakes.
+See [tests/CollectorsVault.Api.Tests/unit/API_UNIT_TEST_TEMPLATE.md](tests/CollectorsVault.Api.Tests/unit/API_UNIT_TEST_TEMPLATE.md) for the canonical test-naming and AAA-structure pattern.
 
 ## Debug in VS Code
 
@@ -204,3 +206,7 @@ For module-level details, see:
 - `server/README.md`
 - `docs/lan-https-certificate-setup.md`
 - `docs/testing-guidelines.md`
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, branching guidelines, code style, and the pre-PR checklist.

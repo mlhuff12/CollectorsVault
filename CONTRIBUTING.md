@@ -14,6 +14,8 @@ Thanks for your interest in improving CollectorsVault.
 
 ## Development Setup
 
+For a quick overview of running the app locally, see [README Quick Start](README.md#quick-start).
+
 1. Clone the repository.
 2. Start API:
    1. `cd server`
