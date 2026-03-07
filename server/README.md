@@ -113,6 +113,27 @@ When adding or modifying database schema, follow these conventions:
 - **Boolean/bit column names** must use the `{columnName}Ind` suffix (e.g., `AdminInd`).
 - Configure table names explicitly with `.ToTable("TableName")` in `OnModelCreating`.
 
+## Linting
+
+Server formatting is enforced by `dotnet format` using the rules in the repository root
+`.editorconfig`. See [docs/server-lint-strategy.md](../docs/server-lint-strategy.md) for
+the full decision record.
+
+**Check for violations** (from the repository root):
+
+```bash
+dotnet format CollectorsVault.sln --verify-no-changes
+```
+
+**Auto-fix all violations** before committing:
+
+```bash
+dotnet format CollectorsVault.sln
+```
+
+CI runs the check command on every pull request via the `server-lint` job and fails if
+any violation is present.
+
 ## Coding Standards
 
 - **`if` / `else if` / `else` statements must always use curly braces** even for single-line bodies.

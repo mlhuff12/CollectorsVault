@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
 using CollectorsVault.Server.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace CollectorsVault.Server.Data
 {

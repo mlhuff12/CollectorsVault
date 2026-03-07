@@ -76,6 +76,8 @@ See [docs/testing-guidelines.md](docs/testing-guidelines.md) for all test comman
 ## Linting
 
 Run lint checks locally before opening a PR to catch style and code-quality issues early.
+See [docs/server-lint-strategy.md](docs/server-lint-strategy.md) for the full decision
+record and expected failure behavior.
 
 - Client (from `client`):
   ```bash
@@ -98,6 +100,7 @@ CI runs both lint checks on every pull request and fails if violations are prese
 |------|---------|-----------|
 | API unit tests | `dotnet test tests/CollectorsVault.Api.Tests/CollectorsVault.Api.Tests.csproj` | repo root |
 | Solution build | `dotnet build CollectorsVault.sln` | repo root |
+| Server lint check | `dotnet format CollectorsVault.sln --verify-no-changes` | repo root |
 | Client tests | `npm test` | `client/` |
 | Client build | `npm run build` | `client/` |
 | Vite verify (build + tests) | `npm run verify:vite` | `client/` |
