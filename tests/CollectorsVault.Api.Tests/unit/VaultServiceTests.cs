@@ -23,6 +23,8 @@ namespace CollectorsVault.Api.Tests.Unit
                 .Options;
 
             var contextMock = new Mock<VaultDbContext>(options) { CallBase = true };
+            // MockBehavior.Strict is intentionally omitted: CallBase = true delegates un-setup
+            // calls to the real DbContext implementation, making strict mode impractical here.
             var booksSetMock = new Mock<DbSet<Book>>();
 
             Book? capturedBook = null;

@@ -29,7 +29,7 @@ namespace CollectorsVault.Api.Tests.Unit
                 ImdbId = "tt0468569"
             };
 
-            var mock = new Mock<IMovieLookupService>();
+            var mock = new Mock<IMovieLookupService>(MockBehavior.Strict);
             mock.Setup(s => s.LookupByUpcAsync("025192179822")).ReturnsAsync(expected);
 
             // Act
@@ -48,7 +48,7 @@ namespace CollectorsVault.Api.Tests.Unit
         public async Task GetByUpc_WhenMovieMissing_ReturnsNotFound()
         {
             // Arrange
-            var mock = new Mock<IMovieLookupService>();
+            var mock = new Mock<IMovieLookupService>(MockBehavior.Strict);
             mock.Setup(s => s.LookupByUpcAsync("000000000000")).ReturnsAsync((MovieLookupResult?)null);
 
             // Act
@@ -68,7 +68,7 @@ namespace CollectorsVault.Api.Tests.Unit
                 new MovieLookupResult { Title = "The Dark Knight Rises", ReleaseYear = 2012 }
             };
 
-            var mock = new Mock<IMovieLookupService>();
+            var mock = new Mock<IMovieLookupService>(MockBehavior.Strict);
             mock.Setup(s => s.SearchByTitleAsync("Dark Knight")).ReturnsAsync(expected);
 
             // Act
@@ -85,7 +85,7 @@ namespace CollectorsVault.Api.Tests.Unit
         public async Task SearchByTitle_WhenNoneFound_ReturnsOk_WithEmptyList()
         {
             // Arrange
-            var mock = new Mock<IMovieLookupService>();
+            var mock = new Mock<IMovieLookupService>(MockBehavior.Strict);
             mock.Setup(s => s.SearchByTitleAsync("xyzzy")).ReturnsAsync(new List<MovieLookupResult>());
 
             // Act

@@ -45,7 +45,7 @@ Follow the conventions in [docs/testing-guidelines.md](docs/testing-guidelines.m
 - Include one blank line before `// Act`.
 - Include one blank line before `// Assert`.
 - For API unit tests (`tests/CollectorsVault.Api.Tests/unit`), use `Moq` to mock and configure collaborators.
-- Prefer `MockBehavior.Strict` when practical, and verify important interactions for behavior-focused tests.
+- Use `MockBehavior.Strict` for all Moq mocks by default. The only recognized exception is mocks that also set `CallBase = true` (e.g., EF Core `DbContext` subclass mocks). See [docs/testing-guidelines.md](docs/testing-guidelines.md) for the full policy and examples.
 - Do not use EF in-memory setup in API unit tests when a mocked collaborator can cover the scenario.
 - Use `tests/CollectorsVault.Api.Tests/unit/API_UNIT_TEST_TEMPLATE.md` as the baseline pattern for test naming and `// Arrange`, `// Act`, `// Assert` structure.
 

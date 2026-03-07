@@ -18,7 +18,7 @@ namespace CollectorsVault.Api.Tests.Unit
             long userId = 1,
             bool isAdmin = true)
         {
-            var userServiceMock = new Mock<IUserService>();
+            var userServiceMock = new Mock<IUserService>(MockBehavior.Strict);
             userServiceMock.Setup(s => s.GetCurrentUserId()).Returns(userId);
             userServiceMock.Setup(s => s.GetCurrentUserIsAdmin()).Returns(isAdmin);
             return new AdminController(adminService, userServiceMock.Object);
@@ -28,7 +28,7 @@ namespace CollectorsVault.Api.Tests.Unit
         public async Task GetAllUsers_WhenNotAdmin_ReturnsForbid()
         {
             // Arrange
-            var serviceMock = new Mock<IAdminService>();
+            var serviceMock = new Mock<IAdminService>(MockBehavior.Strict);
             var controller = CreateController(serviceMock.Object, isAdmin: false);
 
             // Act
@@ -48,7 +48,7 @@ namespace CollectorsVault.Api.Tests.Unit
                 new AdminUserResponse { Id = 2L, Username = "user2", IsAdmin = false, BookCount = 0, MovieCount = 0, GameCount = 3 }
             };
 
-            var serviceMock = new Mock<IAdminService>();
+            var serviceMock = new Mock<IAdminService>(MockBehavior.Strict);
             serviceMock.Setup(s => s.GetAllUsersAsync()).ReturnsAsync(users);
 
             var controller = CreateController(serviceMock.Object, isAdmin: true);
@@ -67,7 +67,7 @@ namespace CollectorsVault.Api.Tests.Unit
         public async Task DeleteUser_WhenNotAdmin_ReturnsForbid()
         {
             // Arrange
-            var serviceMock = new Mock<IAdminService>();
+            var serviceMock = new Mock<IAdminService>(MockBehavior.Strict);
             var controller = CreateController(serviceMock.Object, userId: 1, isAdmin: false);
 
             // Act
@@ -81,7 +81,7 @@ namespace CollectorsVault.Api.Tests.Unit
         public async Task DeleteUser_WhenAdminDeletesSelf_ReturnsForbid()
         {
             // Arrange
-            var serviceMock = new Mock<IAdminService>();
+            var serviceMock = new Mock<IAdminService>(MockBehavior.Strict);
             var controller = CreateController(serviceMock.Object, userId: 1, isAdmin: true);
 
             // Act
@@ -95,7 +95,7 @@ namespace CollectorsVault.Api.Tests.Unit
         public async Task DeleteUser_WhenUserDoesNotExist_ReturnsNotFound()
         {
             // Arrange
-            var serviceMock = new Mock<IAdminService>();
+            var serviceMock = new Mock<IAdminService>(MockBehavior.Strict);
             serviceMock.Setup(s => s.DeleteUserAsync(99L)).ReturnsAsync(false);
 
             var controller = CreateController(serviceMock.Object, userId: 1, isAdmin: true);
@@ -111,7 +111,7 @@ namespace CollectorsVault.Api.Tests.Unit
         public async Task DeleteUser_WhenUserDeleted_ReturnsNoContent()
         {
             // Arrange
-            var serviceMock = new Mock<IAdminService>();
+            var serviceMock = new Mock<IAdminService>(MockBehavior.Strict);
             serviceMock.Setup(s => s.DeleteUserAsync(2L)).ReturnsAsync(true);
 
             var controller = CreateController(serviceMock.Object, userId: 1, isAdmin: true);
