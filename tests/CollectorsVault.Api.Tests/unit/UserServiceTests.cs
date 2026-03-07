@@ -19,7 +19,7 @@ namespace CollectorsVault.Api.Tests.Unit
             var principal = new ClaimsPrincipal(identity);
 
             var httpContext = new DefaultHttpContext { User = principal };
-            var httpContextAccessorMock = new Mock<IHttpContextAccessor>();
+            var httpContextAccessorMock = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
             httpContextAccessorMock.Setup(a => a.HttpContext).Returns(httpContext);
 
             return new UserService(httpContextAccessorMock.Object);
@@ -97,7 +97,7 @@ namespace CollectorsVault.Api.Tests.Unit
             var identity = new ClaimsIdentity(claims, "TestAuth");
             var principal = new ClaimsPrincipal(identity);
             var httpContext = new DefaultHttpContext { User = principal };
-            var httpContextAccessorMock = new Mock<IHttpContextAccessor>();
+            var httpContextAccessorMock = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
             httpContextAccessorMock.Setup(a => a.HttpContext).Returns(httpContext);
             var service = new UserService(httpContextAccessorMock.Object);
 
@@ -114,7 +114,7 @@ namespace CollectorsVault.Api.Tests.Unit
             var identity = new ClaimsIdentity(claims, "TestAuth");
             var principal = new ClaimsPrincipal(identity);
             var httpContext = new DefaultHttpContext { User = principal };
-            var httpContextAccessorMock = new Mock<IHttpContextAccessor>();
+            var httpContextAccessorMock = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
             httpContextAccessorMock.Setup(a => a.HttpContext).Returns(httpContext);
             var service = new UserService(httpContextAccessorMock.Object);
 

@@ -141,58 +141,7 @@ When adding or modifying database schema, follow these conventions:
 
 ## Testing With Swagger
 
-1. Open `https://localhost:5000/swagger`
-2. Expand an endpoint.
-3. Click **Try it out**.
-4. Paste a sample request body.
-5. Click **Execute**.
-
-### Sample: `POST /api/vault/books`
-
-```json
-{
-	"title": "The Hobbit",
-	"authors": ["J.R.R. Tolkien"],
-	"isbn": "978-0547928227",
-	"year": 1937,
-	"genre": "Fantasy"
-}
-```
-
-### Sample: `POST /api/vault/books` (minimal required fields)
-
-```json
-{
-	"title": "Good Omens",
-	"authors": ["Neil Gaiman", "Terry Pratchett"]
-}
-```
-
-### Sample: `POST /api/vault/movies`
-
-```json
-{
-	"title": "Interstellar",
-	"director": "Christopher Nolan",
-	"releaseYear": 2014,
-	"genre": "Sci-Fi"
-}
-```
-
-### Sample: `POST /api/vault/games`
-
-```json
-{
-	"title": "Elden Ring",
-	"platform": "PC",
-	"releaseDate": "2022-02-25"
-}
-```
-
-### Sample: `DELETE /api/vault/{id}`
-
-- Use an existing ID from `GET /api/vault`.
-- Example: `DELETE /api/vault/3`
+See [docs/testing-guidelines.md](../docs/testing-guidelines.md) for Swagger usage steps and sample request bodies for all endpoints.
 
 ## Notes
 
@@ -213,29 +162,4 @@ dotnet test tests/CollectorsVault.Api.Tests/CollectorsVault.Api.Tests.csproj
 
 Tests mock `IVaultService` with Moq and do not hit SQLite/database.
 
-### Unit test style
-
-When adding new API unit tests, follow this pattern consistently:
-
-- Method names must use `Method_Condition_Expected`.
-- Test bodies must use `// Arrange`, `// Act`, and `// Assert` comments.
-- Do not add a blank line immediately after `// Arrange`.
-- Include one blank line before `// Act`.
-- Include one blank line before `// Assert`.
-
-Example:
-
-```csharp
-[Fact]
-public async Task LookupByIsbnAsync_WhenNoWorksKey_UsesEditionDescription()
-{
-	// Arrange
-	var (service, _) = CreateService(("/api/books", Ok("{}")));
-
-	// Act
-	var result = await service.LookupByIsbnAsync("9780547928227");
-
-	// Assert
-	Assert.NotNull(result);
-}
-```
+See [docs/testing-guidelines.md](../docs/testing-guidelines.md) for unit test naming conventions, structure, and examples.
