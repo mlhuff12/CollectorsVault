@@ -49,9 +49,15 @@ jobs:
 
       - name: Terraform plan
         working-directory: infra
+        env:
+          TF_VAR_sql_admin_login: ${{ secrets.SQL_ADMIN_LOGIN }}
+          TF_VAR_sql_admin_password: ${{ secrets.SQL_ADMIN_PASSWORD }}
         run: terraform plan
 
       - name: Terraform apply
         if: github.ref == 'refs/heads/main' && vars.RUN_TF_APPLY == 'true'
         working-directory: infra
+        env:
+          TF_VAR_sql_admin_login: ${{ secrets.SQL_ADMIN_LOGIN }}
+          TF_VAR_sql_admin_password: ${{ secrets.SQL_ADMIN_PASSWORD }}
         run: terraform apply -auto-approve

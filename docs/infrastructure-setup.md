@@ -38,18 +38,20 @@ The repository now includes an `infra` directory containing Terraform configurat
 
 ```
 /infra
-  ├── main.tf              # root configuration invoking modules
-  ├── variables.tf         # input variable definitions
-  ├── outputs.tf           # values exposed after apply
-  ├── README.md            # human-friendly overview
-  ├── modules/             # re-usable components (rg, key vault, sql, app service)
+  ├── main.tf                        # root configuration invoking modules
+  ├── variables.tf                   # input variable definitions
+  ├── outputs.tf                     # values exposed after apply
+  ├── local.auto.tfvars.example      # template for local secret variables (copy & fill in)
+  ├── local.backend.tfvars.example   # template for local backend config (copy & fill in)
+  ├── README.md                      # human-friendly overview
+  ├── modules/                       # re-usable components (rg, key vault, sql, app service)
   │    ├── resource_group/
   │    ├── key_vault/
   │    ├── sql/
   │    └── app_service/
   └── scripts/
-       ├── deploy.ps1      # wrapper to run terraform locally
-       └── bootstrap-backend.ps1  # create backend RG/SA/container if missing
+       ├── deploy.ps1                # wrapper to run terraform locally
+       └── bootstrap-backend.ps1    # create backend RG/SA/container if missing
 ```
 
 The workflow lives in `.github/workflows/infra.yml` and is triggered on pushes to `main`.
@@ -95,37 +97,71 @@ environment variables when running locally.
 
 ## Local Usage
 
-1. Install Terraform and ensure you have logged in with the appropriate Azure credentials.
-2. Set the backend variables in your session:
+### 1. Copy and fill in the secret files
+
+Two example files in the `infra/` directory hold placeholders for every value that differs between
+developer machines.  Copy each one and replace the `REPLACE_WITH_*` tokens with your real values:
 
 ```powershell
-$env:TF_STATE_RG = "my-state-rg"
-$env:TF_STATE_SA = "mystatestorage"
+cp infra/local.auto.tfvars.example   infra/local.auto.tfvars
+cp infra/local.backend.tfvars.example infra/local.backend.tfvars
+```
+
+| File | Purpose | Gitignored? |
+|------|---------|------------|
+| `local.auto.tfvars` | Terraform variables (SQL credentials) | ✔ yes |
+| `local.backend.tfvars` | Backend storage account config | ✔ yes |
+
+Both files are listed in `.gitignore` and will never be committed.
+
+**`local.auto.tfvars`** contents (fill in your values):
+```hcl
+sql_admin_login    = "your-admin-login"
+sql_admin_password = "your-admin-password"
+```
+
+**`local.backend.tfvars`** contents (fill in your values):
+```hcl
+resource_group_name  = "my-state-rg"
+storage_account_name = "mystatestorage"
+container_name       = "tfstate"
+```
+
+Terraform automatically loads `*.auto.tfvars` files.  The `local.backend.tfvars` file is picked up
+automatically by `scripts\deploy.ps1`; you do **not** need to pass extra flags.
+
+### 2. Log in to Azure
+
+```powershell
+az login
+```
+
+### 3. (Optional) Bootstrap the backend
+
+If the backend storage account and container do not yet exist, create them:
+
+```powershell
+$env:RUN_INFRA = "true"
+$env:TF_STATE_RG        = "my-state-rg"
+$env:TF_STATE_SA        = "mystatestorage"
 $env:TF_STATE_CONTAINER = "tfstate"
+cd infra/scripts
+./bootstrap-backend.ps1
 ```
 
-3. (Optional) bootstrap the backend locally if the state storage does not yet exist. You can run the
-   provided PowerShell helper to create the RG/account/container using the same `TF_STATE_*`
-   environment variables:
-
-   ```powershell
-   cd infra/scripts
-   ./bootstrap-backend.ps1
-   ```
-
-4. (Optional) you may disable all infrastructure operations locally by ensuring the
-   `RUN_INFRA` variable is not set to `true` (e.g. `SET RUN_INFRA=false`); both the bootstrap and deploy
-   scripts will exit immediately.
-
-5. Run the main helper script:
+### 4. Run the deploy helper
 
 ```powershell
+$env:RUN_INFRA = "true"
 cd infra
-scripts\deploy.ps1           # applies configuration
-scripts\deploy.ps1 -PlanOnly  # just show plan
+scripts\deploy.ps1           # plan + apply
+scripts\deploy.ps1 -PlanOnly  # plan only
 ```
 
-6. **Unit testing** – execute the helper under `tests/`:  
+The script reads `local.backend.tfvars` for the backend config and Terraform automatically reads
+`local.auto.tfvars` for the SQL credentials.
+
+### 5. (Optional) Validate without deploying
 
 ```powershell
 powershell -File tests\infra-validate.ps1
@@ -133,8 +169,6 @@ powershell -File tests\infra-validate.ps1
 
 This script copies the configuration to a temporary folder, sets dummy variables and runs
 `terraform validate`, providing a quick integrity check before deploying.
-
-The script initializes the backend if necessary and applies the configuration.
 
 > **Review the plan locally:**
 >
@@ -173,7 +207,9 @@ logical phases:
 ### 2. Plan and apply
 
 4. Initialize the Terraform backend using the same secret values.
-5. Run `terraform plan` to surface changes.
+5. Run `terraform plan` (the `SQL_ADMIN_LOGIN` and `SQL_ADMIN_PASSWORD` secrets are exposed as
+   `TF_VAR_sql_admin_login` / `TF_VAR_sql_admin_password` environment variables so Terraform can
+   read them without a local secrets file).
 6. On `main` branch pushes (and when `RUN_TF_APPLY` is `true`) run `terraform apply -auto-approve` to enact changes.
 
 ### 3. Destroy (tear‑down)
@@ -264,8 +300,14 @@ merging.  The modular structure keeps the root file slim and the planning output
 
 ## Sensitive Data
 
-Never hard‑code credentials or secrets in the `.tf` files. Use variables sourced from GitHub secrets or an
-external secrets manager. GitHub Actions masks secrets in logs to prevent exposure.
+Never hard‑code credentials or secrets in the `.tf` files.
+
+* **Locally** – copy the `*.example` files in `infra/` to their real names (`local.auto.tfvars`,
+  `local.backend.tfvars`) and fill in your values.  Both files are git-ignored.
+* **In CI** – GitHub Actions exposes secrets as `TF_VAR_*` environment variables and as
+  `-backend-config` flags; the local files are never present on the runner.
+
+GitHub Actions masks secrets in logs to prevent accidental exposure.
 
 ---
 

@@ -1,0 +1,20 @@
+# Backend configuration for Terraform — DO NOT COMMIT real values.
+#
+# Copy this file to local.backend.tfvars and replace each placeholder with the
+# names of your existing Azure backend resources.
+#
+#   cp infra/local.backend.tfvars.example infra/local.backend.tfvars
+#
+# Pass this file to terraform init with -backend-config:
+#
+#   terraform init -backend-config=local.backend.tfvars
+#
+# The deploy.ps1 helper detects local.backend.tfvars automatically, so running
+# scripts\deploy.ps1 from the infra directory is enough.
+#
+# In CI, these values are supplied directly as -backend-config flags from
+# GitHub Secrets instead of this file.
+
+resource_group_name  = "REPLACE_WITH_STATE_RESOURCE_GROUP"
+storage_account_name = "REPLACE_WITH_STATE_STORAGE_ACCOUNT"
+container_name       = "tfstate"
