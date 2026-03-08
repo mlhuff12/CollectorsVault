@@ -32,13 +32,26 @@ rollback/destroy procedures, and usage tips, see the [Infrastructure Deployment 
 
 ## Local Development
 
-You can run the scripts in `infra/scripts` to perform the same actions locally, assuming you have the provider
-credentials available as environment variables.
+To run locally, copy the two example secret files and fill in your real values:
+
+```powershell
+cp infra/local.auto.tfvars.example  infra/local.auto.tfvars    # Terraform variables (SQL credentials)
+cp infra/local.backend.tfvars.example infra/local.backend.tfvars  # Backend storage config
+```
+
+Edit both files, replacing each `REPLACE_WITH_*` placeholder with your actual value.  Both files are
+git-ignored so they will never be committed.
+
+Then run the deploy helper — it picks up `local.backend.tfvars` automatically:
 
 ```powershell
 cd infra
+$env:RUN_INFRA = "true"
 scripts\deploy.ps1 -Environment "dev"
 ```
+
+In CI, GitHub Secrets supply the same values instead of these files (see the
+[Infrastructure Deployment Guide](../docs/infrastructure-setup.md) for details).
 
 ### Control flags
 

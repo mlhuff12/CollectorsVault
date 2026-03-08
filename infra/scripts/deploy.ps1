@@ -13,23 +13,31 @@ if ($env:RUN_INFRA -ne 'true') {
     exit 0
 }
 
-Push-Location -Path (Split-Path -Parent $MyInvocation.MyCommand.Path)
+# Change to the infra root directory (parent of this script's directory) so
+# Terraform can find the .tf files regardless of where the caller is.
+$infraDir = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
+Push-Location -Path $infraDir
 
-$vars = @{
-    state_resource_group  = $env:TF_STATE_RG
-    state_storage_account = $env:TF_STATE_SA
-    state_container       = $env:TF_STATE_CONTAINER
+# Determine backend config.
+# Locally: copy local.backend.tfvars.example to local.backend.tfvars and fill in values.
+# In CI: set TF_STATE_RG, TF_STATE_SA, and TF_STATE_CONTAINER environment variables.
+$localBackend = Join-Path $infraDir "local.backend.tfvars"
+if (Test-Path $localBackend) {
+    Write-Host "Using backend config from local.backend.tfvars"
+    $backendArgs = @("-backend-config=local.backend.tfvars")
+} else {
+    $backendArgs = @(
+        "-backend-config=resource_group_name=$($env:TF_STATE_RG)",
+        "-backend-config=storage_account_name=$($env:TF_STATE_SA)",
+        "-backend-config=container_name=$($env:TF_STATE_CONTAINER)"
+    )
 }
 
 if ($PlanOnly) {
-    terraform init -backend-config="resource_group_name=$($vars.state_resource_group)" `
-                   -backend-config="storage_account_name=$($vars.state_storage_account)" `
-                   -backend-config="container_name=$($vars.state_container)"
+    terraform init @backendArgs
     terraform plan
 } else {
-    terraform init -backend-config="resource_group_name=$($vars.state_resource_group)" `
-                   -backend-config="storage_account_name=$($vars.state_storage_account)" `
-                   -backend-config="container_name=$($vars.state_container)"
+    terraform init @backendArgs
     terraform apply -auto-approve
 }
 

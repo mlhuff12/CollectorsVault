@@ -7,8 +7,11 @@ on:
 
 jobs:
   terraform:
-    if: env.RUN_INFRA == 'true'
+    if: vars.RUN_INFRA == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,20 +29,15 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Bootstrap backend resources
-        if: env.SKIP_BACKEND_BOOTSTRAP != 'true'
-        uses: azure/CLI@v1
-        with:
-          azcliversion: 'latest'
-          inlineScript: |
-            # ensure RG/SA/container exist before terraform tries to use them
-            cd infra/scripts
-            ./bootstrap-backend.ps1
+        if: vars.SKIP_BACKEND_BOOTSTRAP != 'true'
+        shell: pwsh
+        run: infra/scripts/bootstrap-backend.ps1
         env:
           TF_STATE_RG: ${{ secrets.TF_STATE_RG }}
           TF_STATE_SA: ${{ secrets.TF_STATE_SA }}
           TF_STATE_CONTAINER: ${{ secrets.TF_STATE_CONTAINER }}
-          SKIP_BACKEND_BOOTSTRAP: ${{ env.SKIP_BACKEND_BOOTSTRAP }}
-          RUN_INFRA: ${{ env.RUN_INFRA }}
+          SKIP_BACKEND_BOOTSTRAP: ${{ vars.SKIP_BACKEND_BOOTSTRAP }}
+          RUN_INFRA: ${{ vars.RUN_INFRA }}
 
       - name: Initialise backend
         working-directory: infra
@@ -51,9 +49,15 @@ jobs:
 
       - name: Terraform plan
         working-directory: infra
+        env:
+          TF_VAR_sql_admin_login: ${{ secrets.SQL_ADMIN_LOGIN }}
+          TF_VAR_sql_admin_password: ${{ secrets.SQL_ADMIN_PASSWORD }}
         run: terraform plan
 
       - name: Terraform apply
-        if: github.ref == 'refs/heads/main' && env.RUN_TF_APPLY == 'true'
+        if: github.ref == 'refs/heads/main' && vars.RUN_TF_APPLY == 'true'
         working-directory: infra
+        env:
+          TF_VAR_sql_admin_login: ${{ secrets.SQL_ADMIN_LOGIN }}
+          TF_VAR_sql_admin_password: ${{ secrets.SQL_ADMIN_PASSWORD }}
         run: terraform apply -auto-approve

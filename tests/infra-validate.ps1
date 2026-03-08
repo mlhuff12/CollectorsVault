@@ -29,6 +29,8 @@ $env:TF_VAR_sql_server_name = "test-sql"
 $env:TF_VAR_sql_database_name = "test-db"
 $env:TF_VAR_app_service_plan_name = "test-plan"
 $env:TF_VAR_app_service_name = "test-app"
+$env:TF_VAR_sql_admin_login = "testadmin"
+$env:TF_VAR_sql_admin_password = "Dummy-Password-For-Validate-Only!"
 
 Write-Host "Initializing terraform"
 terraform init -backend=false | Out-Null

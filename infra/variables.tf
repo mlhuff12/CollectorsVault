@@ -43,23 +43,6 @@ variable "app_service_name" {
   default     = "collectorsvault-app"
 }
 
-# backend state configuration
-variable "state_resource_group" {
-  description = "Resource group holding the Terraform backend state"
-  type        = string
-}
-
-variable "state_storage_account" {
-  description = "Storage account used for the Terraform backend state"
-  type        = string
-}
-
-variable "state_container" {
-  description = "Blob container in the backend storage account"
-  type        = string
-  default     = "tfstate"
-}
-
 # credentials for SQL server (avoid hardcoding in repo)
 variable "sql_admin_login" {
   description = "Administrator login for SQL server"

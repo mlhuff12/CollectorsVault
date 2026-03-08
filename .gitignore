@@ -40,3 +40,12 @@ server/Data/*.db-wal
 
 # Local HTTPS certs for LAN phone testing
 server/.certs/
+
+# Terraform local secrets and working files (never commit real values)
+infra/local.auto.tfvars
+infra/local.backend.tfvars
+infra/.terraform/
+infra/.terraform.lock.hcl
+infra/*.tfplan
+infra/*.tfstate
+infra/*.tfstate.backup

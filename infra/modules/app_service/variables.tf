@@ -18,14 +18,8 @@ variable "location" {
   type        = string
 }
 
-variable "sku_tier" {
-  description = "SKU tier for the plan"
-  type        = string
-  default     = "Free"
-}
-
-variable "sku_size" {
-  description = "SKU size for the plan"
+variable "sku_name" {
+  description = "SKU name for the service plan (e.g. F1, B1, S1)"
   type        = string
   default     = "F1"
 }
