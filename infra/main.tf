@@ -10,10 +10,7 @@ terraform {
   }
 
   backend "azurerm" {
-    resource_group_name  = var.state_resource_group
-    storage_account_name = var.state_storage_account
-    container_name       = var.state_container
-    key                  = "terraform.tfstate"
+    key = "terraform.tfstate"
   }
 }
 
@@ -55,8 +52,7 @@ module "app" {
   app_name            = var.app_service_name
   resource_group_name = module.resource_group.name
   location            = module.resource_group.location
-  sku_tier            = "Free"
-  sku_size            = "F1"
+  sku_name            = "F1"
   dotnet_version      = "v8.0"
   app_settings        = { "WEBSITE_RUN_FROM_PACKAGE" = "1" }
 }

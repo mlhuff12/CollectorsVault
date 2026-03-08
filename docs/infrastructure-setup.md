@@ -67,13 +67,12 @@ environment variables when running locally.
 
   | Name | Description | Type | Example/Notes |
   |------|-------------|------|---------------|
-  | `AZURE_CLIENT_ID` | Service principal client ID | secret | used in azure/login action |
-  | `AZURE_CLIENT_SECRET` | Service principal secret | secret |   |
+  | `AZURE_CLIENT_ID` | Service principal client ID | secret | used in azure/login action (OIDC) |
   | `AZURE_TENANT_ID` | Azure tenant ID | secret |   |
   | `AZURE_SUBSCRIPTION_ID` | Azure subscription ID | secret |   |
-  | `TF_STATE_RG` | Resource group for Terraform backend state (existing RG name) | variable | backend resources must be provisioned outside this project; typically a dedicated RG separate from the app resources |
-  | `TF_STATE_SA` | Storage account for backend state (existing account name) | variable | same as above; required by `terraform init` but not managed here |
-  | `TF_STATE_CONTAINER` | Blob container name for state | variable | default `tfstate`; container also must already exist |
+  | `TF_STATE_RG` | Resource group for Terraform backend state (existing RG name) | secret | backend resources must be provisioned outside this project; typically a dedicated RG separate from the app resources |
+  | `TF_STATE_SA` | Storage account for backend state (existing account name) | secret | same as above; required by `terraform init` but not managed here |
+  | `TF_STATE_CONTAINER` | Blob container name for state | secret | default `tfstate`; container also must already exist |
   | `SQL_ADMIN_LOGIN` | SQL server administrator login | secret | used by SQL module |
   | `SQL_ADMIN_PASSWORD` | SQL server administrator password | secret | marked sensitive |
   | `resource_group_name` | Name of the primary resource group | variable | default `collectorsvault-rg` |
@@ -159,20 +158,16 @@ logical phases:
 
 1. Check out the repository.
 2. Log in to Azure using secrets stored in GitHub.
-3. Run an Azure CLI step that executes `infra/scripts/bootstrap-backend.ps1` with the
-   `TF_STATE_*` environment variables. This ensures the state RG, storage account, and blob container
+3. Run a PowerShell step that executes `infra/scripts/bootstrap-backend.ps1` with the
+   `TF_STATE_*` secrets as environment variables. This ensures the state RG, storage account, and blob container
    exist before Terraform attempts to use them; it runs even when `RUN_TF_APPLY` is false.
 
-> **Controlling pipeline execution** – the `terraform` job only runs when the repository or
-> workflow variable `RUN_INFRA` is set to `true`. Leave it unset or set it to another value to
+> **Controlling pipeline execution** – the `terraform` job only runs when the repository
+> variable `RUN_INFRA` is set to `true`. Leave it unset or set it to any other value to
 > bypass infrastructure actions entirely.
 
-> **Skip entire infra workflow** – set a repository or workflow variable named `SKIP_INFRA` to
-> `true` and the `terraform` job will be skipped completely. This allows you to push commits without
-> touching infrastructure at all while you are still working on other parts of the repository.
-
 > **Skipping bootstrap** – if you are early in development and don’t yet want the backend
-> resources created, set a repository or workflow variable named `SKIP_BACKEND_BOOTSTRAP`
+> resources created, set a repository variable named `SKIP_BACKEND_BOOTSTRAP`
 > to `true`. The pipeline will skip the bootstrap step and the script will exit immediately.
 
 ### 2. Plan and apply
@@ -182,23 +177,6 @@ logical phases:
 6. On `main` branch pushes (and when `RUN_TF_APPLY` is `true`) run `terraform apply -auto-approve` to enact changes.
 
 ### 3. Destroy (tear‑down)
-
-A separate workflow (`.github/workflows/infra-destroy.yml`) is available for tearing down all managed
-resources. It can be triggered manually (via **Actions → Infrastructure Destroy → Run workflow**). The
-steps mirror the main pipeline except the final step executes `terraform destroy -auto-approve`, which
-uses the state in the backend to remove everything defined by the configuration.
-
-To perform a **destroy**:
-
-1. Ensure the backend RG/storage account/container still exists (the bootstrap step handles this).
-2. Trigger the **Infrastructure Destroy** workflow from the GitHub UI or via the REST API.
-3. Terraform will destroy the resource group created by the `resource_group` module along with its
-   contents (Key Vault, SQL, App Service, etc.) and update the state accordingly.
-
-> **Note:** destroying the resources does _not_ automatically delete the backend storage account or
-> container; you may clean those up manually if you no longer need them.
-
-### Destroy (tear‑down)
 
 A separate workflow (`.github/workflows/infra-destroy.yml`) is available for tearing down all managed
 resources. It can be triggered manually (via **Actions → Infrastructure Destroy → Run workflow**). The
@@ -256,15 +234,15 @@ Deployments only happen when PRs are merged to `main`. No changes are applied on
 > **Disable automatic apply**
 >
 > You can prevent the workflow from performing an `apply` even after a merge by defining a
-> repository or environment variable named `RUN_TF_APPLY` and setting it to a value other than
+> repository variable named `RUN_TF_APPLY` and setting it to a value other than
 > `true` (or leaving it unset). The workflow condition now reads:
 >
 > ```yaml
-> if: github.ref == 'refs/heads/main' && env.RUN_TF_APPLY == 'true'
+> if: github.ref == 'refs/heads/main' && vars.RUN_TF_APPLY == 'true'
 > ```
 >
-> When you're ready to run the apply step, set `RUN_TF_APPLY=true` in the workflow environment or
-> add it as a variable in GitHub Actions settings. This allows you to merge PRs and review plans
+> When you’re ready to run the apply step, set `RUN_TF_APPLY` as a repository variable in
+> GitHub Actions settings. This allows you to merge PRs and review plans
 > without immediately creating/altering infrastructure.
 
 ## Extending the Configuration

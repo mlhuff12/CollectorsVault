@@ -6,6 +6,9 @@ on:
 jobs:
   destroy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,16 +26,13 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Bootstrap backend resources
-        uses: azure/CLI@v1
-        with:
-          azcliversion: 'latest'
-          inlineScript: |
-            cd infra/scripts
-            ./bootstrap-backend.ps1
+        shell: pwsh
+        run: infra/scripts/bootstrap-backend.ps1
         env:
           TF_STATE_RG: ${{ secrets.TF_STATE_RG }}
           TF_STATE_SA: ${{ secrets.TF_STATE_SA }}
           TF_STATE_CONTAINER: ${{ secrets.TF_STATE_CONTAINER }}
+          RUN_INFRA: "true"
 
       - name: Initialise backend
         working-directory: infra

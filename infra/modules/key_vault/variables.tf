@@ -30,12 +30,6 @@ variable "purge_protection_enabled" {
   default     = false
 }
 
-variable "soft_delete_enabled" {
-  description = "Enable soft delete"
-  type        = bool
-  default     = true
-}
-
 variable "soft_delete_retention_days" {
   description = "Retention days for soft delete"
   type        = number
