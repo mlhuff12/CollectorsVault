@@ -9,7 +9,7 @@ React + TypeScript frontend for Collectors Vault.
   - `/books`
   - `/movies`
   - `/games`
-- Home page includes a type dropdown to switch between add forms (Book/Movie/Game).
+- Home page shows a grid of tiles (Scan Barcode, Add Book, Add Movie, Add Game). Clicking a tile opens a modal with the appropriate form (or scanner).
 - Category pages show filtered items only.
 - Delete action available for items in all tabs.
 - Uses Font Awesome trash icon for delete button.

@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 
 /** Severity level of the toast notification. */
-export type ToastType = 'success' | 'error' | 'info';
+export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
 /** Props accepted by {@link Toast}. */
 interface ToastProps {
@@ -28,7 +28,14 @@ const Toast: React.FC<ToastProps> = ({ message, type = 'success', duration = 300
 
     if (!message) return null;
 
-    const bgClass = type === 'success' ? 'bg-success' : type === 'error' ? 'bg-danger' : 'bg-info';
+    const bgClass =
+        type === 'success'
+            ? 'bg-success'
+            : type === 'error'
+            ? 'bg-danger'
+            : type === 'warning'
+            ? 'bg-warning text-dark'
+            : 'bg-info';
 
     return (
         <div

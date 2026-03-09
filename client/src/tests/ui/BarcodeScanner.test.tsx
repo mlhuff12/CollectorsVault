@@ -79,31 +79,22 @@ describe('BarcodeScanner', () => {
         await waitForScannerToSettle();
     });
 
-    it('shows manual barcode input when the camera fails to start', async () => {
+    it('calls onError and hides all UI when camera fails to start', async () => {
         mockBehavior.startShouldReject = true;
         const onScan = vi.fn();
         const onClose = vi.fn();
-        render(<BarcodeScanner onScan={onScan} onClose={onClose} />);
+        const onError = vi.fn();
+        render(<BarcodeScanner onScan={onScan} onClose={onClose} onError={onError} />);
 
-        // Error message and manual input should appear once start() rejects
-        await screen.findByText(/Camera could not be opened/i);
-        expect(screen.getByPlaceholderText('Enter barcode number')).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: 'Use' })).toBeInTheDocument();
-    });
-
-    it('calls onScan and onClose when a barcode is submitted manually', async () => {
-        mockBehavior.startShouldReject = true;
-        const onScan = vi.fn();
-        const onClose = vi.fn();
-        render(<BarcodeScanner onScan={onScan} onClose={onClose} />);
-
-        await screen.findByPlaceholderText('Enter barcode number');
-        fireEvent.change(screen.getByPlaceholderText('Enter barcode number'), {
-            target: { value: '9780134190440' },
+        await waitFor(() => {
+            expect(onError).toHaveBeenCalledWith(
+                'Camera could not be opened. Make sure the camera permission is granted, or manually enter UPC.'
+            );
         });
-        fireEvent.click(screen.getByRole('button', { name: 'Use' }));
 
-        expect(onScan).toHaveBeenCalledWith('9780134190440');
-        expect(onClose).toHaveBeenCalledTimes(1);
+        // component should render nothing after error
+        expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
+        expect(screen.queryByText('Point the camera at a barcode')).not.toBeInTheDocument();
     });
+
 });

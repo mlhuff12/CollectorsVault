@@ -1,13 +1,15 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import VaultPage from '../../pages/VaultPage';
 import * as api from '../../services/api';
 
+// control object for simulating camera start success/failure
+const qrMockBehavior = { startShouldReject: false };
 vi.mock('html5-qrcode', () => ({
     Html5Qrcode: function() {
         return {
-            start: () => Promise.resolve(),
+            start: () => qrMockBehavior.startShouldReject ? Promise.reject(new Error('camera error')) : Promise.resolve(),
             stop: () => Promise.resolve()
         };
     },
@@ -21,7 +23,6 @@ vi.mock('../../services/api', () => ({
     addBook: vi.fn(),
     addMovie: vi.fn(),
     addGame: vi.fn(),
-    deleteItem: vi.fn(),
     fetchAllUsers: vi.fn(),
     lookupBookByIsbn: vi.fn(),
     lookupMovieByUpc: vi.fn(),
@@ -36,7 +37,6 @@ vi.mock('../../context/AuthContext', () => ({
 
 describe('VaultPage', () => {
     const mockFetchItems = api.fetchItems as jest.MockedFunction<typeof api.fetchItems>;
-    const mockDeleteItem = api.deleteItem as jest.MockedFunction<typeof api.deleteItem>;
     const mockFetchAllUsers = api.fetchAllUsers as jest.MockedFunction<typeof api.fetchAllUsers>;
 
     beforeEach(() => {
@@ -47,7 +47,6 @@ describe('VaultPage', () => {
             { id: 2, title: 'Inception', description: 'Mind-bending thriller', category: 'movie' },
             { id: 3, title: 'Halo Infinite', description: 'FPS campaign', category: 'game' }
         ]);
-        mockDeleteItem.mockResolvedValue();
         vi.spyOn(window, 'confirm').mockReturnValue(true);
     });
 
@@ -63,32 +62,125 @@ describe('VaultPage', () => {
         );
     };
 
-    it('renders home view and loads items from mocked endpoint service', async () => {
+    it('renders home tiles and does not fetch any items', async () => {
         renderVaultPage('/');
 
-        expect(await screen.findByRole('heading', { name: "Collector's Vault Items" })).toBeInTheDocument();
-        expect(screen.getByText('Dune')).toBeInTheDocument();
-        expect(screen.getByText('Inception')).toBeInTheDocument();
-        expect(screen.getByText('Halo Infinite')).toBeInTheDocument();
-        expect(mockFetchItems).toHaveBeenCalledTimes(1);
+        // expect our four tiles to be visible
+        expect(await screen.findByText('Scan Barcode')).toBeInTheDocument();
+        expect(screen.getByText('Add Book')).toBeInTheDocument();
+        expect(screen.getByText('Add Movie')).toBeInTheDocument();
+        expect(screen.getByText('Add Game')).toBeInTheDocument();
+        expect(mockFetchItems).not.toHaveBeenCalled();
     });
 
-    it('switches home form based on collectible type dropdown', async () => {
+    it('opens and closes a modal when a tile is clicked', async () => {
         renderVaultPage('/');
 
-        expect(await screen.findByRole('heading', { name: 'Add a New Book' })).toBeInTheDocument();
+        fireEvent.click(await screen.findByText('Add Book'));
+        const dialog = screen.getByRole('dialog');
+        expect(dialog).toBeInTheDocument();
+        // header should display full sentence
+        expect(within(dialog).getByText('Add a Book')).toBeInTheDocument();
+        // form title inside should be removed
+        expect(within(dialog).queryByText('Add a New Book')).not.toBeInTheDocument();
 
-        fireEvent.change(screen.getByLabelText('Select collectible type'), {
-            target: { value: 'movie' }
+        // modal should use scrollable dialog class and limit height
+        const dialogNode = dialog.closest('.modal-dialog');
+        expect(dialogNode).toHaveClass('modal-dialog-scrollable');
+        const content = dialogNode?.querySelector('.modal-content');
+        expect(content).toHaveStyle({ maxHeight: '90vh' });
+
+        // close using close button
+        fireEvent.click(screen.getByLabelText('Close'));
+        await waitFor(() => {
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        });
+    });
+
+    it('opens book modal and can submit the form via the modal confirm', async () => {
+        renderVaultPage('/');
+        fireEvent.click(await screen.findByText('Add Book'));
+        const dialog = screen.getByRole('dialog');
+        expect(dialog).toBeInTheDocument();
+
+        // fill the basic required fields
+        fireEvent.change(screen.getByLabelText('Title:'), { target: { value: 'Test Title' } });
+        fireEvent.change(screen.getByLabelText('Authors (comma-separated):'), { target: { value: 'Tester' } });
+
+        // clicking the header button triggers requestSubmit; jsdom doesn’t implement
+        // requestSubmit reliably, so also submit the form element directly to ensure
+        // the BookForm handler runs and the API spy is invoked.
+        fireEvent.click(screen.getByRole('button', { name: 'Create' }));
+        const formElement = dialog.querySelector('form');
+        if (formElement) {
+            fireEvent.submit(formElement);
+        }
+
+        // the underlying BookForm tests already verify api.addBook, but we keep a
+        // sanity check here rather than drive the entire behaviour through the
+        // modal.
+        await waitFor(() => {
+            expect(api.addBook).toHaveBeenCalled();
         });
 
-        expect(screen.getByRole('heading', { name: 'Add a Movie' })).toBeInTheDocument();
-
-        fireEvent.change(screen.getByLabelText('Select collectible type'), {
-            target: { value: 'game' }
+        await waitFor(() => {
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         });
+    });
 
-        expect(screen.getByRole('heading', { name: 'Add a Game' })).toBeInTheDocument();
+    it('shows manual UPC entry and scan button when camera is available, and keeping input visible after opening scanner', async () => {
+        // ensure mediaDevices is present before rendering
+        Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
+        renderVaultPage('/');
+        fireEvent.click(await screen.findByText('Scan Barcode'));
+
+        const input = screen.getByPlaceholderText('Enter UPC');
+        expect(input).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Lookup' })).toBeInTheDocument();
+        expect(screen.getByText('OR')).toBeInTheDocument();
+        const scanBtn = screen.getByRole('button', { name: 'Scan Barcode' });
+        expect(scanBtn).toBeInTheDocument();
+
+        // open the scanner, input should remain present
+        fireEvent.click(scanBtn);
+        expect(screen.getByPlaceholderText('Enter UPC')).toBeInTheDocument();
+    });
+
+    it('displays error message under UPC input when scanner fails to start', async () => {
+        qrMockBehavior.startShouldReject = true;
+        Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
+        renderVaultPage('/');
+        fireEvent.click(await screen.findByText('Scan Barcode'));
+
+        const scanBtn = screen.getByRole('button', { name: 'Scan Barcode' });
+        fireEvent.click(scanBtn);
+
+        expect(await screen.findByText(/Camera could not be opened/i)).toBeInTheDocument();
+    });
+
+    it('clears prior scan error when the UPC modal is reopened', async () => {
+        qrMockBehavior.startShouldReject = true;
+        Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
+        renderVaultPage('/');
+        fireEvent.click(await screen.findByText('Scan Barcode'));
+        fireEvent.click(screen.getByRole('button', { name: 'Scan Barcode' }));
+        await screen.findByText(/Camera could not be opened/i);
+
+        // close and open again with scanner allowed
+        fireEvent.click(screen.getByLabelText('Close'));
+        qrMockBehavior.startShouldReject = false;
+        fireEvent.click(screen.getByText('Scan Barcode'));
+        expect(screen.queryByText(/Camera could not be opened/i)).not.toBeInTheDocument();
+    });
+
+    it('hides OR and scan button when camera is unavailable', async () => {
+        delete (navigator as any).mediaDevices;
+        renderVaultPage('/');
+        fireEvent.click(await screen.findByText('Scan Barcode'));
+
+        expect(screen.getByPlaceholderText('Enter UPC')).toBeInTheDocument();
+        expect(screen.queryByText('OR')).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Scan Barcode' })).not.toBeInTheDocument();
     });
 
     it('shows only books on the books route', async () => {
@@ -100,28 +192,15 @@ describe('VaultPage', () => {
         expect(screen.queryByText('Halo Infinite')).not.toBeInTheDocument();
     });
 
-    it('deletes an item using mocked delete endpoint service', async () => {
-        renderVaultPage('/');
+    // deletion functionality removed from this page; no test required
 
-        const deleteButton = await screen.findByLabelText('Delete Dune');
-        fireEvent.click(deleteButton);
-
-        await waitFor(() => {
-            expect(mockDeleteItem).toHaveBeenCalledWith(1);
-        });
-
-        await waitFor(() => {
-            expect(screen.queryByText('Dune')).not.toBeInTheDocument();
-        });
-
-        expect(window.confirm).toHaveBeenCalled();
-    });
 
     it('does not show admin tab for non-admin users', async () => {
         mockIsAdmin = false;
         renderVaultPage('/');
 
-        await screen.findByRole('heading', { name: "Collector's Vault Items" });
+        // ensure the page header renders (text updated in UI)
+        await screen.findByRole('heading', { name: "Collector's Vault" });
 
         expect(screen.queryByRole('button', { name: 'Admin' })).not.toBeInTheDocument();
     });
@@ -131,9 +210,26 @@ describe('VaultPage', () => {
         mockFetchAllUsers.mockResolvedValue([]);
         renderVaultPage('/');
 
-        await screen.findByRole('heading', { name: "Collector's Vault Items" });
+        // header adjusted to match updated UI
+        await screen.findByRole('heading', { name: "Collector's Vault" });
 
         expect(screen.getByRole('button', { name: 'Admin' })).toBeInTheDocument();
+    });
+
+    it('book page shows UPC/ISBN lookup field', async () => {
+        renderVaultPage('/books');
+        expect(await screen.findByPlaceholderText('Enter UPC or ISBN')).toBeInTheDocument();
+    });
+
+    it('movie page shows UPC lookup field', async () => {
+        Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
+        renderVaultPage('/movies');
+        expect(await screen.findByPlaceholderText('Enter UPC')).toBeInTheDocument();
+    });
+
+    it('game page shows UPC lookup field', async () => {
+        renderVaultPage('/games');
+        expect(await screen.findByPlaceholderText('Enter UPC')).toBeInTheDocument();
     });
 
     it('renders admin section on /admin route for admin users', async () => {

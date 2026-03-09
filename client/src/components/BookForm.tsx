@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { addBook, lookupBookByIsbn } from '../services/api';
 import { Book, BookFormat, BookLookupResult } from '../models';
 import BarcodeScanner from './BarcodeScanner';
@@ -8,6 +8,9 @@ import Toast from './Toast';
 interface BookFormProps {
     /** Called after a book is successfully added, allowing the parent to refresh its list. */
     onItemAdded?: () => void;
+    hideSubmit?: boolean;
+    formRef?: React.Ref<HTMLFormElement>;
+    hideTitle?: boolean;
 }
 
 const bookFormatByEnumValue: Record<number, BookFormat> = {
@@ -86,12 +89,14 @@ const toBookFormat = (value: unknown): BookFormat | '' => {
  *
  * On submission the form calls the API and notifies the parent via `onItemAdded`.
  */
-const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
+const BookForm: React.FC<BookFormProps> = ({ onItemAdded, hideSubmit = false, formRef, hideTitle = false }) => {
     const [isbn, setIsbn] = useState('');
     const [lookupResult, setLookupResult] = useState<BookLookupResult | null>(null);
     const [lookupError, setLookupError] = useState('');
+    const [scanError, setScanError] = useState('');
     const [isLooking, setIsLooking] = useState(false);
     const [showScanner, setShowScanner] = useState(false);
+    const [canScan, setCanScan] = useState(false);
 
     // Manual-entry fields (used only when no lookup result is present)
     const [title, setTitle] = useState('');
@@ -149,10 +154,19 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
     const handleClearLookup = () => {
         setLookupResult(null);
         setLookupError('');
+        setScanError('');
         setIsbn('');
         setSeriesName('');
         setSeriesNumber('');
     };
+
+    useEffect(() => {
+        if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
+            setCanScan(true);
+        } else {
+            setCanScan(false);
+        }
+    }, []);
 
     /** Called when the barcode scanner successfully decodes a barcode. */
     const handleBarcodeScan = useCallback(async (barcode: string) => {
@@ -262,21 +276,22 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
 
     return (
         <div>
-            <h2 className="h5 mb-3">Add a New Book</h2>
+            {!hideTitle && <h2 className="h5 mb-3">Add a New Book</h2>}
             <form onSubmit={handleSubmit}>
                 {/* ISBN + Lookup + Scan */}
                 <div className="mb-3">
-                    <label htmlFor="book-isbn" className="form-label">ISBN:</label>
+                    <label htmlFor="book-isbn" className="form-label">UPC / ISBN:</label>
                     <div className="input-group">
                         <input
                             id="book-isbn"
                             type="text"
                             className="form-control"
                             value={isbn}
-                            onChange={(e) => { setIsbn(e.target.value); if (isFromLookup) handleClearLookup(); }}
+                            onChange={(e) => { setIsbn(e.target.value); if (isFromLookup) handleClearLookup(); setScanError(''); }}
                             onKeyDown={handleIsbnKeyDown}
-                            placeholder="Enter ISBN-10 or ISBN-13"
-                            aria-label="ISBN"
+                            placeholder="Enter UPC or ISBN"
+                            aria-label="UPC or ISBN"
+                            maxLength={13}
                         />
                         <button
                             type="button"
@@ -287,17 +302,26 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
                         >
                             {isLooking ? 'Looking up…' : 'Lookup'}
                         </button>
-                        <button
-                            type="button"
-                            className="btn btn-outline-secondary"
-                            onClick={() => setShowScanner((prev) => !prev)}
-                            disabled={isLooking}
-                            aria-label="Scan Barcode"
-                        >
-                            {isLooking ? 'Looking up…' : '📷 Scan Barcode'}
-                        </button>
+                        {canScan && (
+                            <>
+                                <div className="input-group-text">OR</div>
+                                <button
+                                    type="button"
+                                    className="btn btn-outline-secondary"
+                                    onClick={() => {
+                                        setScanError('');
+                                        setShowScanner((prev) => !prev);
+                                    }}
+                                    disabled={isLooking}
+                                    aria-label="Scan Barcode"
+                                >
+                                    {isLooking ? 'Looking up…' : '📷 Scan Barcode'}
+                                </button>
+                            </>
+                        )}
                     </div>
                     {lookupError && <div className="form-text text-warning">{lookupError}</div>}
+                    {scanError && <div className="form-text text-warning mb-2">{scanError}</div>}
                     {isFromLookup && (
                         <div className="form-text text-success">
                             Book found! Fields auto-populated.{' '}
@@ -309,6 +333,10 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
                     {showScanner && (
                         <BarcodeScanner
                             onScan={handleBarcodeScan}
+                            onError={(msg) => {
+                                setScanError(msg);
+                                setShowScanner(false);
+                            }}
                             onClose={() => setShowScanner(false)}
                         />
                     )}
@@ -491,7 +519,7 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded }) => {
                     <label htmlFor="book-needs-replacement" className="form-check-label">Needs Replacement</label>
                 </div>
 
-                <button className="btn btn-primary" type="submit">Add Book</button>
+                {!hideSubmit && <button className="btn btn-primary" type="submit">Add Book</button>}
             </form>
             {errorMessage && <p className="mt-2 text-danger">{errorMessage}</p>}
             <Toast

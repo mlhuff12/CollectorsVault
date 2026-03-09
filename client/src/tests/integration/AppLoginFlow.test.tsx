@@ -42,9 +42,10 @@ describe('App login integration flow', () => {
             expect(mockLogin).toHaveBeenCalledWith('michelle', '123456');
         });
 
-        expect(await screen.findByRole('heading', { name: "Collector's Vault Items" })).toBeInTheDocument();
+        // after login we should land on the home tiles rather than an item list
+        expect(await screen.findByText('Scan Barcode')).toBeInTheDocument();
         expect(screen.getByText('michelle')).toBeInTheDocument();
-        expect(mockFetchItems).toHaveBeenCalled();
+        expect(mockFetchItems).not.toHaveBeenCalled();
         expect(localStorage.getItem('cv_token')).toBe('token-123');
         expect(localStorage.getItem('cv_username')).toBe('michelle');
     });

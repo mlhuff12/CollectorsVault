@@ -43,3 +43,40 @@ body {
   height: 220px;
   max-width: 100%;
 }
+
+/* simple tiles shown on home page */
+.home-tile {
+  width: 140px;
+  height: 140px;
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.15s, box-shadow 0.15s;
+}
+.home-tile:hover {
+  background-color: #f8f9fa;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+.home-tile span {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+/* ensure home section fills viewport with matching background */
+.home-bg {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f5f8ff 0%, #eef2ff 100%);
+}
+
+/* ensure modal content does not stretch the entire page height; only body scrolls */
+.modal-dialog-scrollable .modal-content {
+  max-height: 90vh;
+}
+
+.modal-dialog-scrollable .modal-body {
+  overflow-y: auto;
+}

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Movie } from '../models';
 import { addMovie, lookupMovieByUpc } from '../services/api';
 import BarcodeScanner from './BarcodeScanner';
@@ -8,6 +8,11 @@ import Toast from './Toast';
 interface MovieFormProps {
     /** Called after a movie is successfully added, allowing the parent to refresh its list. */
     onItemAdded?: () => void;
+    /** when provided, the component renders the submit button only if false */
+    hideSubmit?: boolean;
+    /** optional ref forwarded to the underlying form element so a parent can trigger submit */
+    formRef?: React.Ref<HTMLFormElement>;
+    hideTitle?: boolean;
 }
 
 /**
@@ -15,7 +20,7 @@ interface MovieFormProps {
  * On submission it calls the API and notifies the parent via `onItemAdded`.
  * A "Scan Barcode" button opens the camera to scan a UPC barcode and auto-fills the form.
  */
-const MovieForm: React.FC<MovieFormProps> = ({ onItemAdded }) => {
+const MovieForm: React.FC<MovieFormProps> = ({ onItemAdded, hideSubmit = false, formRef, hideTitle = false }) => {
     const [title, setTitle] = useState('');
     const [director, setDirector] = useState('');
     const [releaseYear, setReleaseYear] = useState('');
@@ -26,10 +31,15 @@ const MovieForm: React.FC<MovieFormProps> = ({ onItemAdded }) => {
     const [runtime, setRuntime] = useState('');
     const [cast, setCast] = useState('');
     const [error, setError] = useState('');
+    const [scanError, setScanError] = useState('');
     const [showScanner, setShowScanner] = useState(false);
     const [scanLoading, setScanLoading] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
     const [toastType, setToastType] = useState<'success' | 'error'>('success');
+
+    // lookup/input state
+    const [upcInput, setUpcInput] = useState('');
+    const [canScan, setCanScan] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -93,39 +103,128 @@ const MovieForm: React.FC<MovieFormProps> = ({ onItemAdded }) => {
         }
     }, []);
 
+    const attemptScan = () => {
+        if (!canScan) {
+            setToastMessage('Camera could not be opened, make sure camera permission is granted, or enter the barcode manually.');
+            setToastType('error');
+            return;
+        }
+        if (navigator.permissions) {
+            navigator.permissions.query({ name: 'camera' as PermissionName })
+                .then(p => {
+                    if (p.state === 'denied') {
+                        setToastMessage('Camera could not be opened, make sure camera permission is granted, or enter the barcode manually.');
+                        setToastType('error');
+                    } else {
+                        setShowScanner(prev => !prev);
+                    }
+                })
+                .catch(() => {
+                    setShowScanner(prev => !prev);
+                });
+        } else {
+            setShowScanner(prev => !prev);
+        }
+    };
+
+
+    // detect capability on mount
+    useEffect(() => {
+        if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
+            setCanScan(true);
+        } else {
+            setCanScan(false);
+        }
+    }, []);
+
     return (
-        <form onSubmit={handleSubmit}>
-            <h2 className="h5 mb-3">Add a Movie</h2>
+        <form onSubmit={handleSubmit} ref={formRef}>
+            {!hideTitle && <h2 className="h5 mb-3">Add a Movie</h2>}
             {error && <p className="text-danger">{error}</p>}
+
+            {/* manual UPC lookup with optional scan */}
             <div className="mb-3">
-                <label className="form-label">Title:</label>
-                <div className="d-flex gap-2 align-items-center">
+                <div className="input-group">
                     <input
                         type="text"
                         className="form-control"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        required
+                        placeholder="Enter UPC"
+                        maxLength={13}
+                        value={upcInput}
+                        onChange={(e) => {
+                            setUpcInput(e.target.value);
+                            setScanError('');
+                        }}
                     />
                     <button
                         type="button"
-                        className="btn btn-outline-secondary btn-sm text-nowrap"
-                        onClick={() => setShowScanner((prev) => !prev)}
-                        disabled={scanLoading}
+                        className="btn btn-secondary"
+                        disabled={!upcInput.trim()}
+                        onClick={async () => {
+                            setScanError('');
+                            try {
+                                const result = await lookupMovieByUpc(upcInput.trim());
+                                setTitle(result.title || '');
+                                setDirector(result.director || '');
+                                if (result.releaseYear) setReleaseYear(String(result.releaseYear));
+                                setGenre(result.genre || '');
+                                setDescription(result.description || '');
+                                setCoverUrl(result.coverUrl || '');
+                                setRating(result.rating || '');
+                                setRuntime(result.runtime || '');
+                                setCast(result.cast || '');
+                            } catch {
+                                setError('Movie not found for that UPC.');
+                            }
+                        }}
                     >
-                        {scanLoading ? 'Looking up…' : '📷 Scan Barcode'}
+                        Lookup
                     </button>
+                    {canScan && (
+                        <>
+                            <div className="input-group-text">OR</div>
+                            <button
+                                type="button"
+                                className="btn btn-outline-secondary btn-sm"
+                                onClick={() => {
+                                setScanError('');
+                                attemptScan();
+                            }}
+                                disabled={scanLoading}
+                            >
+                                {scanLoading ? 'Looking up…' : '📷 Scan Barcode'}
+                            </button>
+                        </>
+                    )}
                 </div>
+                {scanError && <div className="form-text text-warning mb-2">{scanError}</div>}
                 {showScanner && (
                     <BarcodeScanner
                         onScan={handleBarcodeScan}
+                        onError={(msg) => {
+                            setScanError(msg);
+                            setShowScanner(false);
+                        }}
                         onClose={() => setShowScanner(false)}
                     />
                 )}
             </div>
+
             <div className="mb-3">
-                <label className="form-label">Director:</label>
+                <label htmlFor="movie-title" className="form-label">Title:</label>
                 <input
+                    id="movie-title"
+                    type="text"
+                    className="form-control"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    required
+                />
+            </div>
+            <div className="mb-3">
+                <label htmlFor="movie-director" className="form-label">Director:</label>
+                <input
+                    id="movie-director"
                     type="text"
                     className="form-control"
                     value={director}
@@ -134,8 +233,9 @@ const MovieForm: React.FC<MovieFormProps> = ({ onItemAdded }) => {
                 />
             </div>
             <div className="mb-3">
-                <label className="form-label">Release Year:</label>
+                <label htmlFor="movie-release-year" className="form-label">Release Year:</label>
                 <input
+                    id="movie-release-year"
                     type="number"
                     className="form-control"
                     value={releaseYear}
@@ -144,8 +244,9 @@ const MovieForm: React.FC<MovieFormProps> = ({ onItemAdded }) => {
                 />
             </div>
             <div className="mb-3">
-                <label className="form-label">Genre:</label>
+                <label htmlFor="movie-genre" className="form-label">Genre:</label>
                 <input
+                    id="movie-genre"
                     type="text"
                     className="form-control"
                     value={genre}
@@ -154,8 +255,9 @@ const MovieForm: React.FC<MovieFormProps> = ({ onItemAdded }) => {
                 />
             </div>
             <div className="mb-3">
-                <label className="form-label">Rating (optional):</label>
+                <label htmlFor="movie-rating" className="form-label">Rating (optional):</label>
                 <input
+                    id="movie-rating"
                     type="text"
                     className="form-control"
                     value={rating}
@@ -164,8 +266,9 @@ const MovieForm: React.FC<MovieFormProps> = ({ onItemAdded }) => {
                 />
             </div>
             <div className="mb-3">
-                <label className="form-label">Runtime (optional):</label>
+                <label htmlFor="movie-runtime" className="form-label">Runtime (optional):</label>
                 <input
+                    id="movie-runtime"
                     type="text"
                     className="form-control"
                     value={runtime}
@@ -174,8 +277,9 @@ const MovieForm: React.FC<MovieFormProps> = ({ onItemAdded }) => {
                 />
             </div>
             <div className="mb-3">
-                <label className="form-label">Cast (optional):</label>
+                <label htmlFor="movie-cast" className="form-label">Cast (optional):</label>
                 <input
+                    id="movie-cast"
                     type="text"
                     className="form-control"
                     value={cast}
@@ -184,15 +288,16 @@ const MovieForm: React.FC<MovieFormProps> = ({ onItemAdded }) => {
                 />
             </div>
             <div className="mb-3">
-                <label className="form-label">Description (optional):</label>
+                <label htmlFor="movie-description" className="form-label">Description (optional):</label>
                 <textarea
+                    id="movie-description"
                     className="form-control"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     rows={3}
                 />
             </div>
-            <button className="btn btn-primary" type="submit">Add Movie</button>
+            {!hideSubmit && <button className="btn btn-primary" type="submit">Add Movie</button>}
             <Toast
                 message={toastMessage}
                 type={toastType}

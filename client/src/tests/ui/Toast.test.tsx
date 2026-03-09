@@ -74,4 +74,11 @@ describe('Toast', () => {
 
         expect(screen.getByRole('alert').querySelector('.bg-danger')).toBeInTheDocument();
     });
+
+    it('applies warning background class for type="warning"', () => {
+        const onDismiss = vi.fn();
+        render(<Toast message="Watch out" type="warning" onDismiss={onDismiss} />);
+
+        expect(screen.getByRole('alert').querySelector('.bg-warning')).toBeInTheDocument();
+    });
 });

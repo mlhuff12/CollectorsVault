@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { addGame, lookupGameByUpc } from '../services/api';
 import { Game } from '../models';
 import BarcodeScanner from './BarcodeScanner';
@@ -8,6 +8,9 @@ import Toast from './Toast';
 interface GameFormProps {
     /** Called after a game is successfully added, allowing the parent to refresh its list. */
     onItemAdded?: () => void;
+    hideSubmit?: boolean;
+    formRef?: React.Ref<HTMLFormElement>;
+    hideTitle?: boolean;
 }
 
 /**
@@ -15,7 +18,7 @@ interface GameFormProps {
  * On submission it calls the API and notifies the parent via `onItemAdded`.
  * A "Scan Barcode" button opens the camera to scan a UPC barcode and auto-fills the form.
  */
-const GameForm: React.FC<GameFormProps> = ({ onItemAdded }) => {
+const GameForm: React.FC<GameFormProps> = ({ onItemAdded, hideSubmit = false, formRef, hideTitle = false }) => {
     const [title, setTitle] = useState('');
     const [platform, setPlatform] = useState('');
     const [releaseDate, setReleaseDate] = useState('');
@@ -25,10 +28,15 @@ const GameForm: React.FC<GameFormProps> = ({ onItemAdded }) => {
     const [developer, setDeveloper] = useState('');
     const [publisher, setPublisher] = useState('');
     const [error, setError] = useState('');
+    const [scanError, setScanError] = useState('');
     const [showScanner, setShowScanner] = useState(false);
     const [scanLoading, setScanLoading] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
     const [toastType, setToastType] = useState<'success' | 'error'>('success');
+
+    // lookup state
+    const [upcInput, setUpcInput] = useState('');
+    const [canScan, setCanScan] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -84,39 +92,124 @@ const GameForm: React.FC<GameFormProps> = ({ onItemAdded }) => {
         }
     }, []);
 
+    const attemptScan = () => {
+        if (!canScan) {
+            setToastMessage('Camera could not be opened, make sure camera permission is granted, or enter the barcode manually.');
+            setToastType('error');
+            return;
+        }
+        if (navigator.permissions) {
+            navigator.permissions.query({ name: 'camera' as PermissionName })
+                .then(p => {
+                    if (p.state === 'denied') {
+                        setToastMessage('Camera could not be opened, make sure camera permission is granted, or enter the barcode manually.');
+                        setToastType('error');
+                    } else {
+                        setShowScanner(prev => !prev);
+                    }
+                })
+                .catch(() => {
+                    setShowScanner(prev => !prev);
+                });
+        } else {
+            setShowScanner(prev => !prev);
+        }
+    };
+
+
+    useEffect(() => {
+        if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
+            setCanScan(true);
+        } else {
+            setCanScan(false);
+        }
+    }, []);
+
     return (
-        <form onSubmit={handleSubmit}>
-            <h2 className="h5 mb-3">Add a Game</h2>
+        <form onSubmit={handleSubmit} ref={formRef}>
+            {!hideTitle && <h2 className="h5 mb-3">Add a Game</h2>}
             {error && <p className="text-danger">{error}</p>}
+            {/* UPC lookup / scan section */}
             <div className="mb-3">
-                <label className="form-label">Title:</label>
-                <div className="d-flex gap-2 align-items-center">
+                <div className="input-group">
                     <input
                         type="text"
                         className="form-control"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        required
+                        placeholder="Enter UPC"
+                        maxLength={13}
+                        value={upcInput}
+                        onChange={(e) => {
+                            setUpcInput(e.target.value);
+                            setScanError('');
+                        }}
                     />
                     <button
                         type="button"
-                        className="btn btn-outline-secondary btn-sm text-nowrap"
-                        onClick={() => setShowScanner((prev) => !prev)}
-                        disabled={scanLoading}
+                        className="btn btn-secondary"
+                        disabled={!upcInput.trim()}
+                        onClick={async () => {
+                            setScanError('');
+                            try {
+                                const result = await lookupGameByUpc(upcInput.trim());
+                                setTitle(result.title || '');
+                                setPlatform(result.platform || '');
+                                if (result.releaseYear) setReleaseDate(`${result.releaseYear}-01-01`);
+                                setGenre(result.genre || '');
+                                setDescription(result.description || '');
+                                setCoverUrl(result.coverUrl || '');
+                                setDeveloper(result.developer || '');
+                                setPublisher(result.publisher || '');
+                            } catch {
+                                setError('Game not found for that UPC.');
+                            }
+                        }}
                     >
-                        {scanLoading ? 'Looking up…' : '📷 Scan Barcode'}
+                        Lookup
                     </button>
+                    {canScan && (
+                        <>
+                            <div className="input-group-text">OR</div>
+                            <button
+                                type="button"
+                                className="btn btn-outline-secondary btn-sm"
+                                onClick={() => {
+                                    setScanError('');
+                                    attemptScan();
+                                }}
+                                disabled={scanLoading}
+                            >
+                                {scanLoading ? 'Looking up…' : '📷 Scan Barcode'}
+                            </button>
+                        </>
+                    )}
                 </div>
-                {showScanner && (
-                    <BarcodeScanner
-                        onScan={handleBarcodeScan}
-                        onClose={() => setShowScanner(false)}
-                    />
-                )}
+            </div>
+            {scanError && <div className="form-text text-warning mb-2">{scanError}</div>}
+            {showScanner && (
+                <BarcodeScanner
+                    onScan={handleBarcodeScan}
+                    onError={(msg) => {
+                        setScanError(msg);
+                        setShowScanner(false);
+                    }}
+                    onClose={() => setShowScanner(false)}
+                />
+            )}
+            <div className="mb-3">
+                <label htmlFor="game-title" className="form-label">Title:</label>
+                <input
+                    id="game-title"
+                    type="text"
+                    className="form-control"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    required
+                />
             </div>
             <div className="mb-3">
-                <label className="form-label">Platform:</label>
+                <label htmlFor="game-platform" className="form-label">Platform:</label>
                 <input
+                    id="game-platform"
                     type="text"
                     className="form-control"
                     value={platform}
@@ -125,8 +218,9 @@ const GameForm: React.FC<GameFormProps> = ({ onItemAdded }) => {
                 />
             </div>
             <div className="mb-3">
-                <label className="form-label">Release Date:</label>
+                <label htmlFor="game-release-date" className="form-label">Release Date:</label>
                 <input
+                    id="game-release-date"
                     type="date"
                     className="form-control"
                     value={releaseDate}
@@ -135,8 +229,9 @@ const GameForm: React.FC<GameFormProps> = ({ onItemAdded }) => {
                 />
             </div>
             <div className="mb-3">
-                <label className="form-label">Genre (optional):</label>
+                <label htmlFor="game-genre" className="form-label">Genre (optional):</label>
                 <input
+                    id="game-genre"
                     type="text"
                     className="form-control"
                     value={genre}
@@ -144,8 +239,9 @@ const GameForm: React.FC<GameFormProps> = ({ onItemAdded }) => {
                 />
             </div>
             <div className="mb-3">
-                <label className="form-label">Developer (optional):</label>
+                <label htmlFor="game-developer" className="form-label">Developer (optional):</label>
                 <input
+                    id="game-developer"
                     type="text"
                     className="form-control"
                     value={developer}
@@ -153,8 +249,9 @@ const GameForm: React.FC<GameFormProps> = ({ onItemAdded }) => {
                 />
             </div>
             <div className="mb-3">
-                <label className="form-label">Publisher (optional):</label>
+                <label htmlFor="game-publisher" className="form-label">Publisher (optional):</label>
                 <input
+                    id="game-publisher"
                     type="text"
                     className="form-control"
                     value={publisher}
@@ -162,15 +259,16 @@ const GameForm: React.FC<GameFormProps> = ({ onItemAdded }) => {
                 />
             </div>
             <div className="mb-3">
-                <label className="form-label">Description (optional):</label>
+                <label htmlFor="game-description" className="form-label">Description (optional):</label>
                 <textarea
+                    id="game-description"
                     className="form-control"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     rows={3}
                 />
             </div>
-            <button className="btn btn-primary" type="submit">Add Game</button>
+            {!hideSubmit && <button className="btn btn-primary" type="submit">Add Game</button>}
             <Toast
                 message={toastMessage}
                 type={toastType}

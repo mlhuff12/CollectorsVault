@@ -7,6 +7,8 @@ interface BarcodeScannerProps {
     onScan: (barcode: string) => void;
     /** Called when the user closes the scanner. */
     onClose: () => void;
+    /** Optional callback invoked when the camera fails to start. */
+    onError?: (message: string) => void;
 }
 
 const SCANNER_ELEMENT_ID = 'cv-barcode-scanner';
@@ -17,14 +19,14 @@ const SCANNER_ELEMENT_ID = 'cv-barcode-scanner';
  * Calls `onScan` with the decoded barcode value, then stops scanning.
  *
  * If the camera cannot be started (e.g. the site is not served over HTTPS, or camera
- * permission was denied), the component falls back to a manual text-input so the user
- * can still type/paste the barcode number.
+ * permission was denied), the component shows a warning toast message explaining the
+ * problem and the user may close the scanner and enter the barcode manually in the
+ * parent form.
  */
-const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
+const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose, onError }) => {
     const scannerRef = useRef<Html5Qrcode | null>(null);
     const hasScannedRef = useRef(false);
     const [status, setStatus] = useState<'starting' | 'scanning' | 'error'>('starting');
-    const [manualCode, setManualCode] = useState('');
 
     const stopScanner = useCallback(async () => {
         if (scannerRef.current) {
@@ -55,47 +57,49 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
         });
         scannerRef.current = scanner;
 
-        scanner.start(
-            { facingMode: 'environment' },
-            {
-                fps: 10,
-                qrbox: { width: 250, height: 150 },
-            },
-            (decodedText) => {
-                if (hasScannedRef.current) return;
-                hasScannedRef.current = true;
-                stopScanner().then(() => {
-                    onScan(decodedText);
-                    onClose();
-                });
-            },
-            () => {
-                // scan failure is expected between frames — ignore
-            }
-        ).then(() => {
-            setStatus('scanning');
-        }).catch((err) => {
-            console.error('BarcodeScanner: failed to start camera', err);
-            setStatus('error');
-        });
-
-        return () => {
-            stopScanner();
-        };
+        scanner
+            .start(
+                { facingMode: 'environment' },
+                {
+                    fps: 10,
+                    qrbox: { width: 250, height: 150 },
+                },
+                (decodedText) => {
+                    if (hasScannedRef.current) return;
+                    hasScannedRef.current = true;
+                    stopScanner().then(() => {
+                        onScan(decodedText);
+                        onClose();
+                    });
+                },
+                () => {
+                    // scan failure is expected between frames — ignore
+                }
+            )
+            .then(() => {
+                setStatus('scanning');
+            })
+            .catch((err) => {
+                console.error('BarcodeScanner: failed to start camera', err);
+                const msg =
+                    'Camera could not be opened. Make sure the camera permission is granted, or manually enter UPC.';
+                onError?.(msg);
+                // do not call onClose; let parent decide how to hide scanner
+                setStatus('error');
+            });
     }, [onScan, onClose, stopScanner]);
 
-    const submitManualCode = () => {
-        const code = manualCode.trim();
-        if (code) {
-            onScan(code);
-            onClose();
-        }
-    };
+
+    // no local UI for error any more; parent handles messages via onError callback
+
+    if (status === 'error') {
+        // parent has been notified and possibly closed us; render nothing
+        return null;
+    }
 
     return (
         <div className="mt-3 border rounded p-2">
-            <div className="d-flex justify-content-between align-items-center mb-2">
-                <span className="small text-muted">Point the camera at a barcode</span>
+            <div className="d-flex justify-content-end mb-2">
                 <button
                     type="button"
                     className="btn btn-sm btn-outline-secondary"
@@ -103,6 +107,10 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
                 >
                     Cancel
                 </button>
+            </div>
+
+            <div className="mb-2">
+                <span className="small text-muted">Point the camera at a barcode</span>
             </div>
             {status === 'starting' && (
                 <div className="text-center py-2 text-muted small">
@@ -119,34 +127,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose }) => {
                 id={SCANNER_ELEMENT_ID}
                 style={{ width: '100%', maxWidth: '400px', borderRadius: '8px', overflow: 'hidden' }}
             />
-            {status === 'error' && (
-                <div className="mt-2">
-                    <p className="text-warning small mb-2">
-                        Camera could not be opened. Make sure the site is served over HTTPS and
-                        camera permission is granted, or enter the barcode manually:
-                    </p>
-                    <div className="input-group input-group-sm">
-                        <input
-                            type="text"
-                            className="form-control"
-                            placeholder="Enter barcode number"
-                            value={manualCode}
-                            onChange={(e) => setManualCode(e.target.value)}
-                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); submitManualCode(); } }}
-                            autoFocus
-                            aria-label="Barcode number"
-                        />
-                        <button
-                            type="button"
-                            className="btn btn-primary"
-                            onClick={submitManualCode}
-                            disabled={!manualCode.trim()}
-                        >
-                            Use
-                        </button>
-                    </div>
-                </div>
-            )}
+
         </div>
     );
 };

@@ -3,6 +3,21 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import GameForm from '../../components/GameForm';
 import * as api from '../../services/api';
 
+// control object for html5-qrcode mock
+const qrMockBehavior = { startShouldReject: false };
+
+vi.mock('html5-qrcode', () => ({
+    Html5Qrcode: function() {
+        return {
+            start: () => qrMockBehavior.startShouldReject ? Promise.reject(new Error('camera error')) : Promise.resolve(),
+            stop: () => Promise.resolve()
+        };
+    },
+    Html5QrcodeSupportedFormats: {
+        EAN_13: 'EAN_13', EAN_8: 'EAN_8', UPC_A: 'UPC_A', UPC_E: 'UPC_E', CODE_128: 'CODE_128'
+    }
+}));
+
 vi.mock('../../services/api', () => ({
     addGame: vi.fn(),
     lookupGameByUpc: vi.fn()
@@ -23,12 +38,11 @@ describe('GameForm', () => {
             releaseDate: '2021-12-08'
         });
 
-        const { container } = render(<GameForm onItemAdded={onItemAdded} />);
-        const inputs = container.querySelectorAll('input');
+        render(<GameForm onItemAdded={onItemAdded} />);
 
-        fireEvent.change(inputs[0], { target: { value: 'Halo Infinite' } });
-        fireEvent.change(inputs[1], { target: { value: 'Xbox' } });
-        fireEvent.change(inputs[2], { target: { value: '2021-12-08' } });
+        fireEvent.change(screen.getByLabelText('Title:'), { target: { value: 'Halo Infinite' } });
+        fireEvent.change(screen.getByLabelText('Platform:'), { target: { value: 'Xbox' } });
+        fireEvent.change(screen.getByLabelText('Release Date:'), { target: { value: '2021-12-08' } });
 
         fireEvent.click(screen.getByRole('button', { name: 'Add Game' }));
 
@@ -46,15 +60,85 @@ describe('GameForm', () => {
     it('shows error message when add fails', async () => {
         mockAddGame.mockRejectedValue(new Error('boom'));
 
-        const { container } = render(<GameForm />);
-        const inputs = container.querySelectorAll('input');
+        render(<GameForm />);
 
-        fireEvent.change(inputs[0], { target: { value: 'Halo Infinite' } });
-        fireEvent.change(inputs[1], { target: { value: 'Xbox' } });
-        fireEvent.change(inputs[2], { target: { value: '2021-12-08' } });
+        fireEvent.change(screen.getByLabelText('Title:'), { target: { value: 'Halo Infinite' } });
+        fireEvent.change(screen.getByLabelText('Platform:'), { target: { value: 'Xbox' } });
+        fireEvent.change(screen.getByLabelText('Release Date:'), { target: { value: '2021-12-08' } });
 
         fireEvent.click(screen.getByRole('button', { name: 'Add Game' }));
 
         expect(await screen.findByText('Failed to add game. Please try again.')).toBeInTheDocument();
     });
+
+    it('does not render submit button when hideSubmit prop is set', () => {
+        render(<GameForm hideSubmit />);
+        expect(screen.queryByRole('button', { name: 'Add Game' })).not.toBeInTheDocument();
+    });
+
+    it('hides the title when hideTitle prop is set', () => {
+        render(<GameForm hideTitle />);
+        expect(screen.queryByText('Add a Game')).not.toBeInTheDocument();
+    });
+
+    it('shows UPC lookup field and scan option when camera available', () => {
+        Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
+        render(<GameForm />);
+        const field = screen.getByPlaceholderText('Enter UPC') as HTMLInputElement;
+        expect(field).toBeInTheDocument();
+        expect(field.maxLength).toBe(13);
+        expect(screen.getByRole('button', { name: 'Lookup' })).toBeInTheDocument();
+        expect(screen.getByText('OR')).toBeInTheDocument();
+        const scanBtn = screen.getByRole('button', { name: /Scan Barcode/ });
+        expect(scanBtn).toBeInTheDocument();
+        // scan button should live next to the UPC input rather than with title field
+        expect(scanBtn.closest('.input-group')).not.toBeNull();
+    });
+    it('hides OR and scan option when camera unavailable', () => {
+        delete (navigator as any).mediaDevices;
+        render(<GameForm />);
+        const field2 = screen.getByPlaceholderText('Enter UPC') as HTMLInputElement;
+        expect(field2).toBeInTheDocument();
+        expect(field2.maxLength).toBe(13);
+        expect(screen.queryByText('OR')).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /Scan Barcode/ })).not.toBeInTheDocument();
+    });
+
+    it('opens scanner when Scan Barcode clicked', () => {
+        Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
+        render(<GameForm />);
+        const scanBtn = screen.getByRole('button', { name: /Scan Barcode/ });
+        fireEvent.click(scanBtn);
+        expect(screen.getByText('Point the camera at a barcode')).toBeInTheDocument();
+    });
+
+    it('shows toast when permission denied', async () => {
+        Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
+        Object.defineProperty(navigator, 'permissions', {
+            value: { query: () => Promise.resolve({ state: 'denied' }) },
+            configurable: true
+        });
+        render(<GameForm />);
+        const scanBtn = screen.getByRole('button', { name: /Scan Barcode/ });
+        fireEvent.click(scanBtn);
+        expect(await screen.findByText(/Camera could not be opened/)).toBeInTheDocument();
+    });
+
+    it('shows error below UPC field when scanner fails to start (no toast)', async () => {
+        // clear previous permission stubs
+        delete (navigator as any).permissions;
+        qrMockBehavior.startShouldReject = true;
+        Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
+        render(<GameForm />);
+        const scanBtn = screen.getByRole('button', { name: /Scan Barcode/ });
+        fireEvent.click(scanBtn);
+        const msg = await screen.findByText(/Camera could not be opened/);
+        expect(msg).toBeInTheDocument();
+        // ensure it's not shown as a toast
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        // message should be rendered as form-text element
+        expect(msg).toHaveClass('form-text');
+    });
+
+
 });
