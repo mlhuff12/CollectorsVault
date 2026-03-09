@@ -94,29 +94,23 @@ const VaultPage: React.FC = () => {
 
         if (activeSection === 'home') {
             return (
-                <>
-                    <div className="card shadow-sm mb-3 p-3">
-                        <div className="mb-3">
-                            <label htmlFor="itemType" className="form-label">Select collectible type</label>
-                            <select
-                                id="itemType"
-                                className="form-select"
-                                value={homeFormType}
-                                onChange={(event) => handleHomeTypeChange(event.target.value)}
-                                style={{ maxWidth: '240px' }}
-                            >
-                                <option value="book">Book</option>
-                                <option value="movie">Movie</option>
-                                <option value="game">Game</option>
-                            </select>
-                        </div>
-                        {renderHomeForm()}
+                <div className="card shadow-sm mb-3 p-3">
+                    <div className="mb-3">
+                        <label htmlFor="itemType" className="form-label">Select collectible type</label>
+                        <select
+                            id="itemType"
+                            className="form-select"
+                            value={homeFormType}
+                            onChange={(event) => handleHomeTypeChange(event.target.value)}
+                            style={{ maxWidth: '240px' }}
+                        >
+                            <option value="book">Book</option>
+                            <option value="movie">Movie</option>
+                            <option value="game">Game</option>
+                        </select>
                     </div>
-
-                    <div className="card shadow-sm mb-3 p-3">
-                        <ItemList refreshKey={refreshKey} title="Collector's Vault Items" />
-                    </div>
-                </>
+                    {renderHomeForm()}
+                </div>
             );
         }
 
