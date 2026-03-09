@@ -102,7 +102,7 @@ describe('BookForm', () => {
     it('renders the Scan Barcode button next to the UPC/ISBN field', () => {
         Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
         render(<BookForm />);
-        expect(screen.getByRole('button', { name: 'Scan Barcode' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Scan Barcode/ })).toBeInTheDocument();
     });
 
     it('shows scanner errors below the ISBN field instead of using a toast', async () => {

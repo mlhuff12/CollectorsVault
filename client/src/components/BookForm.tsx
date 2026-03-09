@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { addBook, lookupBookByIsbn } from '../services/api';
 import { Book, BookFormat, BookLookupResult } from '../models';
-import BarcodeScanner from './BarcodeScanner';
+import BarcodeScanLookup from './BarcodeScanLookup';
 import Toast from './Toast';
 
 /** Props accepted by {@link BookForm}. */
@@ -93,10 +93,7 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded, hideSubmit = false, fo
     const [isbn, setIsbn] = useState('');
     const [lookupResult, setLookupResult] = useState<BookLookupResult | null>(null);
     const [lookupError, setLookupError] = useState('');
-    const [scanError, setScanError] = useState('');
     const [isLooking, setIsLooking] = useState(false);
-    const [showScanner, setShowScanner] = useState(false);
-    const [canScan, setCanScan] = useState(false);
 
     // Manual-entry fields (used only when no lookup result is present)
     const [title, setTitle] = useState('');
@@ -154,42 +151,12 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded, hideSubmit = false, fo
     const handleClearLookup = () => {
         setLookupResult(null);
         setLookupError('');
-        setScanError('');
         setIsbn('');
         setSeriesName('');
         setSeriesNumber('');
     };
 
-    useEffect(() => {
-        if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
-            setCanScan(true);
-        } else {
-            setCanScan(false);
-        }
-    }, []);
 
-    /** Called when the barcode scanner successfully decodes a barcode. */
-    const handleBarcodeScan = useCallback(async (barcode: string) => {
-        setShowScanner(false);
-        setIsbn(barcode);
-        setIsLooking(true);
-        setLookupError('');
-        setLookupResult(null);
-        setSeriesName('');
-        setSeriesNumber('');
-
-        try {
-            const result = await lookupBookByIsbn(barcode);
-            setLookupResult(result);
-            if (result.seriesName) setSeriesName(result.seriesName);
-            if (result.seriesNumber != null) setSeriesNumber(result.seriesNumber.toString());
-            setBookFormat(toBookFormat(result.bookFormat));
-        } catch {
-            setLookupError('Book not found for this barcode. You may enter details manually.');
-        } finally {
-            setIsLooking(false);
-        }
-    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -277,70 +244,53 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded, hideSubmit = false, fo
     return (
         <div>
             {!hideTitle && <h2 className="h5 mb-3">Add a New Book</h2>}
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} ref={formRef}>
                 {/* ISBN + Lookup + Scan */}
-                <div className="mb-3">
-                    <label htmlFor="book-isbn" className="form-label">UPC / ISBN:</label>
-                    <div className="input-group">
-                        <input
-                            id="book-isbn"
-                            type="text"
-                            className="form-control"
-                            value={isbn}
-                            onChange={(e) => { setIsbn(e.target.value); if (isFromLookup) handleClearLookup(); setScanError(''); }}
-                            onKeyDown={handleIsbnKeyDown}
-                            placeholder="Enter UPC or ISBN"
-                            aria-label="UPC or ISBN"
-                            maxLength={13}
-                        />
+                <BarcodeScanLookup
+                    label="UPC / ISBN:"
+                    placeholder="Enter UPC or ISBN"
+                    maxLength={13}
+                    value={isbn}
+                    onChange={(v: string) => {
+                        setIsbn(v);
+                        if (isFromLookup) handleClearLookup();
+                    }}
+                    onLookup={async (barcode: string) => {
+                        const trimmed = barcode.trim();
+                        if (!trimmed) return;
+
+                        setIsLooking(true);
+                        setLookupError('');
+                        setLookupResult(null);
+                        setSeriesName('');
+                        setSeriesNumber('');
+
+                        try {
+                            const result = await lookupBookByIsbn(trimmed);
+                            setLookupResult(result);
+                            if (result.seriesName) setSeriesName(result.seriesName);
+                            if (result.seriesNumber != null) setSeriesNumber(result.seriesNumber.toString());
+                            setBookFormat(toBookFormat(result.bookFormat));
+                        } catch {
+                            setLookupError('Book not found for the given ISBN. You may enter details manually.');
+                        } finally {
+                            setIsLooking(false);
+                        }
+                    }}
+                    error={lookupError}
+                />
+                {isFromLookup && (
+                    <div className="form-text text-success">
+                        Book found! Fields auto-populated.{' '}
                         <button
                             type="button"
-                            className="btn btn-secondary"
-                            onClick={handleLookup}
-                            disabled={isLooking || !isbn.trim()}
-                            aria-label="Lookup"
+                            className="btn btn-link btn-sm p-0"
+                            onClick={handleClearLookup}
                         >
-                            {isLooking ? 'Looking up…' : 'Lookup'}
+                            Clear and enter manually
                         </button>
-                        {canScan && (
-                            <>
-                                <div className="input-group-text">OR</div>
-                                <button
-                                    type="button"
-                                    className="btn btn-outline-secondary"
-                                    onClick={() => {
-                                        setScanError('');
-                                        setShowScanner((prev) => !prev);
-                                    }}
-                                    disabled={isLooking}
-                                    aria-label="Scan Barcode"
-                                >
-                                    {isLooking ? 'Looking up…' : '📷 Scan Barcode'}
-                                </button>
-                            </>
-                        )}
                     </div>
-                    {lookupError && <div className="form-text text-warning">{lookupError}</div>}
-                    {scanError && <div className="form-text text-warning mb-2">{scanError}</div>}
-                    {isFromLookup && (
-                        <div className="form-text text-success">
-                            Book found! Fields auto-populated.{' '}
-                            <button type="button" className="btn btn-link btn-sm p-0" onClick={handleClearLookup}>
-                                Clear and enter manually
-                            </button>
-                        </div>
-                    )}
-                    {showScanner && (
-                        <BarcodeScanner
-                            onScan={handleBarcodeScan}
-                            onError={(msg) => {
-                                setScanError(msg);
-                                setShowScanner(false);
-                            }}
-                            onClose={() => setShowScanner(false)}
-                        />
-                    )}
-                </div>
+                )}
 
                 {/* Medium cover image (shown after successful lookup) */}
                 {lookupResult?.coverMedium && (

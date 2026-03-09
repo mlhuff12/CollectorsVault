@@ -142,4 +142,20 @@ describe('MovieForm', () => {
         // message appears somewhere on form; already verified above by class
     });
 
+    it('calls lookupMovieByUpc when Lookup button is pressed', async () => {
+        const mockLookup = api.lookupMovieByUpc as jest.MockedFunction<typeof api.lookupMovieByUpc>;
+        // we don't care about the shape here, just that the function is called
+        mockLookup.mockResolvedValue({} as any);
+
+        Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
+        render(<MovieForm />);
+        const input = screen.getByPlaceholderText('Enter UPC');
+        fireEvent.change(input, { target: { value: '  12345  ' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
+
+        await waitFor(() => {
+            expect(mockLookup).toHaveBeenCalledWith('12345');
+        });
+    });
+
 });

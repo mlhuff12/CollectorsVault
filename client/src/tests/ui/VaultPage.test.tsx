@@ -138,12 +138,29 @@ describe('VaultPage', () => {
         expect(input).toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Lookup' })).toBeInTheDocument();
         expect(screen.getByText('OR')).toBeInTheDocument();
-        const scanBtn = screen.getByRole('button', { name: 'Scan Barcode' });
+        const scanBtn = screen.getByRole('button', { name: /Scan Barcode/ });
         expect(scanBtn).toBeInTheDocument();
 
         // open the scanner, input should remain present
         fireEvent.click(scanBtn);
         expect(screen.getByPlaceholderText('Enter UPC')).toBeInTheDocument();
+    });
+
+    it('calls lookup callback and closes modal when Lookup pressed', async () => {
+        Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
+        // intercept window.alert to track it
+        const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+        renderVaultPage('/');
+        fireEvent.click(await screen.findByText('Scan Barcode'));
+        fireEvent.change(screen.getByPlaceholderText('Enter UPC'), { target: { value: '555' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
+
+        await waitFor(() => {
+            expect(alertSpy).toHaveBeenCalledWith('Lookup: 555');
+        });
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        alertSpy.mockRestore();
     });
 
     it('displays error message under UPC input when scanner fails to start', async () => {
@@ -152,7 +169,7 @@ describe('VaultPage', () => {
         renderVaultPage('/');
         fireEvent.click(await screen.findByText('Scan Barcode'));
 
-        const scanBtn = screen.getByRole('button', { name: 'Scan Barcode' });
+        const scanBtn = screen.getByRole('button', { name: /Scan Barcode/ });
         fireEvent.click(scanBtn);
 
         expect(await screen.findByText(/Camera could not be opened/i)).toBeInTheDocument();
@@ -163,13 +180,13 @@ describe('VaultPage', () => {
         Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
         renderVaultPage('/');
         fireEvent.click(await screen.findByText('Scan Barcode'));
-        fireEvent.click(screen.getByRole('button', { name: 'Scan Barcode' }));
+        fireEvent.click(screen.getByRole('button', { name: /Scan Barcode/ }));
         await screen.findByText(/Camera could not be opened/i);
 
         // close and open again with scanner allowed
         fireEvent.click(screen.getByLabelText('Close'));
         qrMockBehavior.startShouldReject = false;
-        fireEvent.click(screen.getByText('Scan Barcode'));
+        fireEvent.click(screen.getByText(/Scan Barcode/));
         expect(screen.queryByText(/Camera could not be opened/i)).not.toBeInTheDocument();
     });
 
@@ -180,7 +197,7 @@ describe('VaultPage', () => {
 
         expect(screen.getByPlaceholderText('Enter UPC')).toBeInTheDocument();
         expect(screen.queryByText('OR')).not.toBeInTheDocument();
-        expect(screen.queryByRole('button', { name: 'Scan Barcode' })).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /Scan Barcode/ })).not.toBeInTheDocument();
     });
 
     it('shows only books on the books route', async () => {

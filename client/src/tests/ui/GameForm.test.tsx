@@ -140,5 +140,20 @@ describe('GameForm', () => {
         expect(msg).toHaveClass('form-text');
     });
 
+    it('invokes lookupGameByUpc when Lookup clicked', async () => {
+        const mockLookup = api.lookupGameByUpc as jest.MockedFunction<typeof api.lookupGameByUpc>;
+        mockLookup.mockResolvedValue({} as any);
+
+        Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
+        render(<GameForm />);
+        const input = screen.getByPlaceholderText('Enter UPC');
+        fireEvent.change(input, { target: { value: ' 7890 ' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
+
+        await waitFor(() => {
+            expect(mockLookup).toHaveBeenCalledWith('7890');
+        });
+    });
+
 
 });

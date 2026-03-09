@@ -6,7 +6,7 @@ import MovieForm from '../components/MovieForm';
 import GameForm from '../components/GameForm';
 import AdminTab from '../components/AdminTab';
 import Modal from '../components/Modal';
-import BarcodeScanner from '../components/BarcodeScanner';
+import BarcodeScanLookup from '../components/BarcodeScanLookup';
 import Toast from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
 
@@ -38,11 +38,7 @@ const VaultPage: React.FC = () => {
     const movieFormRef = React.useRef<HTMLFormElement>(null);
     const gameFormRef = React.useRef<HTMLFormElement>(null);
 
-    // UPC modal specific state
-    const [canScan, setCanScan] = useState(false);
-    const [upcCode, setUpcCode] = useState('');
-    const [showScanner, setShowScanner] = useState(false);
-    const [scanError, setScanError] = useState('');
+    // temporary toast messages shown in various places
     const [pageToast, setPageToast] = useState('');
 
     const handleItemAdded = () => {
@@ -52,18 +48,11 @@ const VaultPage: React.FC = () => {
     const handleModalOpen = (type: 'book' | 'movie' | 'game' | 'upc') => {
         setFormKey((prev) => prev + 1); // reset any mounted form
         setModalType(type);
-        if (type === 'upc') {
-            setUpcCode('');
-            setShowScanner(false);
-            setScanError('');
-        }
     };
 
     const handleModalClose = () => {
         setModalType(null);
         setFormKey((prev) => prev + 1);
-        setShowScanner(false);
-        setScanError('');
     };
 
     const handleItemAddedAndClose = () => {
@@ -118,50 +107,8 @@ const VaultPage: React.FC = () => {
 
     const activeSection = getSectionFromPath();
 
-    // detect camera capability once
-    useEffect(() => {
-        let available = false;
-        if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
-            available = true;
-        }
-        setCanScan(available);
-
-        if (available && navigator.permissions) {
-            navigator.permissions
-                .query({ name: 'camera' as PermissionName })
-                .then(p => {
-                    if (p.state === 'denied') {
-                        setCanScan(false);
-                    }
-                })
-                .catch(() => { /* ignore unsupported */ });
-        }
-    }, []);
 
     // attempt scanning from UPC modal, with permission check to avoid flicker
-    const handleScanClick = () => {
-        if (!canScan) {
-            setPageToast('Camera not available or permission denied.');
-            return;
-        }
-        if (navigator.permissions) {
-            navigator.permissions
-                .query({ name: 'camera' as PermissionName })
-                .then(p => {
-                    if (p.state === 'denied') {
-                        setPageToast('Camera permission denied.');
-                    } else {
-                        setShowScanner(true);
-                    }
-                })
-                .catch(() => {
-                    // permission query failed; still try
-                    setShowScanner(true);
-                });
-        } else {
-            setShowScanner(true);
-        }
-    };
 
 
     const renderSectionContent = () => {
@@ -212,57 +159,13 @@ const VaultPage: React.FC = () => {
                         {modalType === 'upc' && (
                         <>
                             {/* always display manual entry; scanner appears below when active */}
-                            <div className="d-flex flex-column align-items-center">
-                                <div className="input-group mb-2">
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        placeholder="Enter UPC"
-                                        maxLength={13}
-                                        value={upcCode}
-                                        onChange={(e) => setUpcCode(e.target.value)}
-                                    />
-                                    <button
-                                        type="button"
-                                        className="btn btn-primary"
-                                        disabled={!upcCode.trim()}
-                                        onClick={() => {
-                                            alert(`Lookup: ${upcCode}`);
-                                            handleModalClose();
-                                        }}
-                                    >
-                                        Lookup
-                                    </button>
-                                    {canScan && (
-                                        <>
-                                            <div className="input-group-text">OR</div>
-                                            <button
-                                                type="button"
-                                                className="btn btn-outline-secondary"
-                                                onClick={handleScanClick}
-                                            >
-                                                Scan Barcode
-                                            </button>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                            {scanError && (
-                                <div className="form-text text-warning mb-2">{scanError}</div>
-                            )}
-                            {showScanner && (
-                                <BarcodeScanner
-                                    onScan={(code) => {
-                                        alert(`Scanned: ${code}`);
-                                        handleModalClose();
-                                    }}
-                                    onError={(msg) => {
-                                        setScanError(msg);
-                                        setShowScanner(false);
-                                    }}
-                                    onClose={() => setShowScanner(false)}
-                                />
-                            )}
+                            <BarcodeScanLookup
+                                placeholder="Enter UPC"
+                                onLookup={(code: string) => {
+                                    alert(`Lookup: ${code}`);
+                                    handleModalClose();
+                                }}
+                            />
                         </>
                     )}
                         {modalType === 'book' && (

@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Movie } from '../models';
 import { addMovie, lookupMovieByUpc } from '../services/api';
-import BarcodeScanner from './BarcodeScanner';
+import BarcodeScanLookup from './BarcodeScanLookup';
 import Toast from './Toast';
 
 /** Props accepted by {@link MovieForm}. */
@@ -31,15 +31,12 @@ const MovieForm: React.FC<MovieFormProps> = ({ onItemAdded, hideSubmit = false, 
     const [runtime, setRuntime] = useState('');
     const [cast, setCast] = useState('');
     const [error, setError] = useState('');
-    const [scanError, setScanError] = useState('');
-    const [showScanner, setShowScanner] = useState(false);
-    const [scanLoading, setScanLoading] = useState(false);
+    // toast used for success messages (lookup errors handled by parent)
     const [toastMessage, setToastMessage] = useState('');
     const [toastType, setToastType] = useState<'success' | 'error'>('success');
 
-    // lookup/input state
-    const [upcInput, setUpcInput] = useState('');
-    const [canScan, setCanScan] = useState(false);
+    // lookup input is handled by BarcodeScanLookup; we don't need local state here
+
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -81,9 +78,8 @@ const MovieForm: React.FC<MovieFormProps> = ({ onItemAdded, hideSubmit = false, 
         }
     };
 
-    const handleBarcodeScan = useCallback(async (barcode: string) => {
-        setShowScanner(false);
-        setScanLoading(true);
+    // lookup handler used by the reusable component
+    const handleLookup = async (barcode: string) => {
         setError('');
         try {
             const result = await lookupMovieByUpc(barcode);
@@ -98,44 +94,8 @@ const MovieForm: React.FC<MovieFormProps> = ({ onItemAdded, hideSubmit = false, 
             setCast(result.cast || '');
         } catch {
             setError('Could not find movie for this barcode. Fill in manually.');
-        } finally {
-            setScanLoading(false);
-        }
-    }, []);
-
-    const attemptScan = () => {
-        if (!canScan) {
-            setToastMessage('Camera could not be opened, make sure camera permission is granted, or enter the barcode manually.');
-            setToastType('error');
-            return;
-        }
-        if (navigator.permissions) {
-            navigator.permissions.query({ name: 'camera' as PermissionName })
-                .then(p => {
-                    if (p.state === 'denied') {
-                        setToastMessage('Camera could not be opened, make sure camera permission is granted, or enter the barcode manually.');
-                        setToastType('error');
-                    } else {
-                        setShowScanner(prev => !prev);
-                    }
-                })
-                .catch(() => {
-                    setShowScanner(prev => !prev);
-                });
-        } else {
-            setShowScanner(prev => !prev);
         }
     };
-
-
-    // detect capability on mount
-    useEffect(() => {
-        if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
-            setCanScan(true);
-        } else {
-            setCanScan(false);
-        }
-    }, []);
 
     return (
         <form onSubmit={handleSubmit} ref={formRef}>
@@ -143,72 +103,11 @@ const MovieForm: React.FC<MovieFormProps> = ({ onItemAdded, hideSubmit = false, 
             {error && <p className="text-danger">{error}</p>}
 
             {/* manual UPC lookup with optional scan */}
-            <div className="mb-3">
-                <div className="input-group">
-                    <input
-                        type="text"
-                        className="form-control"
-                        placeholder="Enter UPC"
-                        maxLength={13}
-                        value={upcInput}
-                        onChange={(e) => {
-                            setUpcInput(e.target.value);
-                            setScanError('');
-                        }}
-                    />
-                    <button
-                        type="button"
-                        className="btn btn-secondary"
-                        disabled={!upcInput.trim()}
-                        onClick={async () => {
-                            setScanError('');
-                            try {
-                                const result = await lookupMovieByUpc(upcInput.trim());
-                                setTitle(result.title || '');
-                                setDirector(result.director || '');
-                                if (result.releaseYear) setReleaseYear(String(result.releaseYear));
-                                setGenre(result.genre || '');
-                                setDescription(result.description || '');
-                                setCoverUrl(result.coverUrl || '');
-                                setRating(result.rating || '');
-                                setRuntime(result.runtime || '');
-                                setCast(result.cast || '');
-                            } catch {
-                                setError('Movie not found for that UPC.');
-                            }
-                        }}
-                    >
-                        Lookup
-                    </button>
-                    {canScan && (
-                        <>
-                            <div className="input-group-text">OR</div>
-                            <button
-                                type="button"
-                                className="btn btn-outline-secondary btn-sm"
-                                onClick={() => {
-                                setScanError('');
-                                attemptScan();
-                            }}
-                                disabled={scanLoading}
-                            >
-                                {scanLoading ? 'Looking up…' : '📷 Scan Barcode'}
-                            </button>
-                        </>
-                    )}
-                </div>
-                {scanError && <div className="form-text text-warning mb-2">{scanError}</div>}
-                {showScanner && (
-                    <BarcodeScanner
-                        onScan={handleBarcodeScan}
-                        onError={(msg) => {
-                            setScanError(msg);
-                            setShowScanner(false);
-                        }}
-                        onClose={() => setShowScanner(false)}
-                    />
-                )}
-            </div>
+            <BarcodeScanLookup
+                placeholder="Enter UPC"
+                maxLength={13}
+                onLookup={handleLookup}
+            />
 
             <div className="mb-3">
                 <label htmlFor="movie-title" className="form-label">Title:</label>
