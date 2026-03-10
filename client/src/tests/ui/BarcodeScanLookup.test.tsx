@@ -22,10 +22,15 @@ vi.mock('html5-qrcode', () => ({
     },
 }));
 
-import BarcodeScanLookup from '../../components/BarcodeScanLookup';
+let BarcodeScanLookup: any;
 
 describe('BarcodeScanLookup', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
+        // reload module state so module-level flags (scanUnsupportedPermanently)
+        // reset between tests
+        vi.resetModules();
+        const mod = await import('../../components/BarcodeScanLookup');
+        BarcodeScanLookup = mod.default;
         qrMockBehavior.startShouldReject = false;
         // ensure no lingering permission stub
         delete (navigator as any).permissions;
@@ -78,19 +83,20 @@ describe('BarcodeScanLookup', () => {
         expect(screen.getByText('Point the camera at a barcode')).toBeInTheDocument();
     });
 
-    it('shows error text under field when scanner fails to start', async () => {
+    it('shows only the generic warning when scanner fails to start', async () => {
         qrMockBehavior.startShouldReject = true;
         Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
         render(<BarcodeScanLookup placeholder="foo" onLookup={() => {}} />);
         const scanBtn = screen.getByRole('button', { name: /Scan Barcode/ });
         fireEvent.click(scanBtn);
-        const msg = await screen.findByText(/Camera could not be opened/i);
-        expect(msg).toBeInTheDocument();
-        expect(msg).toHaveClass('form-text');
+        // The detailed camera error should *not* be rendered; instead the permanent
+        // unsupported warning appears.
+        expect(await screen.findByText(/Barcode scanning is not supported/i)).toBeInTheDocument();
+        expect(screen.queryByText(/Camera could not be opened/i)).not.toBeInTheDocument();
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
 
-    it('shows a toast when camera permission is denied via permissions API', async () => {
+    it('marks scanning unsupported when permissions API denies camera and shows no toast', async () => {
         Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
         Object.defineProperty(navigator, 'permissions', {
             value: { query: () => Promise.resolve({ state: 'denied' }) },
@@ -100,6 +106,19 @@ describe('BarcodeScanLookup', () => {
         render(<BarcodeScanLookup placeholder="foo" onLookup={() => {}} />);
         const scanBtn = screen.getByRole('button', { name: /Scan Barcode/ });
         fireEvent.click(scanBtn);
-        expect(await screen.findByRole('alert')).toBeInTheDocument();
+        expect(await screen.findByText(/Barcode scanning is not supported/i)).toBeInTheDocument();
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('skips toast on later scan attempts once unsupported', async () => {
+        qrMockBehavior.startShouldReject = true;
+        Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
+        render(<BarcodeScanLookup placeholder="foo" onLookup={() => {}} />);
+        const scanBtn = screen.getByRole('button', { name: /Scan Barcode/ });
+        fireEvent.click(scanBtn);
+        await screen.findByText(/Barcode scanning is not supported/i);
+        // second click should not show any toast alert
+        fireEvent.click(scanBtn);
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
 });

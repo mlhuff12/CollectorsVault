@@ -1,7 +1,11 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import BookForm from '../../components/BookForm';
-import * as api from '../../services/api';
+
+// component and api vars will be set in beforeEach via require
+let BookForm: any;
+let api: any;
+let mockAddBook: any;
+let mockLookupBookByIsbn: any;
 
 // control object for html5-qrcode mock
 const qrMockBehavior = { startShouldReject: false };
@@ -25,10 +29,15 @@ vi.mock('../../services/api', () => ({
 }));
 
 describe('BookForm', () => {
-    const mockAddBook = api.addBook as jest.MockedFunction<typeof api.addBook>;
-    const mockLookupBookByIsbn = api.lookupBookByIsbn as jest.MockedFunction<typeof api.lookupBookByIsbn>;
+    // mocks will be created inside tests after api is required
 
-    beforeEach(() => {
+    beforeEach(async () => {
+        vi.resetModules();
+        const mod = await import('../../components/BookForm');
+        BookForm = mod.default;
+        api = await import('../../services/api');
+        mockAddBook = api.addBook;
+        mockLookupBookByIsbn = api.lookupBookByIsbn;
         vi.clearAllMocks();
     });
 
@@ -36,6 +45,7 @@ describe('BookForm', () => {
 
     it('submits parsed book payload and resets form on success (manual entry)', async () => {
         const onItemAdded = vi.fn();
+        const mockAddBook = api.addBook as jest.MockedFunction<typeof api.addBook>;
         mockAddBook.mockResolvedValue({
             title: 'Dune',
             authors: ['Frank Herbert']
@@ -73,6 +83,7 @@ describe('BookForm', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Add Book' }));
 
         expect(screen.getByText('Please add at least one author.')).toBeInTheDocument();
+        const mockAddBook = api.addBook as jest.MockedFunction<typeof api.addBook>;
         expect(mockAddBook).not.toHaveBeenCalled();
     });
 
@@ -105,17 +116,15 @@ describe('BookForm', () => {
         expect(screen.getByRole('button', { name: /Scan Barcode/ })).toBeInTheDocument();
     });
 
-    it('shows scanner errors below the ISBN field instead of using a toast', async () => {
+    it('shows generic warning below the ISBN field instead of using a toast', async () => {
         qrMockBehavior.startShouldReject = true;
         Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
         render(<BookForm />);
         fireEvent.click(screen.getByRole('button', { name: /Scan Barcode/ }));
-        const message = await screen.findByText(/Camera could not be opened/i);
+        const message = await screen.findByText(/Barcode scanning is not supported/i);
         expect(message).toBeInTheDocument();
         // should not render a toast alert
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-        // ensure the error is rendered as form-text on the page
-        expect(message).toHaveClass('form-text');
     });
 
     it('shows OR text and scan button only when camera available', () => {

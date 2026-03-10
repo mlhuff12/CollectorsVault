@@ -1,7 +1,9 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import MovieForm from '../../components/MovieForm';
-import * as api from '../../services/api';
+
+// component and api will be (re)required in beforeEach so module-level flag clears
+let MovieForm: any;
+let api: any;
 
 // control object for html5-qrcode mock
 const qrMockBehavior = { startShouldReject: false };
@@ -24,14 +26,19 @@ vi.mock('../../services/api', () => ({
 }));
 
 describe('MovieForm', () => {
-    const mockAddMovie = api.addMovie as jest.MockedFunction<typeof api.addMovie>;
+    // mocks created within tests after api is required
 
-    beforeEach(() => {
+    beforeEach(async () => {
+        vi.resetModules();
+        const mod = await import('../../components/MovieForm');
+        MovieForm = mod.default;
+        api = await import('../../services/api');
         vi.clearAllMocks();
     });
 
     it('submits movie and calls onItemAdded on success', async () => {
         const onItemAdded = vi.fn();
+        const mockAddMovie = api.addMovie as jest.MockedFunction<typeof api.addMovie>;
         mockAddMovie.mockResolvedValue({
             title: 'Inception',
             director: 'Christopher Nolan',
@@ -62,6 +69,7 @@ describe('MovieForm', () => {
     });
 
     it('shows API error message when add fails', async () => {
+        const mockAddMovie = api.addMovie as jest.MockedFunction<typeof api.addMovie>;
         mockAddMovie.mockRejectedValue(new Error('boom'));
 
         render(<MovieForm />);
@@ -115,7 +123,7 @@ describe('MovieForm', () => {
         expect(screen.getByText('Point the camera at a barcode')).toBeInTheDocument();
     });
 
-    it('shows toast when permission denied', async () => {
+    it('converts to unsupported mode when permission denied and shows no toast', async () => {
         Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
         Object.defineProperty(navigator, 'permissions', {
             value: { query: () => Promise.resolve({ state: 'denied' }) },
@@ -124,10 +132,11 @@ describe('MovieForm', () => {
         render(<MovieForm />);
         const scanBtn = screen.getByRole('button', { name: /Scan Barcode/ });
         fireEvent.click(scanBtn);
-        expect(await screen.findByText(/Camera could not be opened/)).toBeInTheDocument();
+        expect(await screen.findByText(/Barcode scanning is not supported/i)).toBeInTheDocument();
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
 
-    it('shows error under UPC field when scanner fails to start (no toast)', async () => {
+    it('shows generic warning when scanner fails to start (no toast)', async () => {
         // clear any previous permissions stub from earlier tests
         delete (navigator as any).permissions;
         qrMockBehavior.startShouldReject = true;
@@ -135,11 +144,10 @@ describe('MovieForm', () => {
         render(<MovieForm />);
         const scanBtn = screen.getByRole('button', { name: /Scan Barcode/ });
         fireEvent.click(scanBtn);
-        const msg = await screen.findByText(/Camera could not be opened/);
+        const msg = await screen.findByText(/Barcode scanning is not supported/i);
         expect(msg).toBeInTheDocument();
         // ensure the message is rendered as form-text rather than a toast alert
-        expect(msg).toHaveClass('form-text');
-        // message appears somewhere on form; already verified above by class
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
 
     it('calls lookupMovieByUpc when Lookup button is pressed', async () => {

@@ -32,6 +32,9 @@ interface BarcodeScanLookupProps {
  * hooks that allow a parent to perform the actual lookup and keep track of the
  * current barcode value.
  */
+// module-level flag tracks whether we've already determined scanning doesn't work
+let scanUnsupportedPermanently = false;
+
 const BarcodeScanLookup: React.FC<BarcodeScanLookupProps> = ({
     label,
     placeholder,
@@ -60,7 +63,12 @@ const BarcodeScanLookup: React.FC<BarcodeScanLookupProps> = ({
     }, [value, input]);
 
     useEffect(() => {
-        if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
+        if (scanUnsupportedPermanently) {
+            setCanScan(false);
+        } else if (
+            navigator.mediaDevices &&
+            typeof navigator.mediaDevices.getUserMedia === 'function'
+        ) {
             setCanScan(true);
         } else {
             setCanScan(false);
@@ -105,10 +113,13 @@ const BarcodeScanLookup: React.FC<BarcodeScanLookupProps> = ({
 
     const attemptScan = () => {
         if (!canScan) {
-            setToastMessage(
-                'Camera could not be opened, make sure camera permission is granted, or enter the barcode manually.'
-            );
-            setToastType('error');
+            // if we've already decided scanning is permanently unsupported, skip toast
+            if (!scanUnsupportedPermanently) {
+                setToastMessage(
+                    'Camera could not be opened, make sure camera permission is granted, or enter the barcode manually.'
+                );
+                setToastType('error');
+            }
             return;
         }
         if (navigator.permissions) {
@@ -116,10 +127,10 @@ const BarcodeScanLookup: React.FC<BarcodeScanLookupProps> = ({
                 .query({ name: 'camera' as PermissionName })
                 .then((p) => {
                     if (p.state === 'denied') {
-                        setToastMessage(
-                            'Camera could not be opened, make sure camera permission is granted, or enter the barcode manually.'
-                        );
-                        setToastType('error');
+                        // no point in offering the scan UI any more
+                        scanUnsupportedPermanently = true;
+                        setCanScan(false);
+                        // warning text below input is sufficient; no toast
                     } else {
                         setShowScanner((prev) => !prev);
                     }
@@ -160,7 +171,7 @@ const BarcodeScanLookup: React.FC<BarcodeScanLookupProps> = ({
                 >
                     {scanLoading ? 'Looking up…' : 'Lookup'}
                 </button>
-                {canScan && (
+                {canScan ? (
                     <>
                         <div className="input-group-text">OR</div>
                         <button
@@ -175,15 +186,35 @@ const BarcodeScanLookup: React.FC<BarcodeScanLookupProps> = ({
                             {scanLoading ? 'Looking up…' : '📷 Scan Barcode'}
                         </button>
                     </>
+                ) : (
+                    // scanning is not available; hide the OR/button and show a warning below
+                    <></>
                 )}
             </div>
-            {scanError && <div className="form-text text-warning mb-2">{scanError}</div>}
+            {/* if camera support isn't detected, always inform the user */}
+            {!canScan && (
+                <div className="form-text text-warning mb-2">
+                    Barcode scanning is not supported on this device; please enter the
+                    barcode manually.
+                </div>
+            )}
+            {/* scanError from a failed camera start is useful only until
+                we mark scanning as permanently unsupported; afterwards the
+                generic warning text covers the situation. */}
+            {scanError && !scanUnsupportedPermanently && (
+                <div className="form-text text-warning mb-2">{scanError}</div>
+            )}
             {error && <div className="form-text text-warning mb-2">{error}</div>}
             {showScanner && (
                 <BarcodeScanner
                     onScan={handleBarcodeScan}
                     onError={(msg) => {
+                        // if the scanner component reports a failure (no camera, etc.)
+                        // treat scanning as unavailable going forward so the UI hides
+                        // the OR/button and the user sees the warning text.
+                        scanUnsupportedPermanently = true;
                         setScanError(msg);
+                        setCanScan(false);
                         setShowScanner(false);
                     }}
                     onClose={() => setShowScanner(false)}

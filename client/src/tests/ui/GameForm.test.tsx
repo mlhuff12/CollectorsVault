@@ -1,7 +1,9 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import GameForm from '../../components/GameForm';
-import * as api from '../../services/api';
+
+// component and api will be required in beforeEach to reset module state
+let GameForm: any;
+let api: any;
 
 // control object for html5-qrcode mock
 const qrMockBehavior = { startShouldReject: false };
@@ -24,14 +26,19 @@ vi.mock('../../services/api', () => ({
 }));
 
 describe('GameForm', () => {
-    const mockAddGame = api.addGame as jest.MockedFunction<typeof api.addGame>;
+    // mocks will be created within each test after api is required
 
-    beforeEach(() => {
+    beforeEach(async () => {
+        vi.resetModules();
+        const mod = await import('../../components/GameForm');
+        GameForm = mod.default;
+        api = await import('../../services/api');
         vi.clearAllMocks();
     });
 
     it('submits game and calls onItemAdded on success', async () => {
         const onItemAdded = vi.fn();
+        const mockAddGame = api.addGame as jest.MockedFunction<typeof api.addGame>;
         mockAddGame.mockResolvedValue({
             title: 'Halo Infinite',
             platform: 'Xbox',
@@ -58,6 +65,7 @@ describe('GameForm', () => {
     });
 
     it('shows error message when add fails', async () => {
+        const mockAddGame = api.addGame as jest.MockedFunction<typeof api.addGame>;
         mockAddGame.mockRejectedValue(new Error('boom'));
 
         render(<GameForm />);
@@ -112,7 +120,7 @@ describe('GameForm', () => {
         expect(screen.getByText('Point the camera at a barcode')).toBeInTheDocument();
     });
 
-    it('shows toast when permission denied', async () => {
+    it('marks unsupported when permission denied and shows no toast', async () => {
         Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
         Object.defineProperty(navigator, 'permissions', {
             value: { query: () => Promise.resolve({ state: 'denied' }) },
@@ -121,10 +129,11 @@ describe('GameForm', () => {
         render(<GameForm />);
         const scanBtn = screen.getByRole('button', { name: /Scan Barcode/ });
         fireEvent.click(scanBtn);
-        expect(await screen.findByText(/Camera could not be opened/)).toBeInTheDocument();
+        expect(await screen.findByText(/Barcode scanning is not supported/i)).toBeInTheDocument();
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
 
-    it('shows error below UPC field when scanner fails to start (no toast)', async () => {
+    it('shows generic warning when scanner fails to start (no toast)', async () => {
         // clear previous permission stubs
         delete (navigator as any).permissions;
         qrMockBehavior.startShouldReject = true;
@@ -132,12 +141,10 @@ describe('GameForm', () => {
         render(<GameForm />);
         const scanBtn = screen.getByRole('button', { name: /Scan Barcode/ });
         fireEvent.click(scanBtn);
-        const msg = await screen.findByText(/Camera could not be opened/);
+        const msg = await screen.findByText(/Barcode scanning is not supported/i);
         expect(msg).toBeInTheDocument();
         // ensure it's not shown as a toast
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-        // message should be rendered as form-text element
-        expect(msg).toHaveClass('form-text');
     });
 
     it('invokes lookupGameByUpc when Lookup clicked', async () => {
