@@ -66,7 +66,17 @@ body {
   font-weight: 500;
 }
 
-/* ensure home section fills viewport with matching background */
+/* wrapper that surrounds the entire vault page. it's always
+   full viewport height and uses the same gradient that the body does. the
+   inner .container is transparent so all content (including the category
+   tabs) appears on a continuous background. */
+.vault-container {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f5f8ff 0%, #eef2ff 100%);
+}
+
+/* home-bg is no longer needed but kept for compatibility in case any
+   references remained (shouldn't be). */
 .home-bg {
   min-height: 100vh;
   background: linear-gradient(180deg, #f5f8ff 0%, #eef2ff 100%);

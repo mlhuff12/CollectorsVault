@@ -66,7 +66,24 @@ describe('VaultPage', () => {
         );
     };
 
-    it('renders home tiles and does not fetch any items', async () => {
+    it('always includes the outer vault-container wrapper with full-height class', () => {
+        const { container } = renderVaultPage('/');
+        const wrapper = container.firstChild as HTMLElement;
+        expect(wrapper).toHaveClass('vault-container');
+        // we can't rely on CSS being applied in jsdom, but the class guarantees
+        // the styling intent; ensure it remains on other routes as well.
+        renderVaultPage('/books');
+        const wrapper2 = container.firstChild as HTMLElement;
+        expect(wrapper2).toHaveClass('vault-container');
+    });
+
+    it('wraps the category nav in a full-width container-fluid', async () => {
+        renderVaultPage('/');
+        const nav = await screen.findByLabelText('Vault categories');
+        expect(nav.parentElement).toHaveClass('container-fluid');
+    });
+
+    it('renders home tiles in a white container and does not fetch any items', async () => {
         renderVaultPage('/');
 
         // expect our four tiles to be visible
@@ -75,6 +92,20 @@ describe('VaultPage', () => {
         expect(screen.getByText('Add Movie')).toBeInTheDocument();
         expect(screen.getByText('Add Game')).toBeInTheDocument();
         expect(mockFetchItems).not.toHaveBeenCalled();
+
+        const container = screen.getByTestId('home-tile-container');
+        // container is a card with default padding/shadow
+        expect(container).toHaveClass('card', 'shadow-sm', 'mb-3', 'p-3');
+        // the row inside should be centered within the card using mx-auto
+        const row = container.querySelector('.row');
+        expect(row).toHaveClass('row-cols-2', 'w-auto', 'mx-auto', 'justify-content-center');
+        // each child should still be a bootstrap column
+        const cols = row?.querySelectorAll('.col');
+        expect(cols).toHaveLength(4);
+        expect(Array.from(cols || []).every(c => !c.classList.contains('col-auto'))).toBe(true);
+        // text content sanity check
+        const tiles = within(container).getAllByText(/Scan Barcode|Add Book|Add Movie|Add Game/);
+        expect(tiles).toHaveLength(4);
     });
 
     it('opens and closes a modal when a tile is clicked', async () => {
@@ -231,6 +262,52 @@ describe('VaultPage', () => {
         expect(screen.queryByText('Halo Infinite')).not.toBeInTheDocument();
         // form should not appear on the books tab
         expect(screen.queryByRole('form')).not.toBeInTheDocument();
+    });
+
+    it('displays sticky add button on category pages and opens proper modal', async () => {
+        // books page
+        renderVaultPage('/books');
+        const booksHeading = await screen.findByRole('heading', { name: 'Books' });
+        // card should use min-vh-75 to push button to bottom
+        expect(booksHeading.closest('.card')).toHaveClass('min-vh-75');
+        let addBtn = await screen.findByRole('button', { name: /Add Book/i });
+        expect(addBtn).toBeInTheDocument();
+        // new layout uses float-end instead of fixed positioning
+        expect(addBtn).toHaveClass('float-end');
+        fireEvent.click(addBtn);
+        expect(await screen.findByText('Add a Book')).toBeInTheDocument();
+        // close modal before next
+        fireEvent.click(screen.getByLabelText('Close'));
+
+        // movies page
+        renderVaultPage('/movies');
+        const moviesHeading = await screen.findByRole('heading', { name: 'Movies' });
+        expect(moviesHeading.closest('.card')).toHaveClass('min-vh-75');
+        addBtn = await screen.findByRole('button', { name: /Add Movie/i });
+        expect(addBtn).toBeInTheDocument();
+        expect(addBtn).toHaveClass('float-end');
+        fireEvent.click(addBtn);
+        expect(await screen.findByText('Add a Movie')).toBeInTheDocument();
+        fireEvent.click(screen.getByLabelText('Close'));
+
+        // games page
+        renderVaultPage('/games');
+        const gamesHeading = await screen.findByRole('heading', { name: 'Games' });
+        expect(gamesHeading.closest('.card')).toHaveClass('min-vh-75');
+        addBtn = await screen.findByRole('button', { name: /Add Game/i });
+        expect(addBtn).toBeInTheDocument();
+        expect(addBtn).toHaveClass('float-end');
+        fireEvent.click(addBtn);
+        expect(await screen.findByText('Add a Game')).toBeInTheDocument();
+    });
+
+    it('does not show add button on home or admin pages', async () => {
+        renderVaultPage('/');
+        expect(screen.queryByRole('button', { name: /Add /i })).not.toBeInTheDocument();
+        mockIsAdmin = true;
+        mockFetchAllUsers.mockResolvedValue([]); // avoid AdminTab crash
+        renderVaultPage('/admin');
+        expect(screen.queryByRole('button', { name: /Add /i })).not.toBeInTheDocument();
     });
 
     // deletion functionality removed from this page; no test required

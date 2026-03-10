@@ -118,6 +118,31 @@ const VaultPage: React.FC = () => {
 
 
     const renderSectionContent = () => {
+        // helper used to render the floating "add" button for category pages
+        const renderAddButton = () => {
+            if (activeSection === 'home' || activeSection === 'admin') {
+                return null;
+            }
+            // convert plural section to singular form used by modal
+            let formType: 'book' | 'movie' | 'game' | undefined;
+            if (activeSection === 'books') formType = 'book';
+            else if (activeSection === 'movies') formType = 'movie';
+            else if (activeSection === 'games') formType = 'game';
+            if (!formType) return null;
+            const label = formType.charAt(0).toUpperCase() + formType.slice(1);
+            // fixed position at bottom right of viewport so it sits beneath container
+            return (
+                <button
+                    type="button"
+                    className="btn btn-primary float-end bottom-0 end-0 m-3 rounded-circle"
+                    aria-label={`Add ${label}`}
+                    onClick={() => handleModalOpen(formType)}
+                >
+                    <span className="fs-4">+</span>
+                </button>
+            );
+        };
+
         if (activeSection === 'admin') {
             return (
                 <div className="card shadow-sm mb-3 p-3">
@@ -128,101 +153,89 @@ const VaultPage: React.FC = () => {
 
         if (activeSection === 'home') {
             // tiles for primary actions
+            // container has white background and enforces two columns per row
             return (
                 <>
-                    <div className="d-flex flex-wrap gap-3 justify-content-center mb-4">
-                        <div className="home-tile" onClick={() => handleModalOpen('upc')}>
-                            <span>Scan Barcode</span>
-                        </div>
-                        <div className="home-tile" onClick={() => handleModalOpen('book')}>
-                            <span>Add Book</span>
-                        </div>
-                        <div className="home-tile" onClick={() => handleModalOpen('movie')}>
-                            <span>Add Movie</span>
-                        </div>
-                        <div className="home-tile" onClick={() => handleModalOpen('game')}>
-                            <span>Add Game</span>
+                    <div data-testid="home-tile-container" className="card shadow-sm mb-3 p-3">
+                        <div className="row row-cols-2 g-3 w-auto mx-auto justify-content-center">
+                            
+                            {/* Left Column 1: Right-aligned toward center */}
+                            <div className="col d-flex justify-content-end">
+                                <div className="home-tile d-flex justify-content-center align-items-center text-center h-100 p-3" onClick={() => handleModalOpen('upc')}>
+                                    <span>Scan Barcode</span>
+                                </div>
+                            </div>
+
+                            {/* Right Column 1: Left-aligned toward center */}
+                            <div className="col d-flex justify-content-start">
+                                <div className="home-tile d-flex justify-content-center align-items-center text-center h-100 p-3" onClick={() => handleModalOpen('book')}>
+                                    <span>Add Book</span>
+                                </div>
+                            </div>
+
+                            {/* Left Column 2: Right-aligned toward center */}
+                            <div className="col d-flex justify-content-end">
+                                <div className="home-tile d-flex justify-content-center align-items-center text-center h-100 p-3" onClick={() => handleModalOpen('movie')}>
+                                    <span>Add Movie</span>
+                                </div>
+                            </div>
+
+                            {/* Right Column 2: Left-aligned toward center */}
+                            <div className="col d-flex justify-content-start">
+                                <div className="home-tile d-flex justify-content-center align-items-center text-center h-100 p-3" onClick={() => handleModalOpen('game')}>
+                                    <span>Add Game</span>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
-
-                    <Modal
-                        show={modalType !== null}
-                        title={
-                            modalType === 'book'
-                                ? 'Add a Book'
-                                : modalType === 'movie'
-                                ? 'Add a Movie'
-                                : modalType === 'game'
-                                ? 'Add a Game'
-                                : modalType === 'upc'
-                                ? 'Scan Barcode'
-                                : ''
-                        }
-                        onClose={handleModalClose}
-                        onConfirm={modalType === 'upc' ? undefined : handleModalConfirm}
-                        confirmText="Create"
-                    >
-                        {modalType === 'upc' && (
-                        <>
-                            {/* always display manual entry; scanner appears below when active */}
-                            <BarcodeScanLookup
-                                placeholder="Enter UPC"
-                                onLookup={(code: string) => {
-                                    alert(`Lookup: ${code}`);
-                                    handleModalClose();
-                                }}
-                            />
-                        </>
-                    )}
-                        {modalType === 'book' && (
-                            <BookForm
-                                key={formKey}
-                                hideSubmit
-                                hideTitle
-                                formRef={bookFormRef}
-                                onItemAdded={(title) => handleItemAddedAndClose(title)}
-                            />
-                        )}
-                        {modalType === 'movie' && (
-                            <MovieForm key={formKey} hideSubmit hideTitle formRef={movieFormRef} onItemAdded={handleItemAddedAndClose} />
-                        )}
-                        {modalType === 'game' && (
-                            <GameForm key={formKey} hideSubmit hideTitle formRef={gameFormRef} onItemAdded={handleItemAddedAndClose} />
-                        )}
-                    </Modal>
                 </>
             );
         }
 
         if (activeSection === 'books') {
-            // only show the list of books; no form on the books tab
+            // only show the list of books; floating add button appears below
             return (
-                <div className="card shadow-sm mb-3 p-3">
-                    <ItemList refreshKey={refreshKey} categoryFilter="book" title="Books" />
-                </div>
+                <>
+                    <div className="card shadow-sm mb-3 p-3 position-relative min-vh-75">
+                        <ItemList refreshKey={refreshKey} categoryFilter="book" title="Books" />
+                    </div>
+                    {renderAddButton()}
+                </>
             );
         }
 
         if (activeSection === 'movies') {
             return (
-                <div className="card shadow-sm mb-3 p-3">
-                    <ItemList refreshKey={refreshKey} categoryFilter="movie" title="Movies" />
-                </div>
+                <>
+                    <div className="card shadow-sm mb-3 p-3 position-relative min-vh-75">
+                        <ItemList refreshKey={refreshKey} categoryFilter="movie" title="Movies" />
+                    </div>
+                    {renderAddButton()}
+                </>
             );
         }
 
         // games section
         return (
-            <div className="card shadow-sm mb-3 p-3">
-                <ItemList refreshKey={refreshKey} categoryFilter="game" title="Games" />
-            </div>
+            <>
+                <div className="card shadow-sm mb-3 p-3 position-relative min-vh-75">
+                    <ItemList refreshKey={refreshKey} categoryFilter="game" title="Games" />
+                </div>
+                {renderAddButton()}
+            </>
         );
     };
 
     return (
         <>
-            <div className={`container py-4 ${activeSection === 'home' ? 'home-bg' : ''}`}>
-            <header className="mb-3">
+            {/* outer wrapper ensures the page is always full height and uses the
+                same background regardless of which section is active. The
+                .container inside limits content width while remaining
+                transparent so the gradient shows through. */}
+            <div className="vault-container">
+                <div className="container py-4">
+                    <header className="mb-3">
                 <div className="d-flex align-items-center gap-3">
                     <div className="brand-logo" aria-hidden="true">CV</div>
                     <div>
@@ -238,7 +251,11 @@ const VaultPage: React.FC = () => {
                 </div>
             </header>
 
-            <nav className="d-flex flex-wrap gap-2 mb-3" aria-label="Vault categories">
+            {/* nav is kept in a fluid container so the category buttons sit on the
+                same background color across the entire screen rather than being
+                constrained by the fixed-width container */}
+            <div className="container-fluid">
+                <nav className="d-flex flex-wrap gap-2 mb-3" aria-label="Vault categories">
                 <button
                     type="button"
                     className={activeSection === 'home' ? 'btn btn-primary' : 'btn btn-outline-secondary'}
@@ -276,17 +293,67 @@ const VaultPage: React.FC = () => {
                         Admin
                     </button>
                 )}
-            </nav>
+                </nav>
+            </div>
 
-            {renderSectionContent()}
-        </div>
-            {pageToast && (
-                <Toast
-                    message={pageToast}
-                    type={pageToastType}
-                    onDismiss={() => setPageToast('')}
-                />
-            )}
+                    <div>
+                        {renderSectionContent()}
+                    </div>
+                </div>
+                {/* global modal shared across sections */}
+                <Modal
+                    show={modalType !== null}
+                    title={
+                        modalType === 'book'
+                            ? 'Add a Book'
+                            : modalType === 'movie'
+                            ? 'Add a Movie'
+                            : modalType === 'game'
+                            ? 'Add a Game'
+                            : modalType === 'upc'
+                            ? 'Scan Barcode'
+                            : ''
+                    }
+                    onClose={handleModalClose}
+                    onConfirm={modalType === 'upc' ? undefined : handleModalConfirm}
+                    confirmText="Create"
+                >
+                    {modalType === 'upc' && (
+                    <>
+                        {/* always display manual entry; scanner appears below when active */}
+                        <BarcodeScanLookup
+                            placeholder="Enter UPC"
+                            onLookup={(code: string) => {
+                                alert(`Lookup: ${code}`);
+                                handleModalClose();
+                            }}
+                        />
+                    </>
+                )}
+                    {modalType === 'book' && (
+                        <BookForm
+                            key={formKey}
+                            hideSubmit
+                            hideTitle
+                            formRef={bookFormRef}
+                            onItemAdded={(title) => handleItemAddedAndClose(title)}
+                        />
+                    )}
+                    {modalType === 'movie' && (
+                        <MovieForm key={formKey} hideSubmit hideTitle formRef={movieFormRef} onItemAdded={handleItemAddedAndClose} />
+                    )}
+                    {modalType === 'game' && (
+                        <GameForm key={formKey} hideSubmit hideTitle formRef={gameFormRef} onItemAdded={handleItemAddedAndClose} />
+                    )}
+                </Modal>
+                {pageToast && (
+                    <Toast
+                        message={pageToast}
+                        type={pageToastType}
+                        onDismiss={() => setPageToast('')}
+                    />
+                )}
+            </div>
         </>
     );
 };
