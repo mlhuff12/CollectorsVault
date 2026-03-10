@@ -268,12 +268,12 @@ describe('VaultPage', () => {
         // books page
         renderVaultPage('/books');
         const booksHeading = await screen.findByRole('heading', { name: 'Books' });
-        // card should use min-vh-75 to push button to bottom
-        expect(booksHeading.closest('.card')).toHaveClass('min-vh-75');
+        // card should have full height/width styling
+        expect(booksHeading.closest('.card')).toHaveClass('h-100', 'w-100');
         let addBtn = await screen.findByRole('button', { name: /Add Book/i });
         expect(addBtn).toBeInTheDocument();
-        // new layout uses float-end instead of fixed positioning
         expect(addBtn).toHaveClass('float-end');
+        expect(addBtn).toHaveClass('position-fixed');
         fireEvent.click(addBtn);
         expect(await screen.findByText('Add a Book')).toBeInTheDocument();
         // close modal before next
@@ -282,10 +282,11 @@ describe('VaultPage', () => {
         // movies page
         renderVaultPage('/movies');
         const moviesHeading = await screen.findByRole('heading', { name: 'Movies' });
-        expect(moviesHeading.closest('.card')).toHaveClass('min-vh-75');
+        expect(moviesHeading.closest('.card')).toHaveClass('h-100', 'w-100');
         addBtn = await screen.findByRole('button', { name: /Add Movie/i });
         expect(addBtn).toBeInTheDocument();
         expect(addBtn).toHaveClass('float-end');
+        expect(addBtn).toHaveClass('position-fixed');
         fireEvent.click(addBtn);
         expect(await screen.findByText('Add a Movie')).toBeInTheDocument();
         fireEvent.click(screen.getByLabelText('Close'));
@@ -293,10 +294,11 @@ describe('VaultPage', () => {
         // games page
         renderVaultPage('/games');
         const gamesHeading = await screen.findByRole('heading', { name: 'Games' });
-        expect(gamesHeading.closest('.card')).toHaveClass('min-vh-75');
+        expect(gamesHeading.closest('.card')).toHaveClass('h-100', 'w-100');
         addBtn = await screen.findByRole('button', { name: /Add Game/i });
         expect(addBtn).toBeInTheDocument();
         expect(addBtn).toHaveClass('float-end');
+        expect(addBtn).toHaveClass('position-fixed');
         fireEvent.click(addBtn);
         expect(await screen.findByText('Add a Game')).toBeInTheDocument();
     });

@@ -116,9 +116,7 @@ const VaultPage: React.FC = () => {
 
     // attempt scanning from UPC modal, with permission check to avoid flicker
 
-
-    const renderSectionContent = () => {
-        // helper used to render the floating "add" button for category pages
+            // helper used to render the floating "add" button for category pages
         const renderAddButton = () => {
             if (activeSection === 'home' || activeSection === 'admin') {
                 return null;
@@ -134,7 +132,7 @@ const VaultPage: React.FC = () => {
             return (
                 <button
                     type="button"
-                    className="btn btn-primary float-end bottom-0 end-0 m-3 rounded-circle"
+                    className="btn btn-primary float-end bottom-0 end-0 m-3 rounded-circle position-fixed"
                     aria-label={`Add ${label}`}
                     onClick={() => handleModalOpen(formType)}
                 >
@@ -142,6 +140,9 @@ const VaultPage: React.FC = () => {
                 </button>
             );
         };
+
+    const renderSectionContent = () => {
+
 
         if (activeSection === 'admin') {
             return (
@@ -197,10 +198,9 @@ const VaultPage: React.FC = () => {
             // only show the list of books; floating add button appears below
             return (
                 <>
-                    <div className="card shadow-sm mb-3 p-3 position-relative min-vh-75">
+                    <div className="card shadow-sm p-3 h-100 w-100">
                         <ItemList refreshKey={refreshKey} categoryFilter="book" title="Books" />
                     </div>
-                    {renderAddButton()}
                 </>
             );
         }
@@ -208,10 +208,9 @@ const VaultPage: React.FC = () => {
         if (activeSection === 'movies') {
             return (
                 <>
-                    <div className="card shadow-sm mb-3 p-3 position-relative min-vh-75">
+                    <div className="card shadow-sm p-3 h-100 w-100">
                         <ItemList refreshKey={refreshKey} categoryFilter="movie" title="Movies" />
                     </div>
-                    {renderAddButton()}
                 </>
             );
         }
@@ -219,10 +218,9 @@ const VaultPage: React.FC = () => {
         // games section
         return (
             <>
-                <div className="card shadow-sm mb-3 p-3 position-relative min-vh-75">
+                <div className="card shadow-sm p-3 h-100 w-100">
                     <ItemList refreshKey={refreshKey} categoryFilter="game" title="Games" />
                 </div>
-                {renderAddButton()}
             </>
         );
     };
@@ -233,8 +231,8 @@ const VaultPage: React.FC = () => {
                 same background regardless of which section is active. The
                 .container inside limits content width while remaining
                 transparent so the gradient shows through. */}
-            <div className="vault-container">
-                <div className="container py-4">
+            <div className="vault-container d-flex flex-column min-vh-100">
+                <div className="container py-4 flex-grow-1 d-flex flex-column">
                     <header className="mb-3">
                 <div className="d-flex align-items-center gap-3">
                     <div className="brand-logo" aria-hidden="true">CV</div>
@@ -296,9 +294,11 @@ const VaultPage: React.FC = () => {
                 </nav>
             </div>
 
-                    <div>
+                    <div className="flex-grow-1 position-relative d-flex col">
                         {renderSectionContent()}
                     </div>
+                    {renderAddButton()}
+                    
                 </div>
                 {/* global modal shared across sections */}
                 <Modal
