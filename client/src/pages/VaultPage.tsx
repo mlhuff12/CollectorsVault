@@ -17,8 +17,9 @@ type VaultSection = 'home' | 'books' | 'movies' | 'games' | 'admin';
  *
  * It provides:
  * - Navigation between Home, Books, Movies, and Games sections.
- * - Forms for adding new collectible items (books, movies, games).
  * - A list of existing items for the current user, with delete support.
+ *   (Add forms have been moved to the home modal; category tabs only show
+ *    item lists.)
  * - A header showing the logged-in username and a Sign Out button.
  * - An Admin tab (visible only to admin users) for user management.
  *
@@ -194,10 +195,9 @@ const VaultPage: React.FC = () => {
         }
 
         if (activeSection === 'books') {
+            // only show the list of books; no form on the books tab
             return (
                 <div className="card shadow-sm mb-3 p-3">
-                    <BookForm onItemAdded={handleItemAdded} />
-                    <hr />
                     <ItemList refreshKey={refreshKey} categoryFilter="book" title="Books" />
                 </div>
             );
@@ -206,17 +206,14 @@ const VaultPage: React.FC = () => {
         if (activeSection === 'movies') {
             return (
                 <div className="card shadow-sm mb-3 p-3">
-                    <MovieForm onItemAdded={handleItemAdded} />
-                    <hr />
                     <ItemList refreshKey={refreshKey} categoryFilter="movie" title="Movies" />
                 </div>
             );
         }
 
+        // games section
         return (
             <div className="card shadow-sm mb-3 p-3">
-                <GameForm onItemAdded={handleItemAdded} />
-                <hr />
                 <ItemList refreshKey={refreshKey} categoryFilter="game" title="Games" />
             </div>
         );

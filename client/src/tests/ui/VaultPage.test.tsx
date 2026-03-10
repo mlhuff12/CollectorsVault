@@ -222,13 +222,15 @@ describe('VaultPage', () => {
         expect(screen.queryByRole('button', { name: /Scan Barcode/ })).not.toBeInTheDocument();
     });
 
-    it('shows only books on the books route', async () => {
+    it('shows only books on the books route without any add form', async () => {
         renderVaultPage('/books');
 
         expect(await screen.findByRole('heading', { name: 'Books' })).toBeInTheDocument();
         expect(screen.getByText('Dune')).toBeInTheDocument();
         expect(screen.queryByText('Inception')).not.toBeInTheDocument();
         expect(screen.queryByText('Halo Infinite')).not.toBeInTheDocument();
+        // form should not appear on the books tab
+        expect(screen.queryByRole('form')).not.toBeInTheDocument();
     });
 
     // deletion functionality removed from this page; no test required
@@ -255,20 +257,26 @@ describe('VaultPage', () => {
         expect(screen.getByRole('button', { name: 'Admin' })).toBeInTheDocument();
     });
 
-    it('book page shows UPC/ISBN lookup field', async () => {
+    // individual category routes no longer contain lookup fields or forms
+    it('books route has no form or lookup controls', async () => {
         renderVaultPage('/books');
-        expect(await screen.findByPlaceholderText('Enter UPC or ISBN')).toBeInTheDocument();
+        expect(await screen.findByRole('heading', { name: 'Books' })).toBeInTheDocument();
+        expect(screen.queryByPlaceholderText(/Enter UPC/)).not.toBeInTheDocument();
+        expect(screen.queryByRole('form')).not.toBeInTheDocument();
     });
 
-    it('movie page shows UPC lookup field', async () => {
-        Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
+    it('movies route has no form or lookup controls', async () => {
         renderVaultPage('/movies');
-        expect(await screen.findByPlaceholderText('Enter UPC')).toBeInTheDocument();
+        expect(await screen.findByRole('heading', { name: 'Movies' })).toBeInTheDocument();
+        expect(screen.queryByPlaceholderText(/Enter UPC/)).not.toBeInTheDocument();
+        expect(screen.queryByRole('form')).not.toBeInTheDocument();
     });
 
-    it('game page shows UPC lookup field', async () => {
+    it('games route has no form or lookup controls', async () => {
         renderVaultPage('/games');
-        expect(await screen.findByPlaceholderText('Enter UPC')).toBeInTheDocument();
+        expect(await screen.findByRole('heading', { name: 'Games' })).toBeInTheDocument();
+        expect(screen.queryByPlaceholderText(/Enter UPC/)).not.toBeInTheDocument();
+        expect(screen.queryByRole('form')).not.toBeInTheDocument();
     });
 
     it('renders admin section on /admin route for admin users', async () => {
