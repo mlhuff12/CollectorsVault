@@ -32,7 +32,7 @@ describe('Toast', () => {
         expect(onDismiss).not.toHaveBeenCalled();
 
         act(() => {
-            vi.advanceTimersByTime(3000);
+            vi.advanceTimersByTime(5000);
         });
 
         expect(onDismiss).toHaveBeenCalledTimes(1);
@@ -66,6 +66,10 @@ describe('Toast', () => {
         render(<Toast message="Done" onDismiss={onDismiss} />);
 
         expect(screen.getByRole('alert').querySelector('.bg-success')).toBeInTheDocument();
+        // default positioning should be left-aligned instead of centered
+        const alert = screen.getByRole('alert');
+        expect(alert).toHaveStyle({ left: '1.5rem' });
+        expect(alert).not.toHaveStyle({ transform: 'translateX(-50%)' });
     });
 
     it('applies error background class for type="error"', () => {

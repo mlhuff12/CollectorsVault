@@ -40,6 +40,7 @@ const VaultPage: React.FC = () => {
 
     // temporary toast messages shown in various places
     const [pageToast, setPageToast] = useState('');
+    const [pageToastType, setPageToastType] = useState<'success' | 'error' | 'info' | 'warning'>('warning');
 
     const handleItemAdded = () => {
         setRefreshKey((previous) => previous + 1);
@@ -55,9 +56,13 @@ const VaultPage: React.FC = () => {
         setFormKey((prev) => prev + 1);
     };
 
-    const handleItemAddedAndClose = () => {
+    const handleItemAddedAndClose = (title?: string) => {
         handleItemAdded();
         handleModalClose();
+        if (title) {
+            setPageToast(`The book ${title} has successfully been created.`);
+            setPageToastType('success');
+        }
     };
 
     const handleModalConfirm = () => {
@@ -169,7 +174,13 @@ const VaultPage: React.FC = () => {
                         </>
                     )}
                         {modalType === 'book' && (
-                            <BookForm key={formKey} hideSubmit hideTitle formRef={bookFormRef} onItemAdded={handleItemAddedAndClose} />
+                            <BookForm
+                                key={formKey}
+                                hideSubmit
+                                hideTitle
+                                formRef={bookFormRef}
+                                onItemAdded={(title) => handleItemAddedAndClose(title)}
+                            />
                         )}
                         {modalType === 'movie' && (
                             <MovieForm key={formKey} hideSubmit hideTitle formRef={movieFormRef} onItemAdded={handleItemAddedAndClose} />
@@ -273,7 +284,11 @@ const VaultPage: React.FC = () => {
             {renderSectionContent()}
         </div>
             {pageToast && (
-                <Toast message={pageToast} type="warning" onDismiss={() => setPageToast('')} />
+                <Toast
+                    message={pageToast}
+                    type={pageToastType}
+                    onDismiss={() => setPageToast('')}
+                />
             )}
         </>
     );

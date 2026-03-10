@@ -72,7 +72,15 @@ describe('BookForm', () => {
         });
 
         expect(onItemAdded).toHaveBeenCalledTimes(1);
-        expect(await screen.findByText('Book added successfully!')).toBeInTheDocument();
+        // verify the callback received the title and the toast shows it explicitly
+        expect(onItemAdded).toHaveBeenCalledWith('Dune');
+        const alert = await screen.findByRole('alert');
+        expect(alert).toHaveTextContent('The book Dune has successfully been created.');
+        // ensure the toast uses success styling (green background)
+        expect(alert.querySelector('.bg-success')).not.toBeNull();
+        // toast should now be left-aligned (not centered)
+        expect(alert).toHaveStyle({ left: '1.5rem' });
+        expect(alert).not.toHaveStyle({ transform: 'translateX(-50%)' });
     });
 
     it('shows validation when no author names provided (manual entry)', async () => {

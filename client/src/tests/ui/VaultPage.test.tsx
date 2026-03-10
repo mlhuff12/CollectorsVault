@@ -130,6 +130,16 @@ describe('VaultPage', () => {
         await waitFor(() => {
             expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         });
+
+        // after closing the modal the page-level toast should appear with the
+        // title we entered and should use the success style (green background).
+        const alert = await screen.findByRole('alert');
+        expect(alert).toHaveTextContent('The book Test Title has successfully been created.');
+        // bootstrap success toast uses bg-success class
+        expect(alert.querySelector('.bg-success')).not.toBeNull();
+        // should be left-aligned
+        expect(alert).toHaveStyle({ left: '1.5rem' });
+        expect(alert).not.toHaveStyle({ transform: 'translateX(-50%)' });
     });
 
     it('shows manual UPC entry and scan button when camera is available, and keeping input visible after opening scanner', async () => {

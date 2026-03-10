@@ -19,7 +19,7 @@ interface ToastProps {
  * Toast displays a brief, auto-dismissing notification at the bottom of the viewport.
  * It automatically calls `onDismiss` after `duration` milliseconds.
  */
-const Toast: React.FC<ToastProps> = ({ message, type = 'success', duration = 3000, onDismiss }) => {
+const Toast: React.FC<ToastProps> = ({ message, type = 'success', duration = 5000, onDismiss }) => {
     useEffect(() => {
         if (!message) return;
         const timer = setTimeout(onDismiss, duration);
@@ -44,11 +44,10 @@ const Toast: React.FC<ToastProps> = ({ message, type = 'success', duration = 300
             style={{
                 position: 'fixed',
                 bottom: '1.5rem',
-                left: '50%',
-                transform: 'translateX(-50%)',
+                left: '1.5rem',
                 zIndex: 9999,
                 minWidth: '240px',
-                maxWidth: '90vw'
+                maxWidth: 'calc(100vw - 3rem)'
             }}
         >
             <div className={`toast show text-white ${bgClass} border-0 shadow`}>

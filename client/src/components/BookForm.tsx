@@ -6,8 +6,14 @@ import Toast from './Toast';
 
 /** Props accepted by {@link BookForm}. */
 interface BookFormProps {
-    /** Called after a book is successfully added, allowing the parent to refresh its list. */
-    onItemAdded?: () => void;
+    /**
+     * Called after a book is successfully added, allowing the parent to refresh
+     * its list.  If the caller cares about the title of the new book (for
+     * example to show a page‑level toast) it may accept a single string
+     * argument containing the title; the argument will be undefined when the
+     * caller doesn’t declare a parameter.
+     */
+    onItemAdded?: (title?: string) => void;
     hideSubmit?: boolean;
     formRef?: React.Ref<HTMLFormElement>;
     hideTitle?: boolean;
@@ -225,8 +231,13 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded, hideSubmit = false, fo
             setSeriesNumber('');
             setBookFormat('');
             setNeedsReplacement(false);
-            setToastMessage('Book added successfully!');
-            onItemAdded?.();
+            // include the actual title in the toast so that callers (especially the
+            // modal case) can show a more descriptive message.  The toast type is
+            // always `success` which yields the green background the design
+            // requires.
+            const toastText = `The book ${displayTitle} has successfully been created.`;
+            setToastMessage(toastText);
+            onItemAdded?.(displayTitle);
         } catch {
             setErrorMessage('Failed to add book. Please try again.');
         }
