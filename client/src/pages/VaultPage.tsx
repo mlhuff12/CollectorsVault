@@ -16,8 +16,15 @@ import {
     Paper,
     Typography,
     Fab,
+    SpeedDial,
+    SpeedDialAction,
+    SpeedDialIcon,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import BookIcon from '@mui/icons-material/Book';
+import MovieIcon from '@mui/icons-material/Movie';
+import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
+import BarcodeIcon from 'mdi-material-ui/Barcode';
 
 type VaultSection = 'home' | 'books' | 'movies' | 'games' | 'admin';
 
@@ -130,7 +137,7 @@ const VaultPage: React.FC = () => {
             if (!formType) return null;
 
             const label = formType.charAt(0).toUpperCase() + formType.slice(1);
-            // use MUI Fab for floating add button
+            // use MUI Fab for floating add button (category pages)
             return (
                 <Fab
                     color="primary"
@@ -140,6 +147,34 @@ const VaultPage: React.FC = () => {
                 >
                     <AddIcon />
                 </Fab>
+            );
+        };
+
+        // floating action menu on home page offering multiple quick actions
+        const renderHomeFab = () => {
+            if (activeSection !== 'home') return null;
+            const actions = [
+                { icon: <BarcodeIcon />, name: 'Scan Barcode', handler: () => handleModalOpen('upc') },
+                { icon: <BookIcon />, name: 'Add Book', handler: () => handleModalOpen('book') },
+                { icon: <MovieIcon />, name: 'Add Movie', handler: () => handleModalOpen('movie') },
+                { icon: <SportsEsportsIcon />, name: 'Add Game', handler: () => handleModalOpen('game') },
+            ];
+            return (
+                <SpeedDial
+                    ariaLabel="Home actions"
+                    sx={{ position: 'fixed', bottom: 16, right: 16 }}
+                    icon={<SpeedDialIcon openIcon={<AddIcon />} />}
+                >
+                    {actions.map((action) => (
+                        <SpeedDialAction
+                            key={action.name}
+                            icon={action.icon}
+                            tooltipTitle={action.name}
+                            aria-label={action.name}
+                            onClick={action.handler}
+                        />
+                    ))}
+                </SpeedDial>
             );
         };
 
@@ -223,6 +258,7 @@ const VaultPage: React.FC = () => {
                         {renderSectionContent()}
                     </Box>
                     {renderAddButton()}
+                    {renderHomeFab()}
                 </Container>
                 {/* global modal shared across sections */}
                 <Modal

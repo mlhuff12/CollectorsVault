@@ -146,6 +146,49 @@ describe('VaultPage', () => {
         });
     });
 
+    it('shows a floating speed-dial on home with actions that open modals', async () => {
+        renderVaultPage('/');
+        // dial should be present only on home
+        expect(screen.getByLabelText(/home actions/i)).toBeInTheDocument();
+
+        // open the speed dial
+        const mainBtn = screen.getByLabelText(/home actions/i);
+        fireEvent.click(mainBtn);
+
+        // actions should become visible
+        expect(await screen.findByLabelText('Scan Barcode')).toBeInTheDocument();
+        expect(screen.getByLabelText('Add Book')).toBeInTheDocument();
+        expect(screen.getByLabelText('Add Movie')).toBeInTheDocument();
+        expect(screen.getByLabelText('Add Game')).toBeInTheDocument();
+
+        // clicking each action opens the correct modal
+        fireEvent.click(screen.getByLabelText('Add Game'));
+        expect(screen.getByRole('dialog')).toHaveTextContent('Add a Game');
+        fireEvent.click(screen.getByRole('button', { name: /Cancel/i }));
+
+        fireEvent.click(mainBtn);
+        fireEvent.click(screen.getByLabelText('Add Movie'));
+        expect(screen.getByRole('dialog')).toHaveTextContent('Add a Movie');
+        fireEvent.click(screen.getByRole('button', { name: /Cancel/i }));
+
+        fireEvent.click(mainBtn);
+        fireEvent.click(screen.getByLabelText('Add Book'));
+        expect(screen.getByRole('dialog')).toHaveTextContent('Add a Book');
+        fireEvent.click(screen.getByRole('button', { name: /Cancel/i }));
+
+        fireEvent.click(mainBtn);
+        fireEvent.click(screen.getByLabelText('Scan Barcode'));
+        expect(screen.getByRole('dialog')).toHaveTextContent('Scan Barcode');
+        fireEvent.click(screen.getByRole('button', { name: /Cancel/i }));
+    });
+
+    it('does not render the home speed-dial on other sections', () => {
+        renderVaultPage('/books');
+        expect(screen.queryByLabelText(/home actions/i)).toBeNull();
+        renderVaultPage('/movies');
+        expect(screen.queryByLabelText(/home actions/i)).toBeNull();
+    });
+
     it('opens book modal and can submit the form via the modal confirm', async () => {
         renderVaultPage('/');
         fireEvent.click(await screen.findByText('Add Book'));
