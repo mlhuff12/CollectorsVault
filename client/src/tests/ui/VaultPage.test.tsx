@@ -165,7 +165,10 @@ describe('VaultPage', () => {
         // after closing the modal the page-level toast should appear with the
         // title we entered and should use the success style (green background).
         const alert = await screen.findByRole('alert');
-        expect(alert).toHaveTextContent('The book Test Title has successfully been created.');
+        // the implementation capitalizes the item type so the word "Book" may
+        // appear with an uppercase B; use a case-insensitive regex instead of a
+        // hard-coded string to avoid fragile expectations.
+        expect(alert).toHaveTextContent(/The book Test Title has successfully been created\./i);
         // bootstrap success toast uses bg-success class
         expect(alert.querySelector('.bg-success')).not.toBeNull();
         // should be left-aligned
@@ -257,11 +260,30 @@ describe('VaultPage', () => {
         renderVaultPage('/books');
 
         expect(await screen.findByRole('heading', { name: 'Books' })).toBeInTheDocument();
-        expect(screen.getByText('Dune')).toBeInTheDocument();
+        expect(screen.getByText('Dune')).toBeInTheDocument();   
         expect(screen.queryByText('Inception')).not.toBeInTheDocument();
         expect(screen.queryByText('Halo Infinite')).not.toBeInTheDocument();
         // form should not appear on the books tab
         expect(screen.queryByRole('form')).not.toBeInTheDocument();
+    });
+
+    // regression for path parsing: query strings and trailing slashes should
+    // not confuse section detection (previously would default to home and
+    // leave the nav in an inconsistent state).
+    it('parses book path even with query or trailing slash', async () => {
+        // ensure each invocation of renderVaultPage is isolated; clean up after
+        // the first render to avoid stale DOM elements interfering with the
+        // subsequent call.
+        const { unmount } = renderVaultPage('/books?page=1');
+        expect(await screen.findByRole('heading', { name: 'Books' })).toBeInTheDocument();
+        const booksButton = await screen.findByRole('button', { name: 'Books' });
+        expect(booksButton).toHaveClass('btn-primary');
+        unmount();
+
+        renderVaultPage('/books/');
+        expect(await screen.findByRole('heading', { name: 'Books' })).toBeInTheDocument();
+        const booksButton2 = await screen.findByRole('button', { name: 'Books' });
+        expect(booksButton2).toHaveClass('btn-primary');
     });
 
     it('displays sticky add button on category pages and opens proper modal', async () => {

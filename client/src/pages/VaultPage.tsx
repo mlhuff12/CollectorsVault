@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import ItemList from '../components/ItemList';
 import BookForm from '../components/BookForm';
@@ -61,72 +61,58 @@ const VaultPage: React.FC = () => {
         handleItemAdded();
         handleModalClose();
         if (title) {
-            setPageToast(`The book ${title} has successfully been created.`);
+            // include the type of item in the toast if we know it
+            const itemType = modalType ? modalType.charAt(0).toUpperCase() + modalType.slice(1) : 'item';
+            setPageToast(`The ${itemType} ${title} has successfully been created.`);
             setPageToastType('success');
         }
     };
 
     const handleModalConfirm = () => {
-        if (modalType === 'book') {
-            bookFormRef.current?.requestSubmit();
-            return;
-        }
-        if (modalType === 'movie') {
-            movieFormRef.current?.requestSubmit();
-            return;
-        }
-        if (modalType === 'game') {
-            gameFormRef.current?.requestSubmit();
-            return;
+        // map modal type to its ref so we can submit generically
+        const refMap: Record<'book' | 'movie' | 'game', React.RefObject<HTMLFormElement>> = {
+            book: bookFormRef,
+            movie: movieFormRef,
+            game: gameFormRef,
+        };
+
+        if (modalType && modalType !== 'upc' && refMap[modalType]) {
+            refMap[modalType].current?.requestSubmit();
         }
     };
 
 
-    const getSectionFromPath = (): VaultSection => {
-        if (location.pathname === '/books') {
-            return 'books';
+    // convert pathname to a section enum, defaulting to home when unknown
+    const sectionFromPath = (path: string): VaultSection => {
+        // drop any query/hash data and trim slashes
+        const clean = path.split(/[?#]/)[0];
+        const trimmed = clean.replace(/^\/+|\/+$/g, '');
+        if (trimmed === '' || !(['books','movies','games','admin'] as string[]).includes(trimmed)) {
+            return 'home';
         }
-
-        if (location.pathname === '/movies') {
-            return 'movies';
-        }
-
-        if (location.pathname === '/games') {
-            return 'games';
-        }
-
-        if (location.pathname === '/admin') {
-            return 'admin';
-        }
-
-        return 'home';
+        return trimmed as VaultSection;
     };
 
     const setSection = (section: VaultSection) => {
-        if (section === 'home') {
-            history.push('/');
-            return;
-        }
-
-        history.push(`/${section}`);
+        history.push(section === 'home' ? '/' : `/${section}`);
     };
 
-    const activeSection = getSectionFromPath();
+    const activeSection = sectionFromPath(location.pathname);
 
 
     // attempt scanning from UPC modal, with permission check to avoid flicker
 
             // helper used to render the floating "add" button for category pages
         const renderAddButton = () => {
-            if (activeSection === 'home' || activeSection === 'admin') {
-                return null;
-            }
-            // convert plural section to singular form used by modal
-            let formType: 'book' | 'movie' | 'game' | undefined;
-            if (activeSection === 'books') formType = 'book';
-            else if (activeSection === 'movies') formType = 'movie';
-            else if (activeSection === 'games') formType = 'game';
+            const singularMap: Record<string, 'book' | 'movie' | 'game'> = {
+                books: 'book',
+                movies: 'movie',
+                games: 'game',
+            };
+
+            const formType = singularMap[activeSection];
             if (!formType) return null;
+
             const label = formType.charAt(0).toUpperCase() + formType.slice(1);
             // fixed position at bottom right of viewport so it sits beneath container
             return (
@@ -142,8 +128,6 @@ const VaultPage: React.FC = () => {
         };
 
     const renderSectionContent = () => {
-
-
         if (activeSection === 'admin') {
             return (
                 <div className="card shadow-sm mb-3 p-3">
@@ -159,70 +143,52 @@ const VaultPage: React.FC = () => {
                 <>
                     <div data-testid="home-tile-container" className="card shadow-sm mb-3 p-3">
                         <div className="row row-cols-2 g-3 w-auto mx-auto justify-content-center">
-                            
-                            {/* Left Column 1: Right-aligned toward center */}
-                            <div className="col d-flex justify-content-end">
-                                <div className="home-tile d-flex justify-content-center align-items-center text-center h-100 p-3" onClick={() => handleModalOpen('upc')}>
-                                    <span>Scan Barcode</span>
+                            {/* left/right columns are laid out explicitly for styling */}
+                            {(
+                                [
+                                    { label: 'Scan Barcode', action: () => handleModalOpen('upc') },
+                                    { label: 'Add Book', action: () => handleModalOpen('book') },
+                                    { label: 'Add Movie', action: () => handleModalOpen('movie') },
+                                    { label: 'Add Game', action: () => handleModalOpen('game') },
+                                ] as const
+                            ).map((tile, idx) => (
+                                <div
+                                    key={idx}
+                                    className={idx % 2 === 0 ? 'col d-flex justify-content-end' : 'col d-flex justify-content-start'}
+                                >
+                                    <div
+                                        className="home-tile d-flex justify-content-center align-items-center text-center h-100 p-3"
+                                        onClick={tile.action}
+                                    >
+                                        <span>{tile.label}</span>
+                                    </div>
                                 </div>
-                            </div>
-
-                            {/* Right Column 1: Left-aligned toward center */}
-                            <div className="col d-flex justify-content-start">
-                                <div className="home-tile d-flex justify-content-center align-items-center text-center h-100 p-3" onClick={() => handleModalOpen('book')}>
-                                    <span>Add Book</span>
-                                </div>
-                            </div>
-
-                            {/* Left Column 2: Right-aligned toward center */}
-                            <div className="col d-flex justify-content-end">
-                                <div className="home-tile d-flex justify-content-center align-items-center text-center h-100 p-3" onClick={() => handleModalOpen('movie')}>
-                                    <span>Add Movie</span>
-                                </div>
-                            </div>
-
-                            {/* Right Column 2: Left-aligned toward center */}
-                            <div className="col d-flex justify-content-start">
-                                <div className="home-tile d-flex justify-content-center align-items-center text-center h-100 p-3" onClick={() => handleModalOpen('game')}>
-                                    <span>Add Game</span>
-                                </div>
-                            </div>
-
+                            ))}
                         </div>
                     </div>
                 </>
             );
         }
 
-        if (activeSection === 'books') {
-            // only show the list of books; floating add button appears below
+        // books / movies / games use same structure; derive filter and title from section
+        const singular: Record<string, 'book' | 'movie' | 'game'> = {
+            books: 'book',
+            movies: 'movie',
+            games: 'game',
+        };
+        const cat = singular[activeSection];
+        if (cat) {
+            const title = cat.charAt(0).toUpperCase() + cat.slice(1) + 's';
             return (
                 <>
                     <div className="card shadow-sm p-3 h-100 w-100">
-                        <ItemList refreshKey={refreshKey} categoryFilter="book" title="Books" />
+                        <ItemList refreshKey={refreshKey} categoryFilter={cat} title={title} />
                     </div>
                 </>
             );
         }
 
-        if (activeSection === 'movies') {
-            return (
-                <>
-                    <div className="card shadow-sm p-3 h-100 w-100">
-                        <ItemList refreshKey={refreshKey} categoryFilter="movie" title="Movies" />
-                    </div>
-                </>
-            );
-        }
-
-        // games section
-        return (
-            <>
-                <div className="card shadow-sm p-3 h-100 w-100">
-                    <ItemList refreshKey={refreshKey} categoryFilter="game" title="Games" />
-                </div>
-            </>
-        );
+        return null;
     };
 
     return (
@@ -254,43 +220,29 @@ const VaultPage: React.FC = () => {
                 constrained by the fixed-width container */}
             <div className="container-fluid">
                 <nav className="d-flex flex-wrap gap-2 mb-3" aria-label="Vault categories">
-                <button
-                    type="button"
-                    className={activeSection === 'home' ? 'btn btn-primary' : 'btn btn-outline-secondary'}
-                    onClick={() => setSection('home')}
-                >
-                    Home
-                </button>
-                <button
-                    type="button"
-                    className={activeSection === 'books' ? 'btn btn-primary' : 'btn btn-outline-secondary'}
-                    onClick={() => setSection('books')}
-                >
-                    Books
-                </button>
-                <button
-                    type="button"
-                    className={activeSection === 'movies' ? 'btn btn-primary' : 'btn btn-outline-secondary'}
-                    onClick={() => setSection('movies')}
-                >
-                    Movies
-                </button>
-                <button
-                    type="button"
-                    className={activeSection === 'games' ? 'btn btn-primary' : 'btn btn-outline-secondary'}
-                    onClick={() => setSection('games')}
-                >
-                    Games
-                </button>
-                {isAdmin && (
-                    <button
-                        type="button"
-                        className={activeSection === 'admin' ? 'btn btn-primary' : 'btn btn-outline-secondary'}
-                        onClick={() => setSection('admin')}
-                    >
-                        Admin
-                    </button>
-                )}
+                    {(
+                        [
+                            { section: 'home' as VaultSection, label: 'Home', adminOnly: false },
+                            { section: 'books' as VaultSection, label: 'Books', adminOnly: false },
+                            { section: 'movies' as VaultSection, label: 'Movies', adminOnly: false },
+                            { section: 'games' as VaultSection, label: 'Games', adminOnly: false },
+                            { section: 'admin' as VaultSection, label: 'Admin', adminOnly: true },
+                        ] as const
+                    ).map(({ section, label, adminOnly }) => {
+                        if (adminOnly && !isAdmin) return null;
+                        return (
+                            <button
+                                key={section}
+                                type="button"
+                                className={
+                                    activeSection === section ? 'btn btn-primary' : 'btn btn-outline-secondary'
+                                }
+                                onClick={() => setSection(section)}
+                            >
+                                {label}
+                            </button>
+                        );
+                    })}
                 </nav>
             </div>
 
@@ -304,47 +256,56 @@ const VaultPage: React.FC = () => {
                 <Modal
                     show={modalType !== null}
                     title={
-                        modalType === 'book'
-                            ? 'Add a Book'
-                            : modalType === 'movie'
-                            ? 'Add a Movie'
-                            : modalType === 'game'
-                            ? 'Add a Game'
-                            : modalType === 'upc'
-                            ? 'Scan Barcode'
+                        modalType
+                            ? {
+                                  book: 'Add a Book',
+                                  movie: 'Add a Movie',
+                                  game: 'Add a Game',
+                                  upc: 'Scan Barcode',
+                              }[modalType]
                             : ''
                     }
                     onClose={handleModalClose}
                     onConfirm={modalType === 'upc' ? undefined : handleModalConfirm}
                     confirmText="Create"
                 >
-                    {modalType === 'upc' && (
-                    <>
-                        {/* always display manual entry; scanner appears below when active */}
-                        <BarcodeScanLookup
-                            placeholder="Enter UPC"
-                            onLookup={(code: string) => {
-                                alert(`Lookup: ${code}`);
-                                handleModalClose();
-                            }}
-                        />
-                    </>
-                )}
-                    {modalType === 'book' && (
-                        <BookForm
-                            key={formKey}
-                            hideSubmit
-                            hideTitle
-                            formRef={bookFormRef}
-                            onItemAdded={(title) => handleItemAddedAndClose(title)}
-                        />
-                    )}
-                    {modalType === 'movie' && (
-                        <MovieForm key={formKey} hideSubmit hideTitle formRef={movieFormRef} onItemAdded={handleItemAddedAndClose} />
-                    )}
-                    {modalType === 'game' && (
-                        <GameForm key={formKey} hideSubmit hideTitle formRef={gameFormRef} onItemAdded={handleItemAddedAndClose} />
-                    )}
+                    {modalType === 'upc' ? (
+                        <>
+                            {/* always display manual entry; scanner appears below when active */}
+                            <BarcodeScanLookup
+                                placeholder="Enter UPC"
+                                onLookup={(code: string) => {
+                                    alert(`Lookup: ${code}`);
+                                    handleModalClose();
+                                }}
+                            />
+                        </>
+                    ) : null}
+                    {modalType && modalType !== 'upc' ? (
+                        (() => {
+                            const formMap: Record<
+                                'book' | 'movie' | 'game',
+                                {
+                                    Component: React.FC<any>;
+                                    ref: React.RefObject<HTMLFormElement>;
+                                }
+                            > = {
+                                book: { Component: BookForm, ref: bookFormRef },
+                                movie: { Component: MovieForm, ref: movieFormRef },
+                                game: { Component: GameForm, ref: gameFormRef },
+                            };
+                            const { Component, ref } = formMap[modalType as 'book' | 'movie' | 'game'];
+                            return (
+                                <Component
+                                    key={formKey}
+                                    hideSubmit
+                                    hideTitle
+                                    formRef={ref}
+                                    onItemAdded={handleItemAddedAndClose}
+                                />
+                            );
+                        })()
+                    ) : null}
                 </Modal>
                 {pageToast && (
                     <Toast
