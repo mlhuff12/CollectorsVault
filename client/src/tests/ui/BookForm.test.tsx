@@ -7,13 +7,41 @@ let api: any;
 let mockAddBook: any;
 let mockLookupBookByIsbn: any;
 
+// ignore spurious act() warnings emitted when the mocked scanner fails
+const _origErrBookForm = console.error;
+const _origWarnBookForm = console.warn;
+beforeAll(() => {
+    console.error = (...args: any[]) => {
+        if (typeof args[0] === 'string' && args[0].includes('not wrapped in act')) {
+            return;
+        }
+        _origErrBookForm.apply(console, args);
+    };
+    console.warn = (...args: any[]) => {
+        if (typeof args[0] === 'string' && args[0].includes('not wrapped in act')) {
+            return;
+        }
+        _origWarnBookForm.apply(console, args);
+    };
+});
+afterAll(() => {
+    console.error = _origErrBookForm;
+    console.warn = _origWarnBookForm;
+});
+
 // control object for html5-qrcode mock
 const qrMockBehavior = { startShouldReject: false };
 
 vi.mock('html5-qrcode', () => ({
     Html5Qrcode: function() {
         return {
-            start: () => qrMockBehavior.startShouldReject ? Promise.reject(new Error('camera error')) : Promise.resolve(),
+            start: () => {
+                const promise = qrMockBehavior.startShouldReject ? Promise.reject(new Error('camera error')) : Promise.resolve();
+                return promise.then(
+                    res => { act(() => {}); return res; },
+                    err => { act(() => {}); return Promise.reject(err); }
+                );
+            },
             stop: () => Promise.resolve()
         };
     },

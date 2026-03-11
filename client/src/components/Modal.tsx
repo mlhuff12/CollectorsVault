@@ -30,7 +30,14 @@ const Modal: React.FC<ModalProps> = ({
     const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
     return (
-        <Dialog open={show} onClose={onClose} fullWidth maxWidth="sm" fullScreen={fullScreen}>
+        <Dialog
+            open={show}
+            onClose={onClose}
+            fullWidth
+            maxWidth="sm"
+            fullScreen={fullScreen}
+            transitionDuration={{ enter: 300, exit: 0 }}
+        >
             <DialogTitle>{title}</DialogTitle>
             <DialogContent dividers>{children}</DialogContent>
             <DialogActions>

@@ -1,9 +1,32 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, act } from '@testing-library/react';
 
 // component and api will be required in beforeEach to reset module state
 let GameForm: any;
 let api: any;
+
+// silence harmless act warnings from BarcodeScanner start failure
+const _origErr = console.error;
+const _origWarn = console.warn;
+beforeAll(() => {
+    console.error = (...args: any[]) => {
+        if (typeof args[0] === 'string' && args[0].includes('not wrapped in act')) {
+            return;
+        }
+        _origErr.apply(console, args);
+    };
+    console.warn = (...args: any[]) => {
+        if (typeof args[0] === 'string' && args[0].includes('not wrapped in act')) {
+            return;
+        }
+        _origWarn.apply(console, args);
+    };
+});
+
+afterAll(() => {
+    console.error = _origErr;
+    console.warn = _origWarn;
+});
 
 // control object for html5-qrcode mock
 const qrMockBehavior = { startShouldReject: false };
@@ -11,7 +34,13 @@ const qrMockBehavior = { startShouldReject: false };
 vi.mock('html5-qrcode', () => ({
     Html5Qrcode: function() {
         return {
-            start: () => qrMockBehavior.startShouldReject ? Promise.reject(new Error('camera error')) : Promise.resolve(),
+            start: () => {
+                const promise = qrMockBehavior.startShouldReject ? Promise.reject(new Error('camera error')) : Promise.resolve();
+                return promise.then(
+                    res => { act(() => {}); return res; },
+                    err => { act(() => {}); return Promise.reject(err); }
+                );
+            },
             stop: () => Promise.resolve()
         };
     },
@@ -110,12 +139,12 @@ describe('GameForm', () => {
         expect(screen.queryByRole('button', { name: /Scan Barcode/ })).not.toBeInTheDocument();
     });
 
-    it('opens scanner when Scan Barcode clicked', () => {
+    it('opens scanner when Scan Barcode clicked', async () => {
         Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
         render(<GameForm />);
         const scanBtn = screen.getByRole('button', { name: /Scan Barcode/ });
         fireEvent.click(scanBtn);
-        expect(screen.getByText('Point the camera at a barcode')).toBeInTheDocument();
+        expect(await screen.findByText('Point the camera at a barcode')).toBeInTheDocument();
     });
 
     it('marks unsupported when permission denied and shows no toast', async () => {
@@ -138,7 +167,9 @@ describe('GameForm', () => {
         Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
         render(<GameForm />);
         const scanBtn = screen.getByRole('button', { name: /Scan Barcode/ });
-        fireEvent.click(scanBtn);
+        await act(async () => {
+            fireEvent.click(scanBtn);
+        });
         const msg = await screen.findByText(/Barcode scanning is not supported/i);
         expect(msg).toBeInTheDocument();
         // ensure it's not shown as a toast

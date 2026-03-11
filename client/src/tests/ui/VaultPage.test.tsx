@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor, waitForElementToBeRemoved } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, waitForElementToBeRemoved, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import { ColorModeProvider } from '../../contexts/ColorModeContext';
@@ -9,10 +9,38 @@ import * as api from '../../services/api';
 
 // control object for simulating camera start success/failure
 const qrMockBehavior = { startShouldReject: false };
+
+// suppress act warning from barcode component when start rejects
+const _origErrVault = console.error;
+const _origWarnVault = console.warn;
+beforeAll(() => {
+    console.error = (...args: any[]) => {
+        if (typeof args[0] === 'string' && args[0].includes('not wrapped in act')) {
+            return;
+        }
+        _origErrVault.apply(console, args);
+    };
+    console.warn = (...args: any[]) => {
+        if (typeof args[0] === 'string' && args[0].includes('not wrapped in act')) {
+            return;
+        }
+        _origWarnVault.apply(console, args);
+    };
+});
+afterAll(() => {
+    console.error = _origErrVault;
+    console.warn = _origWarnVault;
+});
 vi.mock('html5-qrcode', () => ({
     Html5Qrcode: function() {
         return {
-            start: () => qrMockBehavior.startShouldReject ? Promise.reject(new Error('camera error')) : Promise.resolve(),
+            start: () => {
+                const promise = qrMockBehavior.startShouldReject ? Promise.reject(new Error('camera error')) : Promise.resolve();
+                return promise.then(
+                    res => { act(() => {}); return res; },
+                    err => { act(() => {}); return Promise.reject(err); }
+                );
+            },
             stop: () => Promise.resolve()
         };
     },
@@ -95,6 +123,15 @@ describe('VaultPage', () => {
     it('opens and closes a modal when a tile is clicked', async () => {
         renderVaultPage('/');
 
+        // tooltip appears on hover
+        fireEvent.mouseOver(screen.getByLabelText('Scan barcode'));
+        expect(await screen.findByText('Scan Barcode')).toBeInTheDocument();
+
+        // header barcode button should also open the scan modal (tested elsewhere)
+        fireEvent.click(screen.getByLabelText('Scan barcode'));
+        // close it again via cancel so we start fresh
+        fireEvent.click(screen.getByRole('button', { name: /Cancel/ }));
+
         fireEvent.click(await screen.findByText('Add Book'));
         const dialog = screen.getByRole('dialog');
         expect(dialog).toBeInTheDocument();
@@ -164,7 +201,9 @@ describe('VaultPage', () => {
         expect(scanBtn).toBeInTheDocument();
 
         // open the scanner, input should remain present
-        fireEvent.click(scanBtn);
+        await act(async () => {
+            fireEvent.click(scanBtn);
+        });
         expect(screen.getByPlaceholderText('Enter UPC')).toBeInTheDocument();
     });
 
@@ -182,7 +221,10 @@ describe('VaultPage', () => {
             expect(alertSpy).toHaveBeenCalledWith('Lookup: 555');
         });
         // dialog close is triggered inside onLookup; wait for it to be removed
-        await waitForElementToBeRemoved(() => screen.queryByRole('dialog'));
+        // dialog close is triggered inside onLookup; it may already be gone
+        await waitFor(() => {
+            expect(screen.queryByRole('dialog')).toBeNull();
+        });
 
         alertSpy.mockRestore();
     });

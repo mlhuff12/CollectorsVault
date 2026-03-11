@@ -1,15 +1,21 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 
 // re-use html5-qrcode mock pattern from other tests
 const qrMockBehavior: { startShouldReject: boolean } = { startShouldReject: false };
 vi.mock('html5-qrcode', () => ({
     Html5Qrcode: function () {
         return {
-            start: () =>
-                qrMockBehavior.startShouldReject
+            start: () => {
+                const promise = qrMockBehavior.startShouldReject
                     ? Promise.reject(new Error('camera failure'))
-                    : Promise.resolve(),
+                    : Promise.resolve();
+                // wrap resolution/rejection in act so React doesn't warn
+                return promise.then(
+                    res => { act(() => {}); return res; },
+                    err => { act(() => {}); return Promise.reject(err); }
+                );
+            },
             stop: () => Promise.resolve(),
         };
     },
@@ -23,6 +29,29 @@ vi.mock('html5-qrcode', () => ({
 }));
 
 let BarcodeScanLookup: any;
+
+// suppress known act() warning emitted by BarcodeScanner when start() rejects
+const originalError = console.error;
+const originalWarn = console.warn;
+beforeAll(() => {
+    console.error = (...args: any[]) => {
+        if (typeof args[0] === 'string' && args[0].includes('not wrapped in act')) {
+            return;
+        }
+        originalError.apply(console, args);
+    };
+    console.warn = (...args: any[]) => {
+        if (typeof args[0] === 'string' && args[0].includes('not wrapped in act')) {
+            return;
+        }
+        originalWarn.apply(console, args);
+    };
+});
+
+afterAll(() => {
+    console.error = originalError;
+    console.warn = originalWarn;
+});
 
 describe('BarcodeScanLookup', () => {
     beforeEach(async () => {
@@ -75,12 +104,12 @@ describe('BarcodeScanLookup', () => {
         expect(screen.getByRole('button', { name: /Scan Barcode/ })).toBeInTheDocument();
     });
 
-    it('opens scanner when Scan Barcode is clicked', () => {
+    it('opens scanner when Scan Barcode is clicked', async () => {
         Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
         render(<BarcodeScanLookup placeholder="foo" onLookup={() => {}} />);
         const scanBtn = screen.getByRole('button', { name: /Scan Barcode/ });
         fireEvent.click(scanBtn);
-        expect(screen.getByText('Point the camera at a barcode')).toBeInTheDocument();
+        expect(await screen.findByText('Point the camera at a barcode')).toBeInTheDocument();
     });
 
     it('shows only the generic warning when scanner fails to start', async () => {
@@ -88,7 +117,9 @@ describe('BarcodeScanLookup', () => {
         Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
         render(<BarcodeScanLookup placeholder="foo" onLookup={() => {}} />);
         const scanBtn = screen.getByRole('button', { name: /Scan Barcode/ });
-        fireEvent.click(scanBtn);
+        await act(async () => {
+            fireEvent.click(scanBtn);
+        });
         // The detailed camera error should *not* be rendered; instead the permanent
         // unsupported warning appears.
         expect(await screen.findByText(/Barcode scanning is not supported/i)).toBeInTheDocument();
@@ -115,10 +146,14 @@ describe('BarcodeScanLookup', () => {
         Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
         render(<BarcodeScanLookup placeholder="foo" onLookup={() => {}} />);
         const scanBtn = screen.getByRole('button', { name: /Scan Barcode/ });
-        fireEvent.click(scanBtn);
+        await act(async () => {
+            fireEvent.click(scanBtn);
+        });
         await screen.findByText(/Barcode scanning is not supported/i);
         // second click should not show any toast alert
-        fireEvent.click(scanBtn);
+        await act(async () => {
+            fireEvent.click(scanBtn);
+        });
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
 });

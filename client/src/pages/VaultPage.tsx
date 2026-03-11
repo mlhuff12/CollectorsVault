@@ -61,6 +61,13 @@ const VaultPage: React.FC = () => {
         setModalType(type);
     };
 
+    // listen for global scan event from header button
+    React.useEffect(() => {
+        const handler = () => handleModalOpen('upc');
+        window.addEventListener('open-scan-modal', handler);
+        return () => window.removeEventListener('open-scan-modal', handler);
+    }, []);
+
     const handleModalClose = () => {
         setModalType(null);
         setFormKey((prev) => prev + 1);

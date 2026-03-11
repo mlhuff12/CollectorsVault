@@ -38,6 +38,8 @@ describe('Layout', () => {
     // drawer items should appear
     expect(screen.getByText('Home')).toBeInTheDocument();
     expect(screen.getByText('Books')).toBeInTheDocument();
+    // icons should be present (home icon rendered as svg)
+    expect(screen.getByTestId('HomeIcon')).toBeInTheDocument();
   });
 
   it('shows profile menu when avatar clicked and allows updating names', () => {
@@ -61,5 +63,26 @@ describe('Layout', () => {
     fireEvent.click(document.body);
     // avatar should now show initials
     expect(screen.getByText('AS')).toBeInTheDocument();
+  });
+
+  it('renders scan barcode icon button with tooltip and dispatches event on click', async () => {
+    render(
+      <MemoryRouter>
+        <ColorModeProvider>
+          <Layout>
+            <Dummy />
+          </Layout>
+        </ColorModeProvider>
+      </MemoryRouter>
+    );
+    const scanBtn = screen.getByLabelText('Scan barcode');
+    fireEvent.mouseOver(scanBtn);
+    expect(await screen.findByText('Scan Barcode')).toBeInTheDocument();
+
+    const listener = vi.fn();
+    window.addEventListener('open-scan-modal', listener);
+    fireEvent.click(scanBtn);
+    expect(listener).toHaveBeenCalled();
+    window.removeEventListener('open-scan-modal', listener);
   });
 });
