@@ -102,48 +102,22 @@ describe('VaultPage', () => {
 
 
 
-    it('renders home tiles in a white container and does not fetch any items', async () => {
+    it('renders an empty white container on home and does not fetch any items', () => {
         renderVaultPage('/');
-
-        // expect our four tiles to be visible
-        expect(await screen.findByText('Scan Barcode')).toBeInTheDocument();
-        expect(screen.getByText('Add Book')).toBeInTheDocument();
-        expect(screen.getByText('Add Movie')).toBeInTheDocument();
-        expect(screen.getByText('Add Game')).toBeInTheDocument();
         expect(mockFetchItems).not.toHaveBeenCalled();
 
         const container = screen.getByTestId('home-tile-container');
-        // container exists and has expected test id
+        // container should exist but contain no tile labels
         expect(container).toBeInTheDocument();
-        // text content sanity check; the four tiles should all be present
-        const tiles = screen.getAllByText(/Scan Barcode|Add Book|Add Movie|Add Game/);
-        expect(tiles).toHaveLength(4);
+        expect(container).toBeEmptyDOMElement();
     });
 
-    it('opens and closes a modal when a tile is clicked', async () => {
+    it('clicking the empty home container does not open a modal', async () => {
         renderVaultPage('/');
-
-        // tooltip appears on hover
-        fireEvent.mouseOver(screen.getByLabelText('Scan barcode'));
-        expect(await screen.findByText('Scan Barcode')).toBeInTheDocument();
-
-        // header barcode button should also open the scan modal (tested elsewhere)
-        fireEvent.click(screen.getByLabelText('Scan barcode'));
-        // close it again via cancel so we start fresh
-        fireEvent.click(screen.getByRole('button', { name: /Cancel/ }));
-
-        fireEvent.click(await screen.findByText('Add Book'));
-        const dialog = screen.getByRole('dialog');
-        expect(dialog).toBeInTheDocument();
-        // header should display full sentence and the inner form title should not appear
-        expect(dialog).toHaveTextContent('Add a Book');
-        expect(dialog).not.toHaveTextContent('Add a New Book');
-
-        // close using Cancel button (DialogActions provide a Cancel button now)
-        fireEvent.click(screen.getByRole('button', { name: /Cancel/ }));
-        await waitFor(() => {
-            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-        });
+        const container = screen.getByTestId('home-tile-container');
+        fireEvent.click(container);
+        // only the speed-dial opens modals; clicking the paper itself should not
+        expect(screen.queryByRole('dialog')).toBeNull();
     });
 
     it('shows a floating speed-dial on home with actions that open modals', async () => {
@@ -189,9 +163,23 @@ describe('VaultPage', () => {
         expect(screen.queryByLabelText(/home actions/i)).toBeNull();
     });
 
+    it('wraps the admin tab in a full-size paper container', async () => {
+        // avoid AdminTab crash
+        mockFetchAllUsers.mockResolvedValue([]);
+        renderVaultPage('/admin');
+        // heading inside AdminTab should appear
+        expect(await screen.findByText('All Users')).toBeInTheDocument();
+        // the heading's closest paper should exist
+        const paper = screen.getByText('All Users').closest('.MuiPaper-root');
+        expect(paper).toBeInTheDocument();
+    });
+
     it('opens book modal and can submit the form via the modal confirm', async () => {
         renderVaultPage('/');
-        fireEvent.click(await screen.findByText('Add Book'));
+        // open the speed dial and choose Add Book (tiles removed)
+        const dial = screen.getByLabelText(/home actions/i);
+        fireEvent.click(dial);
+        fireEvent.click(screen.getByLabelText('Add Book'));
         const dialog = screen.getByRole('dialog');
         expect(dialog).toBeInTheDocument();
 
@@ -234,7 +222,9 @@ describe('VaultPage', () => {
         // ensure mediaDevices is present before rendering
         Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
         renderVaultPage('/');
-        fireEvent.click(await screen.findByText('Scan Barcode'));
+        // use header scan icon since home tiles no longer exist
+        fireEvent.click(screen.getByLabelText('Scan barcode'));
+        await waitFor(() => screen.getByRole('dialog'));
 
         const input = screen.getByPlaceholderText('Enter UPC');
         expect(input).toBeInTheDocument();
@@ -256,7 +246,9 @@ describe('VaultPage', () => {
         const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
 
         renderVaultPage('/');
-        fireEvent.click(await screen.findByText('Scan Barcode'));
+        // header scan icon replaces home tile
+        fireEvent.click(screen.getByLabelText('Scan barcode'));
+        await waitFor(() => screen.getByRole('dialog'));
         fireEvent.change(screen.getByPlaceholderText('Enter UPC'), { target: { value: '555' } });
         fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
 
@@ -276,7 +268,8 @@ describe('VaultPage', () => {
         qrMockBehavior.startShouldReject = true;
         Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
         renderVaultPage('/');
-        fireEvent.click(await screen.findByText('Scan Barcode'));
+        fireEvent.click(screen.getByLabelText('Scan barcode'));
+        await waitFor(() => screen.getByRole('dialog'));
 
         // click the scan button inside the modal to begin the scan process
         const innerScan = screen.getByRole('button', { name: /Scan Barcode/ });
@@ -293,7 +286,8 @@ describe('VaultPage', () => {
         qrMockBehavior.startShouldReject = true;
         Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
         renderVaultPage('/');
-        fireEvent.click(await screen.findByText('Scan Barcode'));
+        fireEvent.click(screen.getByLabelText('Scan barcode'));
+        await waitFor(() => screen.getByRole('dialog'));
         // trigger scan to generate warning
         fireEvent.click(screen.getByRole('button', { name: /Scan Barcode/ }));
         await screen.findByText(/Barcode scanning is not supported/i);
@@ -301,7 +295,8 @@ describe('VaultPage', () => {
         // close and open again with scanner allowed using Cancel button
         fireEvent.click(screen.getByRole('button', { name: /Cancel/ }));
         qrMockBehavior.startShouldReject = false;
-        fireEvent.click(screen.getByText(/Scan Barcode/));
+        fireEvent.click(screen.getByLabelText('Scan barcode'));
+        await waitFor(() => screen.getByRole('dialog'));
         // because the module-level flag persists within the same test, the
         // warning remains even after reopening.
         expect(screen.getByText(/Barcode scanning is not supported/i)).toBeInTheDocument();
@@ -310,7 +305,8 @@ describe('VaultPage', () => {
     it('hides OR and scan button when camera is unavailable', async () => {
         delete (navigator as any).mediaDevices;
         renderVaultPage('/');
-        fireEvent.click(await screen.findByText('Scan Barcode'));
+        fireEvent.click(screen.getByLabelText('Scan barcode'));
+        await waitFor(() => screen.getByRole('dialog'));
 
         expect(screen.getByPlaceholderText('Enter UPC')).toBeInTheDocument();
         expect(screen.queryByText('OR')).not.toBeInTheDocument();

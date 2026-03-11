@@ -180,53 +180,18 @@ const VaultPage: React.FC = () => {
 
     const renderSectionContent = () => {
         if (activeSection === 'admin') {
+            // match the container style used for books/movies/games
             return (
-                <Paper sx={{ mb: 3, p: 3 }}>
+                <Paper sx={{ shadow: 1, mb: 3, p: 3, height: '100%', width: '100%' }}>
                     <AdminTab />
                 </Paper>
             );
         }
 
         if (activeSection === 'home') {
-            // tiles for primary actions - use grid layout
-            const tiles = [
-                { label: 'Scan Barcode', action: () => handleModalOpen('upc') },
-                { label: 'Add Book', action: () => handleModalOpen('book') },
-                { label: 'Add Movie', action: () => handleModalOpen('movie') },
-                { label: 'Add Game', action: () => handleModalOpen('game') },
-            ] as const;
-
+            // simply render the same empty paper container used on category pages
             return (
-                <Paper data-testid="home-tile-container" sx={{ mb: 3, p: 3 }}>
-                    <Grid container spacing={3} justifyContent="center">
-                        {tiles.map((tile, idx) => (
-                            <Grid
-                                key={idx}
-                                sx={{
-                                    flexBasis: '50%',
-                                    display: 'flex',
-                                    justifyContent: idx % 2 === 0 ? 'flex-end' : 'flex-start',
-                                }}
-                            >
-                                <Box
-                                    className="home-tile"
-                                    sx={{
-                                        display: 'flex',
-                                        justifyContent: 'center',
-                                        alignItems: 'center',
-                                        textAlign: 'center',
-                                        height: '100%',
-                                        p: 3,
-                                        cursor: 'pointer',
-                                    }}
-                                    onClick={tile.action}
-                                >
-                                    <Typography>{tile.label}</Typography>
-                                </Box>
-                            </Grid>
-                        ))}
-                    </Grid>
-                </Paper>
+                <Paper data-testid="home-tile-container" sx={{ mb: 3, p: 3, height: '100%', width: '100%' }} />
             );
         }
 

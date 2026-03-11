@@ -42,8 +42,12 @@ describe('App login integration flow', () => {
             expect(mockLogin).toHaveBeenCalledWith('michelle', '123456');
         });
 
-        // after login we should land on the home tiles rather than an item list
-        expect(await screen.findByText('Scan Barcode')).toBeInTheDocument();
+        // after login we should land on the empty home container with the
+        // floating speed‑dial rather than an item list
+        expect(await screen.findByLabelText(/home actions/i)).toBeInTheDocument();
+        const container = screen.getByTestId('home-tile-container');
+        expect(container).toBeInTheDocument();
+        expect(container).toBeEmptyDOMElement();
         expect(mockFetchItems).not.toHaveBeenCalled();
         expect(localStorage.getItem('cv_token')).toBe('token-123');
         expect(localStorage.getItem('cv_username')).toBe('michelle');
