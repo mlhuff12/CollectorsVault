@@ -61,28 +61,29 @@ describe('Toast', () => {
         expect(onDismiss).toHaveBeenCalledTimes(1);
     });
 
-    it('applies success background class by default', () => {
+    it('renders a success alert by default', () => {
         const onDismiss = vi.fn();
         render(<Toast message="Done" onDismiss={onDismiss} />);
 
-        expect(screen.getByRole('alert').querySelector('.bg-success')).toBeInTheDocument();
-        // default positioning should be left-aligned instead of centered
         const alert = screen.getByRole('alert');
-        expect(alert).toHaveStyle({ left: '1.5rem' });
-        expect(alert).not.toHaveStyle({ transform: 'translateX(-50%)' });
+        expect(alert).toBeInTheDocument();
+        // MUI alert adds a classname indicating severity
+        expect(alert.className).toMatch(/MuiAlert-standardSuccess/);
     });
 
-    it('applies error background class for type="error"', () => {
+    it('renders an error alert when type="error"', () => {
         const onDismiss = vi.fn();
         render(<Toast message="Oops" type="error" onDismiss={onDismiss} />);
 
-        expect(screen.getByRole('alert').querySelector('.bg-danger')).toBeInTheDocument();
+        const alert = screen.getByRole('alert');
+        expect(alert.className).toMatch(/MuiAlert-standardError/);
     });
 
-    it('applies warning background class for type="warning"', () => {
+    it('renders a warning alert when type="warning"', () => {
         const onDismiss = vi.fn();
         render(<Toast message="Watch out" type="warning" onDismiss={onDismiss} />);
 
-        expect(screen.getByRole('alert').querySelector('.bg-warning')).toBeInTheDocument();
+        const alert = screen.getByRole('alert');
+        expect(alert.className).toMatch(/MuiAlert-standardWarning/);
     });
 });

@@ -3,6 +3,7 @@ import { useHistory } from 'react-router-dom';
 import { login } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { getApiErrorMessage } from '../utils/errorUtils';
+import { Box, Button, Card, CardContent, Typography, TextField, Alert } from '@mui/material';
 
 /**
  * LoginPage handles user authentication via username and a 6-digit TOTP code.
@@ -45,56 +46,75 @@ const LoginPage: React.FC = () => {
     };
 
     return (
-        <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light py-4">
-            <div className="card shadow p-4 auth-card-width">
-                <div className="d-flex align-items-center gap-3 mb-3">
-                    <div className="brand-logo" aria-hidden="true">CV</div>
-                    <div>
-                        <h1 className="h4 mb-0">Collector&apos;s Vault</h1>
-                        <p className="text-muted mb-0 small">Track your favorite books, movies, and games.</p>
-                    </div>
-                </div>
-                <h2 className="h5 mb-3">Sign In</h2>
-                <form onSubmit={handleSubmit}>
-                    <div className="mb-3">
-                        <label htmlFor="username" className="form-label">Username</label>
-                        <input
+        <Box
+            sx={{
+                minHeight: '100vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                bgcolor: 'background.default',
+                py: 4,
+            }}
+        >
+            <Card sx={{ width: '100%', maxWidth: 420, p: 2 }}>
+                <CardContent>
+                    <Box display="flex" alignItems="center" gap={1} mb={2}>
+                        <Box className="brand-logo" aria-hidden="true">
+                            CV
+                        </Box>
+                        <Box>
+                            <Typography variant="h6" component="h1">
+                                Collector&apos;s Vault
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary">
+                                Track your favorite books, movies, and games.
+                            </Typography>
+                        </Box>
+                    </Box>
+                    <Typography variant="h6" component="h2" gutterBottom>
+                        Sign In
+                    </Typography>
+                    <Box component="form" onSubmit={handleSubmit}>
+                        <TextField
                             id="username"
-                            type="text"
-                            className="form-control"
+                            label="Username"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
                             required
                             autoComplete="username"
+                            fullWidth
+                            margin="normal"
                         />
-                    </div>
-                    <div className="mb-3">
-                        <label htmlFor="totpCode" className="form-label">Authenticator Code</label>
-                        <input
+                        <TextField
                             id="totpCode"
-                            type="text"
-                            className="form-control"
+                            label="Authenticator Code"
                             value={totpCode}
                             onChange={(e) => setTotpCode(e.target.value)}
                             placeholder="6-digit code"
-                            maxLength={6}
+                            inputProps={{ maxLength: 6 }}
                             required
                             autoComplete="one-time-code"
+                            fullWidth
+                            margin="normal"
                         />
-                    </div>
-                    {error && <div className="alert alert-danger py-2" role="alert">{error}</div>}
-                    <button type="submit" className="btn btn-primary w-100" disabled={loading}>
-                        {loading ? 'Signing in...' : 'Sign In'}
-                    </button>
-                </form>
-                <p className="text-center text-muted mt-3 mb-0 small">
-                    Don&apos;t have an account?{' '}
-                    <button type="button" className="btn btn-link p-0 small" onClick={() => history.push('/signup')}>
-                        Sign up
-                    </button>
-                </p>
-            </div>
-        </div>
+                        {error && (
+                            <Alert severity="error" sx={{ my: 1 }}>
+                                {error}
+                            </Alert>
+                        )}
+                        <Button type="submit" fullWidth variant="contained" disabled={loading} sx={{ mt: 1 }}>
+                            {loading ? 'Signing in...' : 'Sign In'}
+                        </Button>
+                    </Box>
+                    <Typography variant="body2" color="textSecondary" align="center" mt={3}>
+                        Don&apos;t have an account?{' '}
+                        <Button variant="text" size="small" onClick={() => history.push('/signup')}>
+                            Sign up
+                        </Button>
+                    </Typography>
+                </CardContent>
+            </Card>
+        </Box>
     );
 };
 

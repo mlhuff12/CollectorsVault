@@ -29,7 +29,7 @@ describe('ItemList', () => {
 
         render(<ItemList />);
 
-        expect(screen.getByText('Loading...')).toBeInTheDocument();
+        expect(screen.getByText(/loading/i)).toBeInTheDocument();
         expect(await screen.findByText('Dune')).toBeInTheDocument();
         expect(screen.getByText('Inception')).toBeInTheDocument();
     });

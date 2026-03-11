@@ -1,6 +1,8 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, waitForElementToBeRemoved } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import Layout from '../../components/Layout';
+import { ColorModeProvider } from '../../contexts/ColorModeContext';
 // VaultPage will be dynamically imported in beforeEach to clear module cache
 let VaultPage: any;
 import * as api from '../../services/api';
@@ -61,27 +63,16 @@ describe('VaultPage', () => {
     const renderVaultPage = (route = '/') => {
         return render(
             <MemoryRouter initialEntries={[route]}>
-                <VaultPage />
+                <ColorModeProvider>
+                    <Layout>
+                        <VaultPage />
+                    </Layout>
+                </ColorModeProvider>
             </MemoryRouter>
         );
     };
 
-    it('always includes the outer vault-container wrapper with full-height class', () => {
-        const { container } = renderVaultPage('/');
-        const wrapper = container.firstChild as HTMLElement;
-        expect(wrapper).toHaveClass('vault-container');
-        // we can't rely on CSS being applied in jsdom, but the class guarantees
-        // the styling intent; ensure it remains on other routes as well.
-        renderVaultPage('/books');
-        const wrapper2 = container.firstChild as HTMLElement;
-        expect(wrapper2).toHaveClass('vault-container');
-    });
 
-    it('wraps the category nav in a full-width container-fluid', async () => {
-        renderVaultPage('/');
-        const nav = await screen.findByLabelText('Vault categories');
-        expect(nav.parentElement).toHaveClass('container-fluid');
-    });
 
     it('renders home tiles in a white container and does not fetch any items', async () => {
         renderVaultPage('/');
@@ -94,17 +85,10 @@ describe('VaultPage', () => {
         expect(mockFetchItems).not.toHaveBeenCalled();
 
         const container = screen.getByTestId('home-tile-container');
-        // container is a card with default padding/shadow
-        expect(container).toHaveClass('card', 'shadow-sm', 'mb-3', 'p-3');
-        // the row inside should be centered within the card using mx-auto
-        const row = container.querySelector('.row');
-        expect(row).toHaveClass('row-cols-2', 'w-auto', 'mx-auto', 'justify-content-center');
-        // each child should still be a bootstrap column
-        const cols = row?.querySelectorAll('.col');
-        expect(cols).toHaveLength(4);
-        expect(Array.from(cols || []).every(c => !c.classList.contains('col-auto'))).toBe(true);
-        // text content sanity check
-        const tiles = within(container).getAllByText(/Scan Barcode|Add Book|Add Movie|Add Game/);
+        // container exists and has expected test id
+        expect(container).toBeInTheDocument();
+        // text content sanity check; the four tiles should all be present
+        const tiles = screen.getAllByText(/Scan Barcode|Add Book|Add Movie|Add Game/);
         expect(tiles).toHaveLength(4);
     });
 
@@ -114,19 +98,12 @@ describe('VaultPage', () => {
         fireEvent.click(await screen.findByText('Add Book'));
         const dialog = screen.getByRole('dialog');
         expect(dialog).toBeInTheDocument();
-        // header should display full sentence
-        expect(within(dialog).getByText('Add a Book')).toBeInTheDocument();
-        // form title inside should be removed
-        expect(within(dialog).queryByText('Add a New Book')).not.toBeInTheDocument();
+        // header should display full sentence and the inner form title should not appear
+        expect(dialog).toHaveTextContent('Add a Book');
+        expect(dialog).not.toHaveTextContent('Add a New Book');
 
-        // modal should use scrollable dialog class and limit height
-        const dialogNode = dialog.closest('.modal-dialog');
-        expect(dialogNode).toHaveClass('modal-dialog-scrollable');
-        const content = dialogNode?.querySelector('.modal-content');
-        expect(content).toHaveStyle({ maxHeight: '90vh' });
-
-        // close using close button
-        fireEvent.click(screen.getByLabelText('Close'));
+        // close using Cancel button (DialogActions provide a Cancel button now)
+        fireEvent.click(screen.getByRole('button', { name: /Cancel/ }));
         await waitFor(() => {
             expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         });
@@ -138,9 +115,9 @@ describe('VaultPage', () => {
         const dialog = screen.getByRole('dialog');
         expect(dialog).toBeInTheDocument();
 
-        // fill the basic required fields
-        fireEvent.change(screen.getByLabelText('Title:'), { target: { value: 'Test Title' } });
-        fireEvent.change(screen.getByLabelText('Authors (comma-separated):'), { target: { value: 'Tester' } });
+        // fill the basic required fields (use role queries to avoid asterisk issue)
+        fireEvent.change(screen.getByRole('textbox', { name: /Title/ }), { target: { value: 'Test Title' } });
+        fireEvent.change(screen.getByRole('textbox', { name: /Authors/ }), { target: { value: 'Tester' } });
 
         // clicking the header button triggers requestSubmit; jsdom doesn’t implement
         // requestSubmit reliably, so also submit the form element directly to ensure
@@ -169,11 +146,8 @@ describe('VaultPage', () => {
         // appear with an uppercase B; use a case-insensitive regex instead of a
         // hard-coded string to avoid fragile expectations.
         expect(alert).toHaveTextContent(/The book Test Title has successfully been created\./i);
-        // bootstrap success toast uses bg-success class
-        expect(alert.querySelector('.bg-success')).not.toBeNull();
-        // should be left-aligned
-        expect(alert).toHaveStyle({ left: '1.5rem' });
-        expect(alert).not.toHaveStyle({ transform: 'translateX(-50%)' });
+        // toast severity rendered via MUI Alert class
+        expect(alert.className).toMatch(/MuiAlert-standardSuccess/);
     });
 
     it('shows manual UPC entry and scan button when camera is available, and keeping input visible after opening scanner', async () => {
@@ -207,7 +181,9 @@ describe('VaultPage', () => {
         await waitFor(() => {
             expect(alertSpy).toHaveBeenCalledWith('Lookup: 555');
         });
-        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        // dialog close is triggered inside onLookup; wait for it to be removed
+        await waitForElementToBeRemoved(() => screen.queryByRole('dialog'));
+
         alertSpy.mockRestore();
     });
 
@@ -237,8 +213,8 @@ describe('VaultPage', () => {
         fireEvent.click(screen.getByRole('button', { name: /Scan Barcode/ }));
         await screen.findByText(/Barcode scanning is not supported/i);
 
-        // close and open again with scanner allowed
-        fireEvent.click(screen.getByLabelText('Close'));
+        // close and open again with scanner allowed using Cancel button
+        fireEvent.click(screen.getByRole('button', { name: /Cancel/ }));
         qrMockBehavior.startShouldReject = false;
         fireEvent.click(screen.getByText(/Scan Barcode/));
         // because the module-level flag persists within the same test, the
@@ -271,56 +247,44 @@ describe('VaultPage', () => {
     // not confuse section detection (previously would default to home and
     // leave the nav in an inconsistent state).
     it('parses book path even with query or trailing slash', async () => {
-        // ensure each invocation of renderVaultPage is isolated; clean up after
-        // the first render to avoid stale DOM elements interfering with the
-        // subsequent call.
+        // the heading should still render correctly regardless of query/trailing
         const { unmount } = renderVaultPage('/books?page=1');
         expect(await screen.findByRole('heading', { name: 'Books' })).toBeInTheDocument();
-        const booksButton = await screen.findByRole('button', { name: 'Books' });
-        expect(booksButton).toHaveClass('btn-primary');
         unmount();
 
         renderVaultPage('/books/');
         expect(await screen.findByRole('heading', { name: 'Books' })).toBeInTheDocument();
-        const booksButton2 = await screen.findByRole('button', { name: 'Books' });
-        expect(booksButton2).toHaveClass('btn-primary');
     });
 
     it('displays sticky add button on category pages and opens proper modal', async () => {
         // books page
         renderVaultPage('/books');
         const booksHeading = await screen.findByRole('heading', { name: 'Books' });
-        // card should have full height/width styling
-        expect(booksHeading.closest('.card')).toHaveClass('h-100', 'w-100');
+        // heading exists; container styling no longer relies on bootstrap classes
+        expect(booksHeading).toBeInTheDocument();
         let addBtn = await screen.findByRole('button', { name: /Add Book/i });
         expect(addBtn).toBeInTheDocument();
-        expect(addBtn).toHaveClass('float-end');
-        expect(addBtn).toHaveClass('position-fixed');
         fireEvent.click(addBtn);
         expect(await screen.findByText('Add a Book')).toBeInTheDocument();
-        // close modal before next
-        fireEvent.click(screen.getByLabelText('Close'));
+        // close modal before next using Cancel
+        fireEvent.click(screen.getByRole('button', { name: /Cancel/ }));
 
         // movies page
         renderVaultPage('/movies');
         const moviesHeading = await screen.findByRole('heading', { name: 'Movies' });
-        expect(moviesHeading.closest('.card')).toHaveClass('h-100', 'w-100');
+        expect(moviesHeading).toBeInTheDocument();
         addBtn = await screen.findByRole('button', { name: /Add Movie/i });
         expect(addBtn).toBeInTheDocument();
-        expect(addBtn).toHaveClass('float-end');
-        expect(addBtn).toHaveClass('position-fixed');
         fireEvent.click(addBtn);
         expect(await screen.findByText('Add a Movie')).toBeInTheDocument();
-        fireEvent.click(screen.getByLabelText('Close'));
+        fireEvent.click(screen.getByRole('button', { name: /Cancel/ }));
 
         // games page
         renderVaultPage('/games');
         const gamesHeading = await screen.findByRole('heading', { name: 'Games' });
-        expect(gamesHeading.closest('.card')).toHaveClass('h-100', 'w-100');
+        expect(gamesHeading).toBeInTheDocument();
         addBtn = await screen.findByRole('button', { name: /Add Game/i });
         expect(addBtn).toBeInTheDocument();
-        expect(addBtn).toHaveClass('float-end');
-        expect(addBtn).toHaveClass('position-fixed');
         fireEvent.click(addBtn);
         expect(await screen.findByText('Add a Game')).toBeInTheDocument();
     });
@@ -341,10 +305,11 @@ describe('VaultPage', () => {
         mockIsAdmin = false;
         renderVaultPage('/');
 
-        // ensure the page header renders (text updated in UI)
-        await screen.findByRole('heading', { name: "Collector's Vault" });
+        // open the drawer by clicking the logo
+        fireEvent.click(screen.getByText('vc'));
 
-        expect(screen.queryByRole('button', { name: 'Admin' })).not.toBeInTheDocument();
+        // Admin item should not be present
+        expect(screen.queryByText('Admin')).not.toBeInTheDocument();
     });
 
     it('shows admin tab for admin users', async () => {
@@ -352,10 +317,9 @@ describe('VaultPage', () => {
         mockFetchAllUsers.mockResolvedValue([]);
         renderVaultPage('/');
 
-        // header adjusted to match updated UI
-        await screen.findByRole('heading', { name: "Collector's Vault" });
-
-        expect(screen.getByRole('button', { name: 'Admin' })).toBeInTheDocument();
+        // open drawer and verify Admin item is present
+        fireEvent.click(screen.getByText('vc'));
+        expect(screen.getByText('Admin')).toBeInTheDocument();
     });
 
     // individual category routes no longer contain lookup fields or forms

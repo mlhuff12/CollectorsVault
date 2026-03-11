@@ -1,9 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrashAlt } from '@fortawesome/free-solid-svg-icons';
 import { AdminUser } from '../models';
 import { deleteUserById, fetchAllUsers } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Paper,
+    Chip,
+    IconButton,
+    Typography,
+    CircularProgress,
+} from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 /**
  * AdminTab displays a list of all users for admin management.
@@ -52,61 +64,59 @@ const AdminTab: React.FC = () => {
     };
 
     if (loading) {
-        return <div className="text-muted">Loading...</div>;
+        return <Typography color="text.secondary">Loading…</Typography>;
     }
 
     if (error) {
-        return <div className="text-danger">Error: {error}</div>;
+        return <Typography color="error">Error: {error}</Typography>;
     }
 
     return (
-        <div>
-            <h2 className="h5 mb-3">All Users</h2>
-            {users.length === 0 && <p className="text-muted">No users found.</p>}
-            <div className="table-responsive">
-                <table className="table table-hover align-middle mb-0">
-                    <thead className="table-light">
-                        <tr>
-                            <th>Username</th>
-                            <th>Books</th>
-                            <th>Movies</th>
-                            <th>Games</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+        <>
+            <Typography variant="h6" gutterBottom>All Users</Typography>
+            {users.length === 0 && <Typography color="text.secondary">No users found.</Typography>}
+            <TableContainer component={Paper}>
+                <Table size="small" aria-label="admin users table">
+                    <TableHead>
+                        <TableRow>
+                            <TableCell>Username</TableCell>
+                            <TableCell>Books</TableCell>
+                            <TableCell>Movies</TableCell>
+                            <TableCell>Games</TableCell>
+                            <TableCell>Actions</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
                         {users.map((user) => {
                             const isSelf = user.username === username;
                             return (
-                                <tr key={user.id}>
-                                    <td>
-                                        {user.username}
-                                        {user.isAdmin && (
-                                            <span className="badge bg-warning text-dark ms-2">admin</span>
-                                        )}
-                                    </td>
-                                    <td>{user.bookCount}</td>
-                                    <td>{user.movieCount}</td>
-                                    <td>{user.gameCount}</td>
-                                    <td>
-                                        <button
-                                            type="button"
-                                            className="btn btn-danger btn-sm"
+                                <TableRow key={user.id} hover>
+                                    <TableCell>
+                                        {user.username}{' '}
+                                        {user.isAdmin && <Chip size="small" label="admin" color="warning" sx={{ ml: 1 }} />}
+                                    </TableCell>
+                                    <TableCell>{user.bookCount}</TableCell>
+                                    <TableCell>{user.movieCount}</TableCell>
+                                    <TableCell>{user.gameCount}</TableCell>
+                                    <TableCell>
+                                        <IconButton
+                                            size="small"
+                                            color="error"
                                             onClick={() => handleDelete(user)}
                                             disabled={isSelf || deletingId === user.id}
                                             title={isSelf ? 'Cannot delete your own account' : deletingId === user.id ? 'Deleting user' : 'Delete user'}
                                             aria-label={isSelf ? `Cannot delete ${user.username}` : deletingId === user.id ? `Deleting ${user.username}` : `Delete ${user.username}`}
                                         >
-                                            {deletingId === user.id ? '…' : <FontAwesomeIcon icon={faTrashAlt} />}
-                                        </button>
-                                    </td>
-                                </tr>
+                                            {deletingId === user.id ? <CircularProgress size={16} /> : <DeleteIcon fontSize="small" />}
+                                        </IconButton>
+                                    </TableCell>
+                                </TableRow>
                             );
                         })}
-                    </tbody>
-                </table>
-            </div>
-        </div>
+                    </TableBody>
+                </Table>
+            </TableContainer>
+        </>
     );
 };
 

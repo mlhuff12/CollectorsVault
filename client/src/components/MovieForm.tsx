@@ -3,6 +3,12 @@ import { Movie } from '../models';
 import { addMovie, lookupMovieByUpc } from '../services/api';
 import BarcodeScanLookup from './BarcodeScanLookup';
 import Toast from './Toast';
+import {
+    TextField,
+    Button,
+    Box,
+    Typography,
+} from '@mui/material';
 
 /** Props accepted by {@link MovieForm}. */
 interface MovieFormProps {
@@ -99,8 +105,12 @@ const MovieForm: React.FC<MovieFormProps> = ({ onItemAdded, hideSubmit = false, 
 
     return (
         <form onSubmit={handleSubmit} ref={formRef}>
-            {!hideTitle && <h2 className="h5 mb-3">Add a Movie</h2>}
-            {error && <p className="text-danger">{error}</p>}
+            {!hideTitle && (
+                <Typography variant="h5" sx={{ mb: 3 }}>
+                    Add a Movie
+                </Typography>
+            )}
+            {error && <Typography color="error">{error}</Typography>}
 
             {/* manual UPC lookup with optional scan */}
             <BarcodeScanLookup
@@ -109,94 +119,76 @@ const MovieForm: React.FC<MovieFormProps> = ({ onItemAdded, hideSubmit = false, 
                 onLookup={handleLookup}
             />
 
-            <div className="mb-3">
-                <label htmlFor="movie-title" className="form-label">Title:</label>
-                <input
-                    id="movie-title"
-                    type="text"
-                    className="form-control"
+            <Box display="flex" flexDirection="column" gap={2}>
+                <TextField
+                    label="Title:"
+                    fullWidth
+                    required
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    required
                 />
-            </div>
-            <div className="mb-3">
-                <label htmlFor="movie-director" className="form-label">Director:</label>
-                <input
-                    id="movie-director"
-                    type="text"
-                    className="form-control"
+
+                <TextField
+                    label="Director:"
+                    fullWidth
+                    required
                     value={director}
                     onChange={(e) => setDirector(e.target.value)}
-                    required
                 />
-            </div>
-            <div className="mb-3">
-                <label htmlFor="movie-release-year" className="form-label">Release Year:</label>
-                <input
-                    id="movie-release-year"
+
+                <TextField
+                    label="Release Year:"
+                    fullWidth
+                    required
                     type="number"
-                    className="form-control"
                     value={releaseYear}
                     onChange={(e) => setReleaseYear(e.target.value)}
-                    required
                 />
-            </div>
-            <div className="mb-3">
-                <label htmlFor="movie-genre" className="form-label">Genre:</label>
-                <input
-                    id="movie-genre"
-                    type="text"
-                    className="form-control"
+
+                <TextField
+                    label="Genre:"
+                    fullWidth
+                    required
                     value={genre}
                     onChange={(e) => setGenre(e.target.value)}
-                    required
                 />
-            </div>
-            <div className="mb-3">
-                <label htmlFor="movie-rating" className="form-label">Rating (optional):</label>
-                <input
-                    id="movie-rating"
-                    type="text"
-                    className="form-control"
+
+                <TextField
+                    label="Rating (optional):"
+                    fullWidth
                     value={rating}
                     onChange={(e) => setRating(e.target.value)}
                     placeholder="e.g. PG-13"
                 />
-            </div>
-            <div className="mb-3">
-                <label htmlFor="movie-runtime" className="form-label">Runtime (optional):</label>
-                <input
-                    id="movie-runtime"
-                    type="text"
-                    className="form-control"
+
+                <TextField
+                    label="Runtime (optional):"
+                    fullWidth
                     value={runtime}
                     onChange={(e) => setRuntime(e.target.value)}
                     placeholder="e.g. 148 min"
                 />
-            </div>
-            <div className="mb-3">
-                <label htmlFor="movie-cast" className="form-label">Cast (optional):</label>
-                <input
-                    id="movie-cast"
-                    type="text"
-                    className="form-control"
+
+                <TextField
+                    label="Cast (optional):"
+                    fullWidth
                     value={cast}
                     onChange={(e) => setCast(e.target.value)}
                     placeholder="Actor One, Actor Two"
                 />
-            </div>
-            <div className="mb-3">
-                <label htmlFor="movie-description" className="form-label">Description (optional):</label>
-                <textarea
-                    id="movie-description"
-                    className="form-control"
+
+                <TextField
+                    label="Description (optional):"
+                    fullWidth
+                    multiline
+                    rows={3}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    rows={3}
                 />
-            </div>
-            {!hideSubmit && <button className="btn btn-primary" type="submit">Add Movie</button>}
+
+                {!hideSubmit && <Button variant="contained" color="primary" type="submit">Add Movie</Button>}
+            </Box>
+
             <Toast
                 message={toastMessage}
                 type={toastType}

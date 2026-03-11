@@ -3,6 +3,12 @@ import { addGame, lookupGameByUpc } from '../services/api';
 import { Game } from '../models';
 import BarcodeScanLookup from './BarcodeScanLookup';
 import Toast from './Toast';
+import {
+    TextField,
+    Button,
+    Box,
+    Typography,
+} from '@mui/material';
 
 /** Props accepted by {@link GameForm}. */
 interface GameFormProps {
@@ -85,88 +91,77 @@ const GameForm: React.FC<GameFormProps> = ({ onItemAdded, hideSubmit = false, fo
 
     return (
         <form onSubmit={handleSubmit} ref={formRef}>
-            {!hideTitle && <h2 className="h5 mb-3">Add a Game</h2>}
-            {error && <p className="text-danger">{error}</p>}
+            {!hideTitle && (
+                <Typography variant="h5" sx={{ mb: 3 }}>
+                    Add a Game
+                </Typography>
+            )}
+            {error && <Typography color="error">{error}</Typography>}
             {/* UPC lookup / scan section */}
             <BarcodeScanLookup
                 placeholder="Enter UPC"
                 maxLength={13}
                 onLookup={handleLookup}
             />
-            <div className="mb-3">
-                <label htmlFor="game-title" className="form-label">Title:</label>
-                <input
-                    id="game-title"
-                    type="text"
-                    className="form-control"
+            <Box display="flex" flexDirection="column" gap={2}>
+                <TextField
+                    label="Title:"
+                    fullWidth
+                    required
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    required
                 />
-            </div>
-            <div className="mb-3">
-                <label htmlFor="game-platform" className="form-label">Platform:</label>
-                <input
-                    id="game-platform"
-                    type="text"
-                    className="form-control"
+
+                <TextField
+                    label="Platform:"
+                    fullWidth
+                    required
                     value={platform}
                     onChange={(e) => setPlatform(e.target.value)}
-                    required
                 />
-            </div>
-            <div className="mb-3">
-                <label htmlFor="game-release-date" className="form-label">Release Date:</label>
-                <input
-                    id="game-release-date"
+
+                <TextField
+                    label="Release Date:"
+                    fullWidth
+                    required
                     type="date"
-                    className="form-control"
                     value={releaseDate}
                     onChange={(e) => setReleaseDate(e.target.value)}
-                    required
                 />
-            </div>
-            <div className="mb-3">
-                <label htmlFor="game-genre" className="form-label">Genre (optional):</label>
-                <input
-                    id="game-genre"
-                    type="text"
-                    className="form-control"
+
+                <TextField
+                    label="Genre (optional):"
+                    fullWidth
                     value={genre}
                     onChange={(e) => setGenre(e.target.value)}
                 />
-            </div>
-            <div className="mb-3">
-                <label htmlFor="game-developer" className="form-label">Developer (optional):</label>
-                <input
-                    id="game-developer"
-                    type="text"
-                    className="form-control"
+
+                <TextField
+                    label="Developer (optional):"
+                    fullWidth
                     value={developer}
                     onChange={(e) => setDeveloper(e.target.value)}
                 />
-            </div>
-            <div className="mb-3">
-                <label htmlFor="game-publisher" className="form-label">Publisher (optional):</label>
-                <input
-                    id="game-publisher"
-                    type="text"
-                    className="form-control"
+
+                <TextField
+                    label="Publisher (optional):"
+                    fullWidth
                     value={publisher}
                     onChange={(e) => setPublisher(e.target.value)}
                 />
-            </div>
-            <div className="mb-3">
-                <label htmlFor="game-description" className="form-label">Description (optional):</label>
-                <textarea
-                    id="game-description"
-                    className="form-control"
+
+                <TextField
+                    label="Description (optional):"
+                    fullWidth
+                    multiline
+                    rows={3}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    rows={3}
                 />
-            </div>
-            {!hideSubmit && <button className="btn btn-primary" type="submit">Add Game</button>}
+
+                {!hideSubmit && <Button variant="contained" color="primary" type="submit">Add Game</Button>}
+            </Box>
+
             <Toast
                 message={toastMessage}
                 type={toastType}

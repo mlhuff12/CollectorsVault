@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { Snackbar, Alert } from '@mui/material';
 
 /** Severity level of the toast notification. */
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
@@ -9,59 +10,43 @@ interface ToastProps {
     message: string;
     /** Visual style of the toast. Defaults to 'success'. */
     type?: ToastType;
-    /** Duration in milliseconds before the toast auto-dismisses. Defaults to 3000. */
+    /** Duration in milliseconds before the toast auto-dismisses. Defaults to 5000. */
     duration?: number;
     /** Called when the toast is dismissed (by timer or close button). */
     onDismiss: () => void;
 }
 
 /**
- * Toast displays a brief, auto-dismissing notification at the bottom of the viewport.
- * It automatically calls `onDismiss` after `duration` milliseconds.
+ * Toast displays a brief, auto-dismissing notification using MUI Snackbar/Alert.
+ * It keeps its own open state tied to the `message` prop and forwards dismiss
+ * events via the onDismiss callback.
  */
 const Toast: React.FC<ToastProps> = ({ message, type = 'success', duration = 5000, onDismiss }) => {
+    const [open, setOpen] = useState(!!message);
+
     useEffect(() => {
-        if (!message) return;
-        const timer = setTimeout(onDismiss, duration);
-        return () => clearTimeout(timer);
-    }, [message, duration, onDismiss]);
+        setOpen(!!message);
+    }, [message]);
 
-    if (!message) return null;
-
-    const bgClass =
-        type === 'success'
-            ? 'bg-success'
-            : type === 'error'
-            ? 'bg-danger'
-            : type === 'warning'
-            ? 'bg-warning text-dark'
-            : 'bg-info';
+    const handleClose = (_event?: React.SyntheticEvent, reason?: string) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+        setOpen(false);
+        onDismiss();
+    };
 
     return (
-        <div
-            role="alert"
-            aria-live="assertive"
-            style={{
-                position: 'fixed',
-                bottom: '1.5rem',
-                left: '1.5rem',
-                zIndex: 9999,
-                minWidth: '240px',
-                maxWidth: 'calc(100vw - 3rem)'
-            }}
+        <Snackbar
+            open={open}
+            autoHideDuration={duration}
+            onClose={handleClose}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
         >
-            <div className={`toast show text-white ${bgClass} border-0 shadow`}>
-                <div className="d-flex align-items-center px-3 py-2">
-                    <span className="me-auto">{message}</span>
-                    <button
-                        type="button"
-                        className="btn-close btn-close-white ms-2"
-                        aria-label="Close"
-                        onClick={onDismiss}
-                    />
-                </div>
-            </div>
-        </div>
+            <Alert onClose={handleClose} severity={type} sx={{ width: '100%' }}>
+                {message}
+            </Alert>
+        </Snackbar>
     );
 };
 

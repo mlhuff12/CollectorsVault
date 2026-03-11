@@ -3,6 +3,18 @@ import { addBook, lookupBookByIsbn } from '../services/api';
 import { Book, BookFormat, BookLookupResult } from '../models';
 import BarcodeScanLookup from './BarcodeScanLookup';
 import Toast from './Toast';
+import {
+  TextField,
+  Button,
+  Box,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Checkbox,
+  FormControlLabel,
+  Typography,
+} from '@mui/material';
 
 /** Props accepted by {@link BookForm}. */
 interface BookFormProps {
@@ -254,235 +266,167 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded, hideSubmit = false, fo
 
     return (
         <div>
-            {!hideTitle && <h2 className="h5 mb-3">Add a New Book</h2>}
+            {!hideTitle && (
+                <Typography variant="h5" sx={{ mb: 3 }}>
+                    Add a New Book
+                </Typography>
+            )}
             <form onSubmit={handleSubmit} ref={formRef}>
-                {/* ISBN + Lookup + Scan */}
-                <BarcodeScanLookup
-                    label="UPC / ISBN:"
-                    placeholder="Enter UPC or ISBN"
-                    maxLength={13}
-                    value={isbn}
-                    onChange={(v: string) => {
-                        setIsbn(v);
-                        if (isFromLookup) handleClearLookup();
-                    }}
-                    onLookup={async (barcode: string) => {
-                        const trimmed = barcode.trim();
-                        if (!trimmed) return;
+                <Box display="flex" flexDirection="column" gap={2}>
+                    {/* ISBN + Lookup + Scan (reuse existing component) */}
+                    <BarcodeScanLookup
+                        label="UPC / ISBN:"
+                        placeholder="Enter UPC or ISBN"
+                        maxLength={13}
+                        value={isbn}
+                        onChange={(v: string) => {
+                            setIsbn(v);
+                            if (isFromLookup) handleClearLookup();
+                        }}
+                        onLookup={handleLookup}
+                        error={lookupError}
+                    />
 
-                        setIsLooking(true);
-                        setLookupError('');
-                        setLookupResult(null);
-                        setSeriesName('');
-                        setSeriesNumber('');
+                    {isFromLookup && (
+                        <Typography variant="body2" color="success.main">
+                            Book found! Fields auto-populated.{' '}
+                            <Button size="small" onClick={handleClearLookup}>
+                                Clear and enter manually
+                            </Button>
+                        </Typography>
+                    )}
 
-                        try {
-                            const result = await lookupBookByIsbn(trimmed);
-                            setLookupResult(result);
-                            if (result.seriesName) setSeriesName(result.seriesName);
-                            if (result.seriesNumber != null) setSeriesNumber(result.seriesNumber.toString());
-                            setBookFormat(toBookFormat(result.bookFormat));
-                        } catch {
-                            setLookupError('Book not found for the given ISBN. You may enter details manually.');
-                        } finally {
-                            setIsLooking(false);
-                        }
-                    }}
-                    error={lookupError}
-                />
-                {isFromLookup && (
-                    <div className="form-text text-success">
-                        Book found! Fields auto-populated.{' '}
-                        <button
-                            type="button"
-                            className="btn btn-link btn-sm p-0"
-                            onClick={handleClearLookup}
-                        >
-                            Clear and enter manually
-                        </button>
-                    </div>
-                )}
+                    {lookupResult?.coverMedium && (
+                        <Box mb={2}>
+                            <img
+                                src={lookupResult.coverMedium}
+                                alt={`Cover for ${lookupResult.title}`}
+                                style={{ maxHeight: '200px' }}
+                            />
+                        </Box>
+                    )}
 
-                {/* Medium cover image (shown after successful lookup) */}
-                {lookupResult?.coverMedium && (
-                    <div className="mb-3">
-                        <img
-                            src={lookupResult.coverMedium}
-                            alt={`Cover for ${lookupResult.title}`}
-                            style={{ maxHeight: '200px' }}
-                        />
-                    </div>
-                )}
-
-                {/* Title */}
-                <div className="mb-3">
-                    <label htmlFor="book-title" className="form-label">Title:</label>
-                    <input
-                        id="book-title"
-                        type="text"
-                        className="form-control"
+                    <TextField
+                        label="Title:"
+                        fullWidth
+                        required
                         value={displayTitle}
                         onChange={(e) => { if (!isFromLookup) setTitle(e.target.value); }}
-                        readOnly={isFromLookup}
-                        required
+                        InputProps={{ readOnly: isFromLookup }}
                     />
-                </div>
 
-                {/* Authors */}
-                <div className="mb-3">
-                    <label htmlFor="book-authors" className="form-label">Authors (comma-separated):</label>
-                    <input
-                        id="book-authors"
-                        type="text"
-                        className="form-control"
+                    <TextField
+                        label="Authors (comma-separated):"
+                        fullWidth
+                        required={!isFromLookup}
                         value={displayAuthors}
                         onChange={(e) => { if (!isFromLookup) setAuthors(e.target.value); }}
-                        readOnly={isFromLookup}
+                        InputProps={{ readOnly: isFromLookup }}
                         placeholder="Author One, Author Two"
-                        required={!isFromLookup}
                     />
-                </div>
 
-                {/* Publisher */}
-                <div className="mb-3">
-                    <label htmlFor="book-publisher" className="form-label">Publisher:</label>
-                    <input
-                        id="book-publisher"
-                        type="text"
-                        className="form-control"
+                    <TextField
+                        label="Publisher:"
+                        fullWidth
                         value={displayPublisher}
                         onChange={(e) => { if (!isFromLookup) setPublisher(e.target.value); }}
-                        readOnly={isFromLookup}
+                        InputProps={{ readOnly: isFromLookup }}
                     />
-                </div>
 
-                {/* Publish Date */}
-                <div className="mb-3">
-                    <label htmlFor="book-publish-date" className="form-label">Publish Date:</label>
-                    <input
-                        id="book-publish-date"
-                        type="text"
-                        className="form-control"
+                    <TextField
+                        label="Publish Date:"
+                        fullWidth
                         value={displayPublishDate}
                         onChange={(e) => { if (!isFromLookup) setPublishDateString(e.target.value); }}
-                        readOnly={isFromLookup}
+                        InputProps={{ readOnly: isFromLookup }}
                     />
-                </div>
 
-                {/* Page Count */}
-                <div className="mb-3">
-                    <label htmlFor="book-page-count" className="form-label">Page Count:</label>
-                    <input
-                        id="book-page-count"
+                    <TextField
+                        label="Page Count:"
                         type="number"
-                        className="form-control"
+                        fullWidth
                         value={displayPageCount}
                         onChange={(e) => { if (!isFromLookup) setPageCount(e.target.value); }}
-                        readOnly={isFromLookup}
+                        InputProps={{ readOnly: isFromLookup }}
                     />
-                </div>
 
-                {/* Description */}
-                <div className="mb-3">
-                    <label htmlFor="book-description" className="form-label">Description:</label>
-                    <textarea
-                        id="book-description"
-                        className="form-control"
+                    <TextField
+                        label="Description:"
+                        fullWidth
+                        multiline
+                        rows={3}
                         value={displayDescription}
                         onChange={(e) => { if (!isFromLookup) setDescription(e.target.value); }}
-                        readOnly={isFromLookup}
-                        rows={3}
+                        InputProps={{ readOnly: isFromLookup }}
                     />
-                </div>
 
-                {/* Book URL */}
-                <div className="mb-3">
-                    <label htmlFor="book-url" className="form-label">Book URL:</label>
-                    <input
-                        id="book-url"
-                        type="text"
-                        className="form-control"
+                    <TextField
+                        label="Book URL:"
+                        fullWidth
                         value={displayBookUrl}
                         onChange={(e) => { if (!isFromLookup) setBookUrl(e.target.value); }}
-                        readOnly={isFromLookup}
+                        InputProps={{ readOnly: isFromLookup }}
                     />
-                </div>
 
-                {/* Series Name */}
-                <div className="mb-3">
-                    <label htmlFor="book-series-name" className="form-label">Series Name (optional):</label>
                     {lookupResult?.seriesNotFound && (
-                        <div className="form-text text-warning mb-1">
+                        <Typography color="warning.main" variant="body2">
                             This book appears to be part of a series, but we couldn't determine some of the series details. Please enter the missing series information.
-                        </div>
+                        </Typography>
                     )}
-                    <input
-                        id="book-series-name"
-                        type="text"
-                        className="form-control"
+
+                    <TextField
+                        label="Series Name (optional):"
+                        fullWidth
                         value={seriesName}
                         onChange={(e) => setSeriesName(e.target.value)}
                         placeholder="e.g. Animorphs"
-                        autoComplete="off"
                     />
-                </div>
 
-                {/* Series Number */}
-                <div className="mb-3">
-                    <label htmlFor="book-series-number" className="form-label">Series Number (optional):</label>
-                    <input
-                        id="book-series-number"
+                    <TextField
+                        label="Series Number (optional):"
+                        fullWidth
                         type="number"
-                        className="form-control"
                         value={seriesNumber}
                         onChange={(e) => setSeriesNumber(e.target.value)}
                         placeholder="e.g. 1"
-                        min={1}
-                        autoComplete="off"
+                        inputProps={{ min: 1 }}
                     />
-                </div>
 
-                {/* Book Format */}
-                <div className="mb-3">
-                    <label htmlFor="book-format" className="form-label">Book Format (optional):</label>
-                    <select
-                        id="book-format"
-                        className="form-select"
-                        value={bookFormat}
-                        onChange={(e) => {
-                            const nextValue = e.target.value;
-                            setBookFormat(toBookFormat(nextValue));
-                        }}
-                    >
-                        <option value="">— Select format —</option>
-                        <option value="Hardcover">Hardcover</option>
-                        <option value="Paperback">Paperback</option>
-                        <option value="MassMarketPaperback">Mass Market Paperback</option>
-                        <option value="TradePaperback">Trade Paperback</option>
-                        <option value="BoardBook">Board Book</option>
-                        <option value="LibraryBinding">Library Binding</option>
-                        <option value="SpiralBound">Spiral-Bound</option>
-                        <option value="EBook">eBook</option>
-                        <option value="Audiobook">Audiobook</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </div>
+                    <FormControl fullWidth>
+                        <InputLabel id="book-format-label">Book Format (optional)</InputLabel>
+                        <Select
+                            labelId="book-format-label"
+                            label="Book Format (optional)"
+                            value={bookFormat}
+                            onChange={(e) => {
+                                const nextValue = e.target.value;
+                                setBookFormat(toBookFormat(nextValue));
+                            }}
+                        >
+                            <MenuItem value=""><em>— Select format —</em></MenuItem>
+                            <MenuItem value="Hardcover">Hardcover</MenuItem>
+                            <MenuItem value="Paperback">Paperback</MenuItem>
+                            <MenuItem value="MassMarketPaperback">Mass Market Paperback</MenuItem>
+                            <MenuItem value="TradePaperback">Trade Paperback</MenuItem>
+                            <MenuItem value="BoardBook">Board Book</MenuItem>
+                            <MenuItem value="LibraryBinding">Library Binding</MenuItem>
+                            <MenuItem value="SpiralBound">Spiral-Bound</MenuItem>
+                            <MenuItem value="EBook">eBook</MenuItem>
+                            <MenuItem value="Audiobook">Audiobook</MenuItem>
+                            <MenuItem value="Other">Other</MenuItem>
+                        </Select>
+                    </FormControl>
 
-                {/* Needs Replacement */}
-                <div className="mb-3 form-check">
-                    <input
-                        id="book-needs-replacement"
-                        type="checkbox"
-                        className="form-check-input"
-                        checked={needsReplacement}
-                        onChange={(e) => setNeedsReplacement(e.target.checked)}
+                    <FormControlLabel
+                        control={<Checkbox checked={needsReplacement} onChange={(e) => setNeedsReplacement(e.target.checked)} />}
+                        label="Needs Replacement"
                     />
-                    <label htmlFor="book-needs-replacement" className="form-check-label">Needs Replacement</label>
-                </div>
 
-                {!hideSubmit && <button className="btn btn-primary" type="submit">Add Book</button>}
+                    {!hideSubmit && <Button variant="contained" color="primary" type="submit">Add Book</Button>}
+
+                    {errorMessage && <Typography color="error">{errorMessage}</Typography>}
+                </Box>
             </form>
-            {errorMessage && <p className="mt-2 text-danger">{errorMessage}</p>}
             <Toast
                 message={toastMessage}
                 type="success"

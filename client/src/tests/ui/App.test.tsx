@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { render, screen } from '@testing-library/react';
+import { ColorModeProvider } from '../../contexts/ColorModeContext';
 
 let mockIsAuthenticated = false;
 
@@ -29,7 +30,11 @@ describe('App routing', () => {
     it('redirects protected route to login when unauthenticated', () => {
         window.history.pushState({}, '', '/books');
 
-        render(<App />);
+        render(
+            <ColorModeProvider>
+                <App />
+            </ColorModeProvider>
+        );
 
         expect(screen.getByText('Login Page Mock')).toBeInTheDocument();
     });
@@ -38,7 +43,11 @@ describe('App routing', () => {
         mockIsAuthenticated = true;
         window.history.pushState({}, '', '/movies');
 
-        render(<App />);
+        render(
+            <ColorModeProvider>
+                <App />
+            </ColorModeProvider>
+        );
 
         expect(screen.getByText('Vault Page Mock')).toBeInTheDocument();
     });
@@ -46,7 +55,11 @@ describe('App routing', () => {
     it('renders signup page on signup route', () => {
         window.history.pushState({}, '', '/signup');
 
-        render(<App />);
+        render(
+            <ColorModeProvider>
+                <App />
+            </ColorModeProvider>
+        );
 
         expect(screen.getByText('Signup Page Mock')).toBeInTheDocument();
     });

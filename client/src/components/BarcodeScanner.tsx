@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import { Box, Button, Typography, CircularProgress } from '@mui/material';
 
 /** Props accepted by {@link BarcodeScanner}. */
 interface BarcodeScannerProps {
@@ -98,37 +99,30 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose, onErro
     }
 
     return (
-        <div className="mt-3 border rounded p-2">
-            <div className="d-flex justify-content-end mb-2">
-                <button
-                    type="button"
-                    className="btn btn-sm btn-outline-secondary"
-                    onClick={handleClose}
-                >
+        <Box mt={3} border={1} borderRadius={1} p={2}>
+            <Box display="flex" justifyContent="flex-end" mb={1}>
+                <Button size="small" variant="outlined" onClick={handleClose}>
                     Cancel
-                </button>
-            </div>
+                </Button>
+            </Box>
 
-            <div className="mb-2">
-                <span className="small text-muted">Point the camera at a barcode</span>
-            </div>
+            <Typography variant="body2" color="textSecondary" mb={1}>
+                Point the camera at a barcode
+            </Typography>
             {status === 'starting' && (
-                <div className="text-center py-2 text-muted small">
-                    <span
-                        className="spinner-border spinner-border-sm me-2"
-                        role="status"
-                        aria-label="starting camera"
-                    />
-                    Starting camera…
-                </div>
+                <Box textAlign="center" py={2}>
+                    <CircularProgress size={16} sx={{ mr: 1 }} aria-label="starting camera" />
+                    <Typography variant="body2" color="textSecondary" component="span">
+                        Starting camera…
+                    </Typography>
+                </Box>
             )}
             {/* The camera view div must always be in the DOM so html5-qrcode can attach to it */}
-            <div
+            <Box
                 id={SCANNER_ELEMENT_ID}
-                style={{ width: '100%', maxWidth: '400px', borderRadius: '8px', overflow: 'hidden' }}
+                sx={{ width: '100%', maxWidth: '400px', borderRadius: '8px', overflow: 'hidden' }}
             />
-
-        </div>
+        </Box>
     );
 };
 

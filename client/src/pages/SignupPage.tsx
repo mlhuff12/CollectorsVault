@@ -3,6 +3,7 @@ import { useHistory } from 'react-router-dom';
 import QRCode from 'qrcode';
 import { signup } from '../services/api';
 import { getApiErrorMessage } from '../utils/errorUtils';
+import { Box, Button, Card, CardContent, Typography, TextField, Alert } from '@mui/material';
 
 /**
  * SignupPage allows a new user to create an account.
@@ -77,77 +78,136 @@ const SignupPage: React.FC = () => {
 
     if (totpUri && totpSecret) {
         return (
-            <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light py-4">
-                <div className="card shadow p-4 auth-card-width">
-                    <div className="d-flex align-items-center gap-3 mb-3">
-                        <div className="brand-logo" aria-hidden="true">CV</div>
-                        <div>
-                            <h1 className="h4 mb-0">Collector&apos;s Vault</h1>
-                        </div>
-                    </div>
-                    <h2 className="h5 mb-3">Set Up Authenticator</h2>
-                    <p className="text-muted">Scan this QR code with your authenticator app (e.g. Google Authenticator):</p>
-                    <div className="d-flex justify-content-center my-3">
-                        {qrCodeDataUrl ? (
-                            <img src={qrCodeDataUrl} alt="TOTP QR Code" className="totp-qr-image border rounded" />
-                        ) : (
-                            <div className="alert alert-danger" role="alert">
-                                {qrCodeError ?? 'Generating QR code...'}
-                            </div>
-                        )}
-                    </div>
-                    <p className="text-muted">Or enter this secret manually:</p>
-                    <code className="d-block bg-light rounded p-2 small text-break mb-3">{totpSecret}</code>
-                    <p className="text-muted small">Once scanned, you can sign in with your username and the code from the app.</p>
-                    <button
-                        type="button"
-                        className="btn btn-primary w-100"
-                        onClick={() => history.push('/login')}
-                    >
-                        Go to Sign In
-                    </button>
-                </div>
-            </div>
+            <Box
+                sx={{
+                    minHeight: '100vh',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    bgcolor: 'background.default',
+                    py: 4,
+                }}
+            >
+                <Card sx={{ width: '100%', maxWidth: 420, p: 2 }}>
+                    <CardContent>
+                        <Box display="flex" alignItems="center" gap={1} mb={2}>
+                            <Box className="brand-logo" aria-hidden="true">
+                                CV
+                            </Box>
+                            <Typography variant="h6" component="h1">
+                                Collector&apos;s Vault
+                            </Typography>
+                        </Box>
+                        <Typography variant="h6" component="h2" gutterBottom>
+                            Set Up Authenticator
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary" gutterBottom>
+                            Scan this QR code with your authenticator app (e.g. Google Authenticator):
+                        </Typography>
+                        <Box display="flex" justifyContent="center" my={2}>
+                            {qrCodeDataUrl ? (
+                                <img
+                                    src={qrCodeDataUrl}
+                                    alt="TOTP QR Code"
+                                    className="totp-qr-image"
+                                    style={{ borderRadius: 4, maxWidth: '100%' }}
+                                />
+                            ) : (
+                                <Alert severity="error">
+                                    {qrCodeError ?? 'Generating QR code...'}
+                                </Alert>
+                            )}
+                        </Box>
+                        <Typography variant="body2" color="textSecondary">
+                            Or enter this secret manually:
+                        </Typography>
+                        <Box
+                            component="code"
+                            display="block"
+                            bgcolor="background.paper"
+                            p={1}
+                            mt={1}
+                            mb={2}
+                            borderRadius={1}
+                            fontSize="0.875rem"
+                            sx={{ wordBreak: 'break-all' }}
+                        >
+                            {totpSecret}
+                        </Box>
+                        <Typography variant="body2" color="textSecondary" fontSize="0.75rem" mb={2}>
+                            Once scanned, you can sign in with your username and the code from the app.
+                        </Typography>
+                        <Button fullWidth variant="contained" onClick={() => history.push('/login')}>
+                            Go to Sign In
+                        </Button>
+                    </CardContent>
+                </Card>
+            </Box>
         );
     }
 
     return (
-        <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light py-4">
-            <div className="card shadow p-4 auth-card-width">
-                <div className="d-flex align-items-center gap-3 mb-3">
-                    <div className="brand-logo" aria-hidden="true">CV</div>
-                    <div>
-                        <h1 className="h4 mb-0">Collector&apos;s Vault</h1>
-                        <p className="text-muted mb-0 small">Track your favorite books, movies, and games.</p>
-                    </div>
-                </div>
-                <h2 className="h5 mb-3">Create Account</h2>
-                <form onSubmit={handleSubmit}>
-                    <div className="mb-3">
-                        <label htmlFor="username" className="form-label">Username</label>
-                        <input
+        <Box
+            sx={{
+                minHeight: '100vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                bgcolor: 'background.default',
+                py: 4,
+            }}
+        >
+            <Card sx={{ width: '100%', maxWidth: 420, p: 2 }}>
+                <CardContent>
+                    <Box display="flex" alignItems="center" gap={1} mb={2}>
+                        <Box className="brand-logo" aria-hidden="true">
+                            CV
+                        </Box>
+                        <Box>
+                            <Typography variant="h6" component="h1">
+                                Collector&apos;s Vault
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary">
+                                Track your favorite books, movies, and games.
+                            </Typography>
+                        </Box>
+                    </Box>
+                    <Typography variant="h6" component="h2" gutterBottom>
+                        Create Account
+                    </Typography>
+                    <Box component="form" onSubmit={handleSubmit}>
+                        <TextField
                             id="username"
-                            type="text"
-                            className="form-control"
+                            label="Username"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
                             required
                             autoComplete="username"
+                            fullWidth
+                            margin="normal"
                         />
-                    </div>
-                    {error && <div className="alert alert-danger py-2" role="alert">{error}</div>}
-                    <button type="submit" className="btn btn-primary w-100" disabled={loading}>
-                        {loading ? 'Creating account...' : 'Create Account'}
-                    </button>
-                </form>
-                <p className="text-center text-muted mt-3 mb-0 small">
-                    Already have an account?{' '}
-                    <button type="button" className="btn btn-link p-0 small" onClick={() => history.push('/login')}>
-                        Sign in
-                    </button>
-                </p>
-            </div>
-        </div>
+                        {error && (
+                            <Alert severity="error" sx={{ my: 1 }}>
+                                {error}
+                            </Alert>
+                        )}
+                        <Button type="submit" fullWidth variant="contained" disabled={loading} sx={{ mt: 1 }}>
+                            {loading ? 'Creating account...' : 'Create Account'}
+                        </Button>
+                    </Box>
+                    <Typography variant="body2" color="textSecondary" align="center" mt={3}>
+                        Already have an account?{' '}
+                        <Button
+                            variant="text"
+                            size="small"
+                            onClick={() => history.push('/login')}
+                        >
+                            Sign in
+                        </Button>
+                    </Typography>
+                </CardContent>
+            </Card>
+        </Box>
     );
 };
 

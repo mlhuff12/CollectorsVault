@@ -48,11 +48,11 @@ describe('Auth UI flow', () => {
             </Router>
         );
 
-        fireEvent.change(screen.getByLabelText('Username'), {
+        fireEvent.change(screen.getByLabelText(/username/i), {
             target: { value: '  michelle  ' }
         });
 
-        fireEvent.change(screen.getByLabelText('Authenticator Code'), {
+        fireEvent.change(screen.getByLabelText(/authenticator code/i), {
             target: { value: ' 123456 ' }
         });
 
@@ -77,11 +77,11 @@ describe('Auth UI flow', () => {
             </Router>
         );
 
-        fireEvent.change(screen.getByLabelText('Username'), {
+        fireEvent.change(screen.getByLabelText(/username/i), {
             target: { value: 'michelle' }
         });
 
-        fireEvent.change(screen.getByLabelText('Authenticator Code'), {
+        fireEvent.change(screen.getByLabelText(/authenticator code/i), {
             target: { value: '000000' }
         });
 
@@ -108,7 +108,7 @@ describe('Auth UI flow', () => {
             </Router>
         );
 
-        fireEvent.change(screen.getByLabelText('Username'), {
+        fireEvent.change(screen.getByLabelText(/username/i), {
             target: { value: ' michelle ' }
         });
 

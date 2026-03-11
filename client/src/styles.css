@@ -19,8 +19,9 @@ body {
 }
 
 .auth-card-width {
-  width: 100%;
+  width: 90%;
   max-width: 440px;
+  min-width: 280px;
 }
 
 .category-badge.book {
@@ -57,6 +58,18 @@ body {
   cursor: pointer;
   transition: background-color 0.15s, box-shadow 0.15s;
 }
+@media (max-width: 600px) {
+  .home-tile {
+    width: 100px;
+    height: 100px;
+  }
+}
+@media (max-width: 400px) {
+  .home-tile {
+    width: 80px;
+    height: 80px;
+  }
+}
 .home-tile:hover {
   background-color: #f8f9fa;
   box-shadow: 0 2px 6px rgba(0,0,0,0.1);
@@ -73,6 +86,17 @@ body {
 .vault-container {
   min-height: 100vh;
   background: linear-gradient(180deg, #f5f8ff 0%, #eef2ff 100%);
+  min-width: 320px;
+}
+
+/* global minimum width so layout doesn't collapse completely */
+/* only enforce on narrow viewports (phones/small tablets) */
+@media (max-width: 480px) {
+  #root,
+  body,
+  .vault-container {
+    min-width: 320px;
+  }
 }
 
 /* home-bg is no longer needed but kept for compatibility in case any

@@ -3,6 +3,16 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrashAlt } from '@fortawesome/free-solid-svg-icons';
 import { VaultItem } from '../models';
 import { deleteItem, fetchItems } from '../services/api';
+import {
+    Box,
+    IconButton,
+    List,
+    ListItem,
+    ListItemText,
+    ListItemSecondaryAction,
+    Typography,
+    Chip,
+} from '@mui/material';
 
 /** Props accepted by {@link ItemList}. */
 interface ItemListProps {
@@ -65,41 +75,62 @@ const ItemList: React.FC<ItemListProps> = ({ refreshKey = 0, title = "Collector'
     };
 
     if (loading) {
-        return <div className="text-muted">Loading...</div>;
+        return <Typography color="text.secondary">Loading…</Typography>;
     }
 
     if (error) {
-        return <div className="text-danger">Error: {error}</div>;
+        return <Typography color="error">Error: {error}</Typography>;
     }
 
     return (
-        <div>
-            <h2 className="h5 mb-3">{title}</h2>
-            {visibleItems.length === 0 && <p className="text-muted">No items found in this category yet.</p>}
-            <ul className="list-group list-group-flush">
-                {visibleItems.map(item => (
-                    <li key={`${item.category}-${item.id}`} className="list-group-item d-flex justify-content-between align-items-center px-0">
-                        <div className="d-flex align-items-center gap-2">
-                            <span>{item.title}</span>
-                            <span className={`badge category-badge ${item.category}`}>{item.category}</span>
-                        </div>
-                        <div className="d-flex align-items-center gap-2">
-                            {item.dateAdded && <small className="text-muted">Added {new Date(item.dateAdded).toLocaleDateString()}</small>}
-                            <button
-                                type="button"
-                                className="btn btn-danger btn-sm"
+        <Box>
+            <Typography variant="h5" gutterBottom>
+                {title}
+            </Typography>
+            {visibleItems.length === 0 && (
+                <Typography color="text.secondary">
+                    No items found in this category yet.
+                </Typography>
+            )}
+            <List>
+                {visibleItems.map((item) => (
+                    <ListItem key={`${item.category}-${item.id}`} disableGutters>
+                        <ListItemText
+                            primary={item.title}
+                            secondary={
+                                <>
+                                    {item.dateAdded && (
+                                        <Typography variant="caption" color="textSecondary">
+                                            Added {new Date(item.dateAdded).toLocaleDateString()}
+                                        </Typography>
+                                    )}
+                                </>
+                            }
+                        />
+                        <Chip label={item.category} size="small" sx={{ mr: 1 }} />
+                        <ListItemSecondaryAction>
+                            <IconButton
+                                edge="end"
+                                color="error"
                                 onClick={() => handleDelete(item)}
                                 disabled={deletingId === item.id}
-                                title={deletingId === item.id ? 'Deleting item' : 'Delete item'}
-                                aria-label={deletingId === item.id ? 'Deleting item' : `Delete ${item.title}`}
+                                title={
+                                    deletingId === item.id ? 'Deleting item' : 'Delete item'
+                                }
+                                aria-label={
+                                    deletingId === item.id
+                                        ? 'Deleting item'
+                                        : `Delete ${item.title}`
+                                }
+                                size="small"
                             >
                                 {deletingId === item.id ? '…' : <FontAwesomeIcon icon={faTrashAlt} />}
-                            </button>
-                        </div>
-                    </li>
+                            </IconButton>
+                        </ListItemSecondaryAction>
+                    </ListItem>
                 ))}
-            </ul>
-        </div>
+            </List>
+        </Box>
     );
 };
 

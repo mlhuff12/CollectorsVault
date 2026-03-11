@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import VaultPage from './pages/VaultPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import Layout from './components/Layout';
 
 /** Props accepted by {@link ProtectedRoute}. */
 interface ProtectedRouteProps {
@@ -49,7 +50,9 @@ const App: React.FC = () => {
     return (
         <AuthProvider>
             <Router>
-                <AppRoutes />
+                <Layout>
+                    <AppRoutes />
+                </Layout>
             </Router>
         </AuthProvider>
     );

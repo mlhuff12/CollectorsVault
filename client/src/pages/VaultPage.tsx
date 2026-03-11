@@ -9,6 +9,15 @@ import Modal from '../components/Modal';
 import BarcodeScanLookup from '../components/BarcodeScanLookup';
 import Toast from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
+import {
+    Box,
+    Container,
+    Grid,
+    Paper,
+    Typography,
+    Fab,
+} from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 
 type VaultSection = 'home' | 'books' | 'movies' | 'games' | 'admin';
 
@@ -114,59 +123,68 @@ const VaultPage: React.FC = () => {
             if (!formType) return null;
 
             const label = formType.charAt(0).toUpperCase() + formType.slice(1);
-            // fixed position at bottom right of viewport so it sits beneath container
+            // use MUI Fab for floating add button
             return (
-                <button
-                    type="button"
-                    className="btn btn-primary float-end bottom-0 end-0 m-3 rounded-circle position-fixed"
+                <Fab
+                    color="primary"
                     aria-label={`Add ${label}`}
+                    sx={{ position: 'fixed', bottom: 16, right: 16 }}
                     onClick={() => handleModalOpen(formType)}
                 >
-                    <span className="fs-4">+</span>
-                </button>
+                    <AddIcon />
+                </Fab>
             );
         };
 
     const renderSectionContent = () => {
         if (activeSection === 'admin') {
             return (
-                <div className="card shadow-sm mb-3 p-3">
+                <Paper sx={{ mb: 3, p: 3 }}>
                     <AdminTab />
-                </div>
+                </Paper>
             );
         }
 
         if (activeSection === 'home') {
-            // tiles for primary actions
-            // container has white background and enforces two columns per row
+            // tiles for primary actions - use grid layout
+            const tiles = [
+                { label: 'Scan Barcode', action: () => handleModalOpen('upc') },
+                { label: 'Add Book', action: () => handleModalOpen('book') },
+                { label: 'Add Movie', action: () => handleModalOpen('movie') },
+                { label: 'Add Game', action: () => handleModalOpen('game') },
+            ] as const;
+
             return (
-                <>
-                    <div data-testid="home-tile-container" className="card shadow-sm mb-3 p-3">
-                        <div className="row row-cols-2 g-3 w-auto mx-auto justify-content-center">
-                            {/* left/right columns are laid out explicitly for styling */}
-                            {(
-                                [
-                                    { label: 'Scan Barcode', action: () => handleModalOpen('upc') },
-                                    { label: 'Add Book', action: () => handleModalOpen('book') },
-                                    { label: 'Add Movie', action: () => handleModalOpen('movie') },
-                                    { label: 'Add Game', action: () => handleModalOpen('game') },
-                                ] as const
-                            ).map((tile, idx) => (
-                                <div
-                                    key={idx}
-                                    className={idx % 2 === 0 ? 'col d-flex justify-content-end' : 'col d-flex justify-content-start'}
+                <Paper data-testid="home-tile-container" sx={{ mb: 3, p: 3 }}>
+                    <Grid container spacing={3} justifyContent="center">
+                        {tiles.map((tile, idx) => (
+                            <Grid
+                                key={idx}
+                                sx={{
+                                    flexBasis: '50%',
+                                    display: 'flex',
+                                    justifyContent: idx % 2 === 0 ? 'flex-end' : 'flex-start',
+                                }}
+                            >
+                                <Box
+                                    className="home-tile"
+                                    sx={{
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        textAlign: 'center',
+                                        height: '100%',
+                                        p: 3,
+                                        cursor: 'pointer',
+                                    }}
+                                    onClick={tile.action}
                                 >
-                                    <div
-                                        className="home-tile d-flex justify-content-center align-items-center text-center h-100 p-3"
-                                        onClick={tile.action}
-                                    >
-                                        <span>{tile.label}</span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </>
+                                    <Typography>{tile.label}</Typography>
+                                </Box>
+                            </Grid>
+                        ))}
+                    </Grid>
+                </Paper>
             );
         }
 
@@ -180,11 +198,9 @@ const VaultPage: React.FC = () => {
         if (cat) {
             const title = cat.charAt(0).toUpperCase() + cat.slice(1) + 's';
             return (
-                <>
-                    <div className="card shadow-sm p-3 h-100 w-100">
-                        <ItemList refreshKey={refreshKey} categoryFilter={cat} title={title} />
-                    </div>
-                </>
+                <Paper sx={{ shadow: 1, p: 3, height: '100%', width: '100%' }}>
+                    <ItemList refreshKey={refreshKey} categoryFilter={cat} title={title} />
+                </Paper>
             );
         }
 
@@ -193,65 +209,14 @@ const VaultPage: React.FC = () => {
 
     return (
         <>
-            {/* outer wrapper ensures the page is always full height and uses the
-                same background regardless of which section is active. The
-                .container inside limits content width while remaining
-                transparent so the gradient shows through. */}
-            <div className="vault-container d-flex flex-column min-vh-100">
-                <div className="container py-4 flex-grow-1 d-flex flex-column">
-                    <header className="mb-3">
-                <div className="d-flex align-items-center gap-3">
-                    <div className="brand-logo" aria-hidden="true">CV</div>
-                    <div>
-                        <h1 className="h3 mb-0">Collector&apos;s Vault</h1>
-                        <p className="text-muted mb-0 small">Track your favorite books, movies, and games.</p>
-                    </div>
-                    <div className="ms-auto d-flex align-items-center gap-3">
-                        {username && <span className="text-muted small fw-medium">{username}</span>}
-                        <button type="button" className="btn btn-outline-secondary btn-sm" onClick={logout}>
-                            Sign Out
-                        </button>
-                    </div>
-                </div>
-            </header>
-
-            {/* nav is kept in a fluid container so the category buttons sit on the
-                same background color across the entire screen rather than being
-                constrained by the fixed-width container */}
-            <div className="container-fluid">
-                <nav className="d-flex flex-wrap gap-2 mb-3" aria-label="Vault categories">
-                    {(
-                        [
-                            { section: 'home' as VaultSection, label: 'Home', adminOnly: false },
-                            { section: 'books' as VaultSection, label: 'Books', adminOnly: false },
-                            { section: 'movies' as VaultSection, label: 'Movies', adminOnly: false },
-                            { section: 'games' as VaultSection, label: 'Games', adminOnly: false },
-                            { section: 'admin' as VaultSection, label: 'Admin', adminOnly: true },
-                        ] as const
-                    ).map(({ section, label, adminOnly }) => {
-                        if (adminOnly && !isAdmin) return null;
-                        return (
-                            <button
-                                key={section}
-                                type="button"
-                                className={
-                                    activeSection === section ? 'btn btn-primary' : 'btn btn-outline-secondary'
-                                }
-                                onClick={() => setSection(section)}
-                            >
-                                {label}
-                            </button>
-                        );
-                    })}
-                </nav>
-            </div>
-
-                    <div className="flex-grow-1 position-relative d-flex col">
+            {/* outer wrapper uses MUI Box/Container for full-height flex layout */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+                <Container sx={{ py: 4, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                    <Box sx={{ flexGrow: 1, position: 'relative', display: 'flex' }}>
                         {renderSectionContent()}
-                    </div>
+                    </Box>
                     {renderAddButton()}
-                    
-                </div>
+                </Container>
                 {/* global modal shared across sections */}
                 <Modal
                     show={modalType !== null}
@@ -314,7 +279,7 @@ const VaultPage: React.FC = () => {
                         onDismiss={() => setPageToast('')}
                     />
                 )}
-            </div>
+            </Box>
         </>
     );
 };

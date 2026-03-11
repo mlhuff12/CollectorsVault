@@ -33,7 +33,7 @@ describe('AdminTab', () => {
     it('loads and displays all users with counts', async () => {
         render(<AdminTab />);
 
-        expect(screen.getByText('Loading...')).toBeInTheDocument();
+        expect(screen.getByText(/loading/i)).toBeInTheDocument();
 
         expect(await screen.findByText('adminuser')).toBeInTheDocument();
         expect(screen.getByText('regularuser')).toBeInTheDocument();

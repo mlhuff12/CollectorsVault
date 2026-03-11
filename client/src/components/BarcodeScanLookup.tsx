@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useId } from 'react';
 import BarcodeScanner from './BarcodeScanner';
 import Toast from './Toast';
+import { Box, Button, InputLabel, TextField, Typography } from '@mui/material';
 
 /** Props accepted by {@link BarcodeScanLookup}. */
 interface BarcodeScanLookupProps {
@@ -144,39 +145,38 @@ const BarcodeScanLookup: React.FC<BarcodeScanLookupProps> = ({
     };
 
     return (
-        <div className="mb-3">
+        <Box mb={2}>
             {label && (
-                <label htmlFor={inputId} className="form-label">
+                <InputLabel htmlFor={inputId} sx={{ mb: 1, display: 'block' }}>
                     {label}
-                </label>
+                </InputLabel>
             )}
-            <div className="input-group">
-                <input
+            <Box display="flex" alignItems="center" gap={1}>
+                <TextField
                     id={inputId}
-                    type="text"
-                    className="form-control"
                     placeholder={placeholder}
                     value={input}
-                    maxLength={maxLength}
+                    inputProps={{ maxLength }}
                     onChange={(e) => {
                         notifyChange(e.target.value);
                         setScanError('');
                     }}
+                    fullWidth
+                    size="small"
                 />
-                <button
-                    type="button"
-                    className="btn btn-secondary"
-                    disabled={!input.trim() || scanLoading}
+                <Button
+                    variant="outlined"
                     onClick={handleManualLookup}
+                    disabled={!input.trim() || scanLoading}
                 >
                     {scanLoading ? 'Looking up…' : 'Lookup'}
-                </button>
-                {canScan ? (
+                </Button>
+                {canScan && (
                     <>
-                        <div className="input-group-text">OR</div>
-                        <button
-                            type="button"
-                            className="btn btn-outline-secondary btn-sm"
+                        <Typography variant="body2">OR</Typography>
+                        <Button
+                            variant="outlined"
+                            size="small"
                             onClick={() => {
                                 setScanError('');
                                 attemptScan();
@@ -184,34 +184,29 @@ const BarcodeScanLookup: React.FC<BarcodeScanLookupProps> = ({
                             disabled={scanLoading}
                         >
                             {scanLoading ? 'Looking up…' : '📷 Scan Barcode'}
-                        </button>
+                        </Button>
                     </>
-                ) : (
-                    // scanning is not available; hide the OR/button and show a warning below
-                    <></>
                 )}
-            </div>
-            {/* if camera support isn't detected, always inform the user */}
+            </Box>
             {!canScan && (
-                <div className="form-text text-warning mb-2">
-                    Barcode scanning is not supported on this device; please enter the
-                    barcode manually.
-                </div>
+                <Typography color="warning.main" variant="body2" mt={1}>
+                    Barcode scanning is not supported on this device; please enter the barcode manually.
+                </Typography>
             )}
-            {/* scanError from a failed camera start is useful only until
-                we mark scanning as permanently unsupported; afterwards the
-                generic warning text covers the situation. */}
             {scanError && !scanUnsupportedPermanently && (
-                <div className="form-text text-warning mb-2">{scanError}</div>
+                <Typography color="warning.main" variant="body2" mt={1}>
+                    {scanError}
+                </Typography>
             )}
-            {error && <div className="form-text text-warning mb-2">{error}</div>}
+            {error && (
+                <Typography color="warning.main" variant="body2" mt={1}>
+                    {error}
+                </Typography>
+            )}
             {showScanner && (
                 <BarcodeScanner
                     onScan={handleBarcodeScan}
                     onError={(msg) => {
-                        // if the scanner component reports a failure (no camera, etc.)
-                        // treat scanning as unavailable going forward so the UI hides
-                        // the OR/button and the user sees the warning text.
                         scanUnsupportedPermanently = true;
                         setScanError(msg);
                         setCanScan(false);
@@ -225,7 +220,7 @@ const BarcodeScanLookup: React.FC<BarcodeScanLookupProps> = ({
                 type={toastType}
                 onDismiss={() => setToastMessage('')}
             />
-        </div>
+        </Box>
     );
 };
 
