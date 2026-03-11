@@ -20,6 +20,25 @@ main {
   overflow-y: hidden !important;
 }
 
+/* ensure barcode scanner container only shows the camera once */
+#cv-barcode-scanner {
+  position: relative;
+}
+#cv-barcode-scanner video:first-child,
+#cv-barcode-scanner canvas:first-child {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+}
+#cv-barcode-scanner video:not(:first-child),
+#cv-barcode-scanner canvas:not(:first-child) {
+  display: none !important;
+}
+/* any additional nodes injected by html5-qrcode should be hidden */
+#cv-barcode-scanner > *:not(video):not(canvas) {
+  display: none !important;
+}
+
 .brand-logo {
   width: 42px;
   height: 42px;

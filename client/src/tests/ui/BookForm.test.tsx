@@ -218,6 +218,44 @@ describe('BookForm', () => {
         });
     });
 
+    // simulate a barcode scanner completing inside the book modal and ensure
+    // the lookup runs automatically without the user clicking the button
+    it('automatically looks up the ISBN when a scan returns a barcode', async () => {
+        // create a fresh module context so we can override BarcodeScanner
+        vi.resetModules();
+        // stub BarcodeScanner to immediately invoke onScan when mounted
+        vi.mock('../../components/BarcodeScanner', () => {
+            const React = require('react');
+            return {
+                __esModule: true,
+                default: ({ onScan, onClose }: any) => {
+                    React.useEffect(() => {
+                        // simulate a successful scan after mount
+                        onScan('9780547928227');
+                    }, []);
+                    return <div data-testid="mock-scanner" />;
+                },
+            };
+        });
+
+        // re-require BookForm and api with the new mock in place
+        const mod = await import('../../components/BookForm');
+        BookForm = mod.default;
+        api = await import('../../services/api');
+        mockLookupBookByIsbn = api.lookupBookByIsbn;
+        mockLookupBookByIsbn.mockResolvedValue({ title: 'Scanned Book', authors: ['Mystery Author'] });
+
+        // ensure camera appears so scan button is rendered
+        Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
+
+        render(<BookForm />);
+        fireEvent.click(screen.getByRole('button', { name: /Scan Barcode/ }));
+
+        await waitFor(() => {
+            expect(mockLookupBookByIsbn).toHaveBeenCalledWith('9780547928227');
+        });
+    });
+
     // ── After lookup: fields are populated ───────────────────────────────────
 
     it('populates fields and displays medium image after a successful ISBN lookup', async () => {

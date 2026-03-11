@@ -79,6 +79,33 @@ describe('BarcodeScanner', () => {
         await waitForScannerToSettle();
     });
 
+    it('positions itself full screen when opened', async () => {
+        const onScan = vi.fn();
+        const onClose = vi.fn();
+        const { container, unmount } = render(<BarcodeScanner onScan={onScan} onClose={onClose} />);
+
+        await waitForScannerToSettle();
+
+        const wrapper = container.firstChild as HTMLElement;
+        expect(wrapper).toBeTruthy();
+        // inline style ensures the element is fixed to viewport
+        expect(wrapper).toHaveStyle('position: fixed');
+        expect(wrapper).toHaveStyle('top: 0');
+        expect(wrapper).toHaveStyle('left: 0');
+
+        const videoEl = container.querySelector('#cv-barcode-scanner') as HTMLElement;
+        expect(videoEl).toHaveStyle('width: 100%');
+        expect(videoEl).toHaveStyle('height: 100%');
+
+        // background scroll should be disabled while scanner is active
+        expect(document.body.style.overflow).toBe('hidden');
+
+        // simulate parent closing the scanner by unmounting
+        fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+        unmount();
+        expect(document.body.style.overflow).toBe('');
+    });
+
     it('calls onError and hides all UI when camera fails to start', async () => {
         mockBehavior.startShouldReject = true;
         const onScan = vi.fn();

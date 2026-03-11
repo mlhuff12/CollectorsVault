@@ -136,8 +136,9 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded, hideSubmit = false, fo
     /** True when fields should be locked because data came from an ISBN lookup. */
     const isFromLookup = lookupResult !== null;
 
-    const handleLookup = async () => {
-        const trimmedIsbn = isbn.trim();
+    // lookup either the current isbn state or a value provided by the caller
+    const handleLookup = async (barcode?: string) => {
+        const trimmedIsbn = (barcode ?? isbn).trim();
         if (!trimmedIsbn) return;
 
         setIsLooking(true);
