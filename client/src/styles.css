@@ -1,6 +1,23 @@
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden !important;
+}
+
+/* make default box-sizing include padding/border so 100% height is accurate */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 body {
   background: linear-gradient(180deg, #f5f8ff 0%, #eef2ff 100%);
   color: #1f2937;
+  overflow-y: hidden !important;
+}
+
+main {
+  overflow-y: hidden !important;
 }
 
 .brand-logo {

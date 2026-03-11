@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import { ColorModeProvider } from '../../contexts/ColorModeContext';
@@ -42,7 +42,7 @@ describe('Layout', () => {
     expect(screen.getByTestId('HomeIcon')).toBeInTheDocument();
   });
 
-  it('shows profile menu when avatar clicked and allows updating names', () => {
+  it('opens profile menu with Settings and Sign Out, and settings modal works', async () => {
     render(
       <MemoryRouter>
         <ColorModeProvider>
@@ -52,16 +52,33 @@ describe('Layout', () => {
         </ColorModeProvider>
       </MemoryRouter>
     );
-    // avatar button exists
+    // open menu
     const avatarButton = screen.getByRole('button', { name: /user profile/i });
     fireEvent.click(avatarButton);
+    // only two options now, both rendered as buttons
+    expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /sign out/i })).toBeInTheDocument();
+
+    // open settings modal
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    expect(await screen.findByText('Profile')).toBeInTheDocument();
+    // fields appear inside modal
     expect(screen.getByLabelText('First Name')).toBeInTheDocument();
     expect(screen.getByLabelText('Last Name')).toBeInTheDocument();
+    expect(screen.getByLabelText('Dark mode')).toBeInTheDocument();
+    // color pickers also present
+    expect(screen.getByLabelText('Primary')).toBeInTheDocument();
+    expect(screen.getByLabelText('Secondary')).toBeInTheDocument();
+
+    // change names and save
     fireEvent.change(screen.getByLabelText('First Name'), { target: { value: 'Alice' } });
     fireEvent.change(screen.getByLabelText('Last Name'), { target: { value: 'Smith' } });
-    // close menu by clicking outside
-    fireEvent.click(document.body);
-    // avatar should now show initials
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    // modal closes
+    await waitFor(() => {
+      expect(screen.queryByText('Profile')).not.toBeInTheDocument();
+    });
+    // avatar initials updated
     expect(screen.getByText('AS')).toBeInTheDocument();
   });
 

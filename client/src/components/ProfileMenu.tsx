@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Menu,
+  MenuItem,
   IconButton,
   Avatar,
   Typography,
@@ -11,6 +12,7 @@ import {
   Switch,
   Box,
 } from '@mui/material';
+import Modal from './Modal';
 import PersonIcon from '@mui/icons-material/Person';
 import { useAuth } from '../context/AuthContext';
 import { useColorMode } from '../contexts/ColorModeContext';
@@ -27,9 +29,16 @@ const ProfileMenu: React.FC = () => {
   } = useColorMode();
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const open = Boolean(anchorEl);
   const handleOpen = (e: React.MouseEvent<HTMLElement>) => setAnchorEl(e.currentTarget);
   const handleClose = () => setAnchorEl(null);
+
+  const openSettings = () => {
+      handleClose();
+      setSettingsOpen(true);
+  };
+  const closeSettings = () => setSettingsOpen(false);
 
   const [firstName, setFirstName] = useState<string>(() => localStorage.getItem('firstName') || '');
   const [lastName, setLastName] = useState<string>(() => localStorage.getItem('lastName') || '');
@@ -63,7 +72,20 @@ const ProfileMenu: React.FC = () => {
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
-        <Box sx={{ p: 2, width: 250 }}>
+      <MenuItem>
+        <Button fullWidth color="primary" onClick={openSettings}>
+          Settings
+        </Button>
+      </MenuItem>
+      <MenuItem>
+        <Button fullWidth color="secondary" onClick={logout}>
+          SIGN OUT
+        </Button>
+      </MenuItem>
+      </Menu>
+
+      <Modal show={settingsOpen} title="Settings" onClose={closeSettings} onConfirm={closeSettings} confirmText="Save">
+        <Box sx={{ p: 1 }}>
           <Typography variant="subtitle1">Profile</Typography>
           <TextField
             label="First Name"
@@ -91,22 +113,18 @@ const ProfileMenu: React.FC = () => {
               label="Primary"
               value={primaryColor}
               onChange={(e) => setPrimaryColor(e.target.value)}
-              sx={{ width: 60, p: 0 }}
+              sx={{ width: 120, p: 0 }}
             />
             <TextField
               type="color"
               label="Secondary"
               value={secondaryColor}
               onChange={(e) => setSecondaryColor(e.target.value)}
-              sx={{ width: 60, p: 0 }}
+              sx={{ width: 120, p: 0 }}
             />
           </Box>
-          <Divider sx={{ my: 1 }} />
-          <Button fullWidth color="secondary" onClick={logout}>
-            Sign Out
-          </Button>
         </Box>
-      </Menu>
+      </Modal>
     </>
   );
 };
