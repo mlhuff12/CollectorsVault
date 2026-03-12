@@ -99,8 +99,14 @@ const VaultPage: React.FC = () => {
     };
 
     const handleModalConfirm = () => {
-        // map modal type to its ref so we can submit generically
-        const refMap: Record<'book' | 'movie' | 'game', React.RefObject<HTMLFormElement>> = {
+        // map modal type to its ref so we can submit generically. the
+        // individual form handles all expose requestSubmit(), so we don't need
+        // the full HTMLFormElement type here.
+        type SubmitHandle = {
+            requestSubmit(): void;
+        };
+
+        const refMap: Record<'book' | 'movie' | 'game', React.RefObject<SubmitHandle>> = {
             book: bookFormRef,
             movie: movieFormRef,
             game: gameFormRef,
@@ -304,7 +310,7 @@ const VaultPage: React.FC = () => {
                                 'book' | 'movie' | 'game',
                                 {
                                     Component: React.FC<any>;
-                                    ref: React.RefObject<HTMLFormElement>;
+                                    ref: React.RefObject<BookFormHandle | MovieFormHandle | GameFormHandle>;
                                 }
                             > = {
                                 book: { Component: BookForm, ref: bookFormRef },
