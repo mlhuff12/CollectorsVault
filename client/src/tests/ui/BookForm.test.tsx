@@ -81,7 +81,7 @@ describe('BookForm', () => {
 
         render(<BookForm onItemAdded={onItemAdded} />);
 
-        fireEvent.change(screen.getByLabelText(/UPC.*ISBN:/), { target: { value: '9780441172719' } });
+        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN:/), { target: { value: '9780441172719' } });
         fireEvent.change(screen.getByRole('textbox', { name: /Title/ }), { target: { value: 'Dune' } });
         fireEvent.change(screen.getByRole('textbox', { name: /Authors/ }), {
             target: { value: ' Frank Herbert,  Brian Herbert ' }
@@ -136,16 +136,16 @@ describe('BookForm', () => {
 
     // ── Lookup button ─────────────────────────────────────────────────────────
 
-    it('renders the Lookup button next to the UPC/ISBN field and limits length', () => {
+    it('renders the Lookup button next to the barcode field and limits length', () => {
         render(<BookForm />);
-        const field = screen.getByPlaceholderText('Enter UPC or ISBN') as HTMLInputElement;
+        const field = screen.getByRole('textbox', { name: /Barcode.*ISBN/ }) as HTMLInputElement;
         expect(field).toBeInTheDocument();
         expect(field.maxLength).toBe(13);
         expect(screen.getByRole('button', { name: 'Lookup' })).toBeInTheDocument();
-        expect(screen.getByLabelText('UPC / ISBN:')).toBeInTheDocument();
+        expect(screen.getByLabelText('Barcode / ISBN:')).toBeInTheDocument();
     });
 
-    it('renders the Scan Barcode button next to the UPC/ISBN field', () => {
+    it('renders the Scan Barcode button next to the barcode field', () => {
         Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
         render(<BookForm />);
         expect(screen.getByRole('button', { name: /Scan Barcode/ })).toBeInTheDocument();
@@ -210,7 +210,7 @@ describe('BookForm', () => {
 
         render(<BookForm />);
 
-        fireEvent.change(screen.getByLabelText(/UPC.*ISBN:/), { target: { value: '9780547928227' } });
+        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN:/), { target: { value: '9780547928227' } });
         fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
 
         // while lookup is in flight, both lookup and scan buttons should be disabled
@@ -223,6 +223,16 @@ describe('BookForm', () => {
 
         await waitFor(() => {
             expect(mockLookupBookByIsbn).toHaveBeenCalledWith('9780547928227');
+        });
+    });
+
+    it('prefixes a leading 0 for 12-digit UPC values when searching', async () => {
+        mockLookupBookByIsbn.mockResolvedValue({ title: 'Dummy', isbn: '0123456789012', authors: [] });
+        render(<BookForm />);
+        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN:/), { target: { value: '123456789012' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
+        await waitFor(() => {
+            expect(mockLookupBookByIsbn).toHaveBeenCalledWith('0123456789012');
         });
     });
 
@@ -250,8 +260,22 @@ describe('BookForm', () => {
         mockLookupBookByIsbn.mockResolvedValue(lookupData);
 
         render(<BookForm />);
-        fireEvent.change(screen.getByLabelText(/UPC.*ISBN:/), { target: { value: '9780547928227' } });
-        // end of initial lookup-populated fields assertions
+        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN:/), { target: { value: '9780547928227' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
+
+        // fields should show the data once lookup completes
+        await waitFor(() => {
+            expect(screen.getByRole('textbox', { name: /Title/ })).toHaveValue('The Hobbit');
+        });
+        expect(screen.getByRole('textbox', { name: /Authors/ })).toHaveValue('J.R.R. Tolkien');
+        expect(screen.getByLabelText('Publisher:')).toHaveValue('Houghton Mifflin');
+        expect(screen.getByLabelText('Publish Date:')).toHaveValue('1937');
+        // Page count is rendered as a numeric input, which yields a number value
+        expect(screen.getByLabelText('Page Count:')).toHaveValue(310);
+        expect(screen.getByLabelText('Description:')).toHaveValue('A fantasy novel.');
+        expect(screen.getByLabelText('Book URL:')).toHaveValue('https://openlibrary.org/books/OL123');
+        // cover image should be rendered with medium url
+        expect(screen.getByAltText(/Cover for The Hobbit/)).toHaveAttribute('src', lookupData.coverMedium);
     });
 
     it('marks fields as read-only after a successful ISBN lookup', async () => {
@@ -274,7 +298,7 @@ describe('BookForm', () => {
         mockLookupBookByIsbn.mockResolvedValue(lookupData2);
 
         render(<BookForm />);
-        fireEvent.change(screen.getByLabelText(/UPC.*ISBN:/), { target: { value: '9780547928227' } });
+        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN:/), { target: { value: '9780547928227' } });
         fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
 
         await waitFor(() => {
@@ -294,12 +318,49 @@ describe('BookForm', () => {
         mockLookupBookByIsbn.mockRejectedValue(new Error('Not found'));
 
         render(<BookForm />);
-        fireEvent.change(screen.getByLabelText(/UPC.*ISBN:/), { target: { value: '0000000000' } });
+        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN:/), { target: { value: '0000000000' } });
         fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
 
         expect(await screen.findByText(/Book not found for the given ISBN/i)).toBeInTheDocument();
         // Fields should remain editable after a failed lookup
         expect(screen.getByRole('textbox', { name: /Title/ })).not.toHaveAttribute('readOnly');
+    });
+
+    it('treats an empty lookup result as not found', async () => {
+        // backend returns an object with no title when it really has no data
+        const emptyResult = {
+            isbn: '0000000000',
+            title: '',
+            authors: [],
+            publisher: '',
+            publishDate: '',
+            pageCount: 0,
+            description: '',
+            subjects: [],
+            coverSmall: '',
+            coverMedium: '',
+            coverLarge: '',
+            providerUrl: '',
+            seriesName: '',
+            seriesNotFound: false
+        };
+        mockLookupBookByIsbn.mockResolvedValue(emptyResult);
+        const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+        render(<BookForm />);
+        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN:/), { target: { value: '0000000000' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
+
+        expect(await screen.findByText(/Book not found for the given ISBN/i)).toBeInTheDocument();
+        // input should remain editable because lookupResult should not be set
+        expect(screen.getByRole('textbox', { name: /Title/ })).not.toHaveAttribute('readOnly');
+        // no "found" message should appear
+        expect(screen.queryByText(/Book found!/)).not.toBeInTheDocument();
+        expect(logSpy).toHaveBeenCalledWith(
+            'ISBN lookup returned no title, treating as miss',
+            emptyResult
+        );
+        logSpy.mockRestore();
     });
 
     // ── Series fields ─────────────────────────────────────────────────────────
@@ -331,7 +392,7 @@ describe('BookForm', () => {
         mockLookupBookByIsbn.mockResolvedValue(lookupData);
 
         render(<BookForm />);
-        fireEvent.change(screen.getByLabelText(/UPC.*ISBN:/), { target: { value: '0590629778' } });
+        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN:/), { target: { value: '0590629778' } });
         fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
 
         await waitFor(() => {
@@ -361,7 +422,7 @@ describe('BookForm', () => {
         mockLookupBookByIsbn.mockResolvedValue(lookupData);
 
         render(<BookForm />);
-        fireEvent.change(screen.getByLabelText(/UPC.*ISBN:/), { target: { value: '0590629778' } });
+        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN:/), { target: { value: '0590629778' } });
         fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
 
         await waitFor(() => {
@@ -414,37 +475,7 @@ describe('BookForm', () => {
         });
     });
 
-    it('clears ISBN field when Clear and enter manually is clicked', async () => {
-        const lookupData = {
-            title: 'The Hobbit',
-            authors: ['J.R.R. Tolkien'],
-            isbn: '9780547928227',
-            publisher: 'Houghton Mifflin',
-            publishDate: '1937',
-            pageCount: 310,
-            description: 'A fantasy novel.',
-            subjects: [],
-            coverSmall: '',
-            coverMedium: '',
-            coverLarge: '',
-            providerUrl: '',
-            seriesName: '',
-            seriesNotFound: false
-        };
-        mockLookupBookByIsbn.mockResolvedValue(lookupData);
-
-        render(<BookForm />);
-        fireEvent.change(screen.getByLabelText(/UPC.*ISBN:/), { target: { value: '9780547928227' } });
-        fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
-
-        await waitFor(() => {
-            expect(screen.getByRole('textbox', { name: /Title/ })).toHaveValue('The Hobbit');
-        });
-
-        fireEvent.click(screen.getByRole('button', { name: 'Clear and enter manually' }));
-
-        expect(screen.getByLabelText(/UPC.*ISBN:/)).toHaveValue('');
-    });
+    // test removed: clear button is gone from the UI, modal reset now covers behavior.
 
     it('pre-populates book format from lookup result', async () => {
         const lookupData = {
@@ -467,7 +498,7 @@ describe('BookForm', () => {
         mockLookupBookByIsbn.mockResolvedValue(lookupData);
 
         render(<BookForm />);
-        fireEvent.change(screen.getByLabelText(/UPC.*ISBN:/), { target: { value: '9780547928227' } });
+        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN:/), { target: { value: '9780547928227' } });
         fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
 
         await waitFor(() => {
@@ -496,7 +527,7 @@ describe('BookForm', () => {
         mockLookupBookByIsbn.mockResolvedValue(lookupData as never);
 
         render(<BookForm />);
-        fireEvent.change(screen.getByLabelText(/UPC.*ISBN:/), { target: { value: '9780547928227' } });
+        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN:/), { target: { value: '9780547928227' } });
         fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
 
         await waitFor(() => {

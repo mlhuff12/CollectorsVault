@@ -16,9 +16,9 @@ interface MovieFormProps {
     onItemAdded?: () => void;
     /** when provided, the component renders the submit button only if false */
     hideSubmit?: boolean;
-    /** optional ref forwarded to the underlying form element so a parent can trigger submit */
-    formRef?: React.Ref<HTMLFormElement>;
     hideTitle?: boolean;
+    /** Notifies parent when any field has a value (used for reset button state). */
+    onDirtyChange?: (dirty: boolean) => void;
 }
 
 /**
@@ -26,7 +26,18 @@ interface MovieFormProps {
  * On submission it calls the API and notifies the parent via `onItemAdded`.
  * A "Scan Barcode" button opens the camera to scan a UPC barcode and auto-fills the form.
  */
-const MovieForm: React.FC<MovieFormProps> = ({ onItemAdded, hideSubmit = false, formRef, hideTitle = false }) => {
+export interface MovieFormHandle {
+    requestSubmit: () => void;
+    reset: () => void;
+}
+
+const MovieForm = React.forwardRef<MovieFormHandle, MovieFormProps>(({
+    onItemAdded,
+    hideSubmit = false,
+    hideTitle = false,
+    onDirtyChange
+}, ref) => {
+    const innerFormRef = React.useRef<HTMLFormElement>(null);
     const [title, setTitle] = useState('');
     const [director, setDirector] = useState('');
     const [releaseYear, setReleaseYear] = useState('');
@@ -41,8 +52,37 @@ const MovieForm: React.FC<MovieFormProps> = ({ onItemAdded, hideSubmit = false, 
     const [toastMessage, setToastMessage] = useState('');
     const [toastType, setToastType] = useState<'success' | 'error'>('success');
 
-    // lookup input is handled by BarcodeScanLookup; we don't need local state here
+    // notify parent when form becomes non-empty
+    const computeDirty = () => {
+        return (
+            !!title ||
+            !!director ||
+            !!releaseYear ||
+            !!genre ||
+            !!description ||
+            !!coverUrl ||
+            !!rating ||
+            !!runtime ||
+            !!cast
+        );
+    };
 
+    useEffect(() => {
+        onDirtyChange?.(computeDirty());
+    }, [
+        title,
+        director,
+        releaseYear,
+        genre,
+        description,
+        coverUrl,
+        rating,
+        runtime,
+        cast,
+        onDirtyChange,
+    ]);
+
+    // lookup input is handled by BarcodeScanLookup; we don't need local state here
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -103,8 +143,26 @@ const MovieForm: React.FC<MovieFormProps> = ({ onItemAdded, hideSubmit = false, 
         }
     };
 
+    React.useImperativeHandle(ref, () => ({
+        requestSubmit: () => innerFormRef.current?.requestSubmit(),
+        reset: () => {
+            setTitle('');
+            setDirector('');
+            setReleaseYear('');
+            setGenre('');
+            setDescription('');
+            setCoverUrl('');
+            setRating('');
+            setRuntime('');
+            setCast('');
+            setError('');
+            setToastMessage('');
+            setToastType('success');
+        }
+    }));
+
     return (
-        <form onSubmit={handleSubmit} ref={formRef}>
+        <form onSubmit={handleSubmit} ref={innerFormRef}>
             {!hideTitle && (
                 <Typography variant="h5" sx={{ mb: 3 }}>
                     Add a Movie
@@ -114,7 +172,7 @@ const MovieForm: React.FC<MovieFormProps> = ({ onItemAdded, hideSubmit = false, 
 
             {/* manual UPC lookup with optional scan */}
             <BarcodeScanLookup
-                placeholder="Enter UPC"
+                label="Barcode"
                 maxLength={13}
                 onLookup={handleLookup}
             />
@@ -196,6 +254,6 @@ const MovieForm: React.FC<MovieFormProps> = ({ onItemAdded, hideSubmit = false, 
             />
         </form>
     );
-};
+});
 
 export default MovieForm;

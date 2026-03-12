@@ -14,6 +14,8 @@ interface ModalProps {
     onConfirm?: () => void;
     confirmText?: string;
     cancelText?: string;
+    /** Optional content rendered at the left side of the action row. */
+    leftActions?: React.ReactNode;
     children?: React.ReactNode;
 }
 
@@ -24,6 +26,7 @@ const Modal: React.FC<ModalProps> = ({
     onConfirm,
     confirmText = 'Create',
     cancelText = 'Cancel',
+    leftActions,
     children,
 }) => {
     const theme = useTheme();
@@ -41,6 +44,7 @@ const Modal: React.FC<ModalProps> = ({
             <DialogTitle>{title}</DialogTitle>
             <DialogContent dividers>{children}</DialogContent>
             <DialogActions>
+                {leftActions}
                 <Button onClick={onClose}>{cancelText}</Button>
                 {onConfirm && (
                     <Button onClick={onConfirm} variant="contained" color="primary">

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import ItemList from '../components/ItemList';
-import BookForm from '../components/BookForm';
-import MovieForm from '../components/MovieForm';
-import GameForm from '../components/GameForm';
+import BookForm, { BookFormHandle } from '../components/BookForm';
+import MovieForm, { MovieFormHandle } from '../components/MovieForm';
+import GameForm, { GameFormHandle } from '../components/GameForm';
 import AdminTab from '../components/AdminTab';
 import Modal from '../components/Modal';
 import BarcodeScanLookup from '../components/BarcodeScanLookup';
@@ -19,6 +19,7 @@ import {
     SpeedDial,
     SpeedDialAction,
     SpeedDialIcon,
+    Button,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import BookIcon from '@mui/icons-material/Book';
@@ -51,9 +52,15 @@ const VaultPage: React.FC = () => {
     // modal/tile state for home page
     const [modalType, setModalType] = useState<'book' | 'movie' | 'game' | 'upc' | null>(null);
     const [formKey, setFormKey] = useState(0);
-    const bookFormRef = React.useRef<HTMLFormElement>(null);
-    const movieFormRef = React.useRef<HTMLFormElement>(null);
-    const gameFormRef = React.useRef<HTMLFormElement>(null);
+    const bookFormRef = React.useRef<BookFormHandle>(null);
+    const movieFormRef = React.useRef<MovieFormHandle>(null);
+    const gameFormRef = React.useRef<GameFormHandle>(null);
+
+    // track whether each form currently contains any value so the Reset button
+    // can be enabled/disabled.  the child forms notify us via onDirtyChange.
+    const [bookDirty, setBookDirty] = useState(false);
+    const [movieDirty, setMovieDirty] = useState(false);
+    const [gameDirty, setGameDirty] = useState(false);
 
     // temporary toast messages shown in various places
     const [pageToast, setPageToast] = useState('');
@@ -241,12 +248,49 @@ const VaultPage: React.FC = () => {
                     onClose={handleModalClose}
                     onConfirm={modalType === 'upc' ? undefined : handleModalConfirm}
                     confirmText="Create"
+                    leftActions={
+                        modalType && modalType !== 'upc' ? (
+                            <Button
+                                onClick={() => {
+                                    // invoke the reset method exposed by the form via ref;
+                                    // this clears every field (including errors) without
+                                    // unmounting the component, avoiding visual flicker.
+                                    switch (modalType) {
+                                        case 'book':
+                                            bookFormRef.current?.reset();
+                                            break;
+                                        case 'movie':
+                                            movieFormRef.current?.reset();
+                                            break;
+                                        case 'game':
+                                            gameFormRef.current?.reset();
+                                            break;
+                                    }
+                                    // clear all dirty flags so button disables immediately
+                                    setBookDirty(false);
+                                    setMovieDirty(false);
+                                    setGameDirty(false);
+                                }}
+                                disabled={
+                                    !(modalType === 'book'
+                                        ? bookDirty
+                                        : modalType === 'movie'
+                                        ? movieDirty
+                                        : modalType === 'game'
+                                        ? gameDirty
+                                        : false)
+                                }
+                            >
+                                Reset
+                            </Button>
+                        ) : undefined
+                    }
                 >
                     {modalType === 'upc' ? (
                         <>
                             {/* always display manual entry; scanner appears below when active */}
                             <BarcodeScanLookup
-                                placeholder="Enter UPC"
+                                label="Barcode"
                                 onLookup={(code: string) => {
                                     alert(`Lookup: ${code}`);
                                     handleModalClose();
@@ -273,8 +317,15 @@ const VaultPage: React.FC = () => {
                                     key={formKey}
                                     hideSubmit
                                     hideTitle
-                                    formRef={ref}
+                                    ref={ref}
                                     onItemAdded={handleItemAddedAndClose}
+                                    onDirtyChange={
+                                        modalType === 'book'
+                                            ? setBookDirty
+                                            : modalType === 'movie'
+                                            ? setMovieDirty
+                                            : setGameDirty
+                                    }
                                 />
                             );
                         })()

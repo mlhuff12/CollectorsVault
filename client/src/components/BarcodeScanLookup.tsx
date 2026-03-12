@@ -8,8 +8,6 @@ import { Box, Button, ButtonProps, InputLabel, TextField, Typography, CircularPr
 interface BarcodeScanLookupProps {
     /** Optional label shown above the input. */
     label?: string;
-    /** Placeholder text for the input. */
-    placeholder: string;
     /** Maximum length for the text field; passed directly to <input>. */
     maxLength?: number;
     /** Current value of the input if the caller wants to control it. */
@@ -52,7 +50,6 @@ const LookupButton: React.FC<LookupButtonProps> = ({ loading, children, disabled
 
 const BarcodeScanLookup: React.FC<BarcodeScanLookupProps> = ({
     label,
-    placeholder,
     maxLength,
     value,
     onChange,
@@ -160,15 +157,10 @@ const BarcodeScanLookup: React.FC<BarcodeScanLookupProps> = ({
 
     return (
         <Box mb={2}>
-            {label && (
-                <InputLabel htmlFor={inputId} sx={{ mb: 1, display: 'block' }}>
-                    {label}
-                </InputLabel>
-            )}
             <Box display="flex" alignItems="center" gap={1}>
                 <TextField
+                    label={label}
                     id={inputId}
-                    placeholder={placeholder}
                     value={input}
                     inputProps={{ maxLength }}
                     onChange={(e) => {

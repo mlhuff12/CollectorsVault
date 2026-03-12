@@ -27,8 +27,12 @@ interface BookFormProps {
      */
     onItemAdded?: (title?: string) => void;
     hideSubmit?: boolean;
-    formRef?: React.Ref<HTMLFormElement>;
     hideTitle?: boolean;
+    /**
+     * Called whenever the set of non-empty fields changes.  Used by the parent
+     * to enable/disable a modal-level reset button.
+     */
+    onDirtyChange?: (dirty: boolean) => void;
 }
 
 const bookFormatByEnumValue: Record<number, BookFormat> = {
@@ -107,7 +111,19 @@ const toBookFormat = (value: unknown): BookFormat | '' => {
  *
  * On submission the form calls the API and notifies the parent via `onItemAdded`.
  */
-const BookForm: React.FC<BookFormProps> = ({ onItemAdded, hideSubmit = false, formRef, hideTitle = false }) => {
+// a handle exposed to parent components via ref
+export interface BookFormHandle {
+    requestSubmit: () => void;
+    reset: () => void;
+}
+
+const BookForm = React.forwardRef<BookFormHandle, BookFormProps>(({
+    onItemAdded,
+    hideSubmit = false,
+    hideTitle = false,
+    onDirtyChange,
+}, ref) => {
+    const innerFormRef = React.useRef<HTMLFormElement>(null);
     const [isbn, setIsbn] = useState('');
     const [lookupResult, setLookupResult] = useState<BookLookupResult | null>(null);
     const [lookupError, setLookupError] = useState('');
@@ -132,9 +148,75 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded, hideSubmit = false, fo
 
     const [errorMessage, setErrorMessage] = useState('');
     const [toastMessage, setToastMessage] = useState('');
+    const [toastType, setToastType] = useState<'success' | 'error'>('success');
 
     /** True when fields should be locked because data came from an ISBN lookup. */
     const isFromLookup = lookupResult !== null;
+
+    // keep parent informed of whether any values exist in the form; this
+    // is deliberately computed from all state fields so that lookup results
+    // count as dirty as well. the parent uses it to control the modal reset
+    // button.
+    const computeDirty = () => {
+        // any truthy field or lookup result indicates dirty
+        return (
+            !!isbn ||
+            isFromLookup ||
+            !!title ||
+            !!authors ||
+            !!publisher ||
+            !!publishDateString ||
+            !!pageCount ||
+            !!description ||
+            !!bookUrl ||
+            !!seriesName ||
+            !!seriesNumber ||
+            bookFormat !== '' ||
+            needsReplacement
+        );
+    };
+
+    React.useImperativeHandle(ref, () => ({
+        requestSubmit: () => innerFormRef.current?.requestSubmit(),
+        reset: () => {
+            // clear all state fields
+            setIsbn('');
+            setLookupResult(null);
+            setLookupError('');
+            setTitle('');
+            setAuthors('');
+            setPublisher('');
+            setPublishDateString('');
+            setPageCount('');
+            setDescription('');
+            setBookUrl('');
+            setSeriesName('');
+            setSeriesNumber('');
+            setBookFormat('');
+            setNeedsReplacement(false);
+            setErrorMessage('');
+            setToastMessage('');
+            setToastType('success');
+        }
+    }));
+    useEffect(() => {
+        onDirtyChange?.(computeDirty());
+    }, [
+        isbn,
+        isFromLookup,
+        title,
+        authors,
+        publisher,
+        publishDateString,
+        pageCount,
+        description,
+        bookUrl,
+        seriesName,
+        seriesNumber,
+        bookFormat,
+        needsReplacement,
+        onDirtyChange,
+    ]);
 
     // lookup either the current isbn state or a value provided by the caller
     const handleLookup = async (barcode?: string) => {
@@ -148,10 +230,28 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded, hideSubmit = false, fo
         setSeriesNumber('');
 
         try {
-            const result = await lookupBookByIsbn(trimmedIsbn);
-            setLookupResult(result);
-            if (result.seriesName) setSeriesName(result.seriesName);
-            if (result.seriesNumber != null) setSeriesNumber(result.seriesNumber.toString());
+            // some barcodes are 12‑digit UPC-A codes that really represent an
+        // ISBN-13 with a leading zero. the OpenLibrary service expects the
+        // 13‑digit form, so normalize before hitting the API. we still trim the
+        // input above so whitespace can't sneak in.
+        let queryIsbn = trimmedIsbn;
+        if (/^\d{12}$/.test(queryIsbn)) {
+            queryIsbn = `0${queryIsbn}`;
+        }
+
+        const result = await lookupBookByIsbn(queryIsbn);
+        // the backend returns a non-null object even when nothing can be found.
+        // treat an empty title as a failed lookup by logging and showing the
+        // regular "not found" message instead of throwing.
+        if (!result || !result.title?.trim()) {
+            console.log('ISBN lookup returned no title, treating as miss', result);
+            setLookupError('Book not found for the given ISBN. You may enter details manually.');
+            return;
+        }
+
+        setLookupResult(result);
+        if (result.seriesName) setSeriesName(result.seriesName);
+        if (result.seriesNumber != null) setSeriesNumber(result.seriesNumber.toString());
             setBookFormat(toBookFormat(result.bookFormat));
         } catch {
             setLookupError('Book not found for the given ISBN. You may enter details manually.');
@@ -272,12 +372,11 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded, hideSubmit = false, fo
                     Add a New Book
                 </Typography>
             )}
-            <form onSubmit={handleSubmit} ref={formRef}>
+            <form onSubmit={handleSubmit} ref={innerFormRef}>
                 <Box display="flex" flexDirection="column" gap={2}>
                     {/* ISBN + Lookup + Scan (reuse existing component) */}
                     <BarcodeScanLookup
-                        label="UPC / ISBN:"
-                        placeholder="Enter UPC or ISBN"
+                        label="Barcode / ISBN:"
                         maxLength={13}
                         value={isbn}
                         onChange={(v: string) => {
@@ -288,14 +387,6 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded, hideSubmit = false, fo
                         error={lookupError}
                     />
 
-                    {isFromLookup && (
-                        <Typography variant="body2" color="success.main">
-                            Book found! Fields auto-populated.{' '}
-                            <Button size="small" onClick={handleClearLookup}>
-                                Clear and enter manually
-                            </Button>
-                        </Typography>
-                    )}
 
                     {lookupResult?.coverMedium && (
                         <Box mb={2}>
@@ -323,7 +414,6 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded, hideSubmit = false, fo
                         value={displayAuthors}
                         onChange={(e) => { if (!isFromLookup) setAuthors(e.target.value); }}
                         InputProps={{ readOnly: isFromLookup }}
-                        placeholder="Author One, Author Two"
                     />
 
                     <TextField
@@ -380,7 +470,6 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded, hideSubmit = false, fo
                         fullWidth
                         value={seriesName}
                         onChange={(e) => setSeriesName(e.target.value)}
-                        placeholder="e.g. Animorphs"
                     />
 
                     <TextField
@@ -389,7 +478,6 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded, hideSubmit = false, fo
                         type="number"
                         value={seriesNumber}
                         onChange={(e) => setSeriesNumber(e.target.value)}
-                        placeholder="e.g. 1"
                         inputProps={{ min: 1 }}
                     />
 
@@ -435,6 +523,6 @@ const BookForm: React.FC<BookFormProps> = ({ onItemAdded, hideSubmit = false, fo
             />
         </div>
     );
-};
+});
 
 export default BookForm;

@@ -65,25 +65,25 @@ describe('BarcodeScanLookup', () => {
         delete (navigator as any).permissions;
     });
 
-    it('renders label if provided and always shows placeholder', () => {
+    it('renders label if provided and always shows an input field', () => {
         render(
             <BarcodeScanLookup
                 label="Test Label"
-                placeholder="Enter value"
                 onLookup={() => {}}
             />
         );
-        expect(screen.getByText('Test Label')).toBeInTheDocument();
-        expect(screen.getByPlaceholderText('Enter value')).toBeInTheDocument();
+        // label text should be associated with the textbox
+        expect(screen.getByLabelText('Test Label')).toBeInTheDocument();
+        expect(screen.getByRole('textbox')).toBeInTheDocument();
     });
 
     it('invokes onLookup with trimmed value when lookup button clicked', async () => {
         const onLookup = vi.fn().mockResolvedValue(undefined);
         // make scanner available so scan button renders
         Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
-        render(<BarcodeScanLookup placeholder="p" onLookup={onLookup} />);
+        render(<BarcodeScanLookup onLookup={onLookup} />);
 
-        const input = screen.getByPlaceholderText('p');
+        const input = screen.getByRole('textbox');
         const lookupBtn = screen.getByRole('button', { name: 'Lookup' });
         // initially shows text
         expect(lookupBtn).toHaveTextContent('Lookup');
@@ -108,21 +108,21 @@ describe('BarcodeScanLookup', () => {
 
     it('hides OR text and scan button when camera unavailable', () => {
         delete (navigator as any).mediaDevices;
-        render(<BarcodeScanLookup placeholder="foo" onLookup={() => {}} />);
+        render(<BarcodeScanLookup onLookup={() => {}} />);
         expect(screen.queryByText('OR')).not.toBeInTheDocument();
         expect(screen.queryByRole('button', { name: /Scan Barcode/ })).not.toBeInTheDocument();
     });
 
     it('shows OR text and scan button when camera available', () => {
         Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
-        render(<BarcodeScanLookup placeholder="foo" onLookup={() => {}} />);
+        render(<BarcodeScanLookup onLookup={() => {}} />);
         expect(screen.getByText('OR')).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Scan Barcode/ })).toBeInTheDocument();
     });
 
     it('opens scanner when Scan Barcode is clicked', async () => {
         Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
-        render(<BarcodeScanLookup placeholder="foo" onLookup={() => {}} />);
+        render(<BarcodeScanLookup onLookup={() => {}} />);
         const scanBtn = screen.getByRole('button', { name: /Scan Barcode/ });
         fireEvent.click(scanBtn);
         expect(await screen.findByText('Point the camera at a barcode')).toBeInTheDocument();
@@ -131,7 +131,7 @@ describe('BarcodeScanLookup', () => {
     it('shows only the generic warning when scanner fails to start', async () => {
         qrMockBehavior.startShouldReject = true;
         Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
-        render(<BarcodeScanLookup placeholder="foo" onLookup={() => {}} />);
+        render(<BarcodeScanLookup onLookup={() => {}} />);
         const scanBtn = screen.getByRole('button', { name: /Scan Barcode/ });
         await act(async () => {
             fireEvent.click(scanBtn);
@@ -150,7 +150,7 @@ describe('BarcodeScanLookup', () => {
             configurable: true,
         });
 
-        render(<BarcodeScanLookup placeholder="foo" onLookup={() => {}} />);
+        render(<BarcodeScanLookup onLookup={() => {}} />);
         const scanBtn = screen.getByRole('button', { name: /Scan Barcode/ });
         fireEvent.click(scanBtn);
         expect(await screen.findByText(/Barcode scanning is not supported/i)).toBeInTheDocument();
@@ -160,7 +160,7 @@ describe('BarcodeScanLookup', () => {
     it('skips toast on later scan attempts once unsupported', async () => {
         qrMockBehavior.startShouldReject = true;
         Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
-        render(<BarcodeScanLookup placeholder="foo" onLookup={() => {}} />);
+        render(<BarcodeScanLookup onLookup={() => {}} />);
         const scanBtn = screen.getByRole('button', { name: /Scan Barcode/ });
         await act(async () => {
             fireEvent.click(scanBtn);

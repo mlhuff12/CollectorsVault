@@ -116,23 +116,23 @@ describe('GameForm', () => {
         expect(screen.queryByText('Add a Game')).not.toBeInTheDocument();
     });
 
-    it('shows UPC lookup field and scan option when camera available', () => {
+    it('shows barcode lookup field and scan option when camera available', () => {
         Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
         render(<GameForm />);
-        const field = screen.getByPlaceholderText('Enter UPC') as HTMLInputElement;
+        const field = screen.getByRole('textbox', { name: /Barcode/ }) as HTMLInputElement;
         expect(field).toBeInTheDocument();
         expect(field.maxLength).toBe(13);
         expect(screen.getByRole('button', { name: 'Lookup' })).toBeInTheDocument();
         expect(screen.getByText('OR')).toBeInTheDocument();
         const scanBtn = screen.getByRole('button', { name: /Scan Barcode/ });
         expect(scanBtn).toBeInTheDocument();
-        // scan button should live next to the UPC input rather than with title field
+        // scan button should live next to the barcode input rather than with title field
         expect(scanBtn).toBeInTheDocument();
     });
     it('hides OR and scan option when camera unavailable', () => {
         delete (navigator as any).mediaDevices;
         render(<GameForm />);
-        const field2 = screen.getByPlaceholderText('Enter UPC') as HTMLInputElement;
+        const field2 = screen.getByRole('textbox', { name: /Barcode/ }) as HTMLInputElement;
         expect(field2).toBeInTheDocument();
         expect(field2.maxLength).toBe(13);
         expect(screen.queryByText('OR')).not.toBeInTheDocument();
@@ -182,7 +182,7 @@ describe('GameForm', () => {
 
         Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
         render(<GameForm />);
-        const input = screen.getByPlaceholderText('Enter UPC');
+        const input = screen.getByRole('textbox', { name: /Barcode/ });
         fireEvent.change(input, { target: { value: ' 7890 ' } });
         fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
 

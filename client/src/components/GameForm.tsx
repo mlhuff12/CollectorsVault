@@ -15,8 +15,9 @@ interface GameFormProps {
     /** Called after a game is successfully added, allowing the parent to refresh its list. */
     onItemAdded?: () => void;
     hideSubmit?: boolean;
-    formRef?: React.Ref<HTMLFormElement>;
     hideTitle?: boolean;
+    /** Notifies parent when any field has a value (used for reset button state). */
+    onDirtyChange?: (dirty: boolean) => void;
 }
 
 /**
@@ -24,7 +25,18 @@ interface GameFormProps {
  * On submission it calls the API and notifies the parent via `onItemAdded`.
  * A "Scan Barcode" button opens the camera to scan a UPC barcode and auto-fills the form.
  */
-const GameForm: React.FC<GameFormProps> = ({ onItemAdded, hideSubmit = false, formRef, hideTitle = false }) => {
+export interface GameFormHandle {
+    requestSubmit: () => void;
+    reset: () => void;
+}
+
+const GameForm = React.forwardRef<GameFormHandle, GameFormProps>(({
+    onItemAdded,
+    hideSubmit = false,
+    hideTitle = false,
+    onDirtyChange
+}, ref) => {
+    const innerFormRef = React.useRef<HTMLFormElement>(null);
     const [title, setTitle] = useState('');
     const [platform, setPlatform] = useState('');
     const [releaseDate, setReleaseDate] = useState('');
@@ -36,6 +48,34 @@ const GameForm: React.FC<GameFormProps> = ({ onItemAdded, hideSubmit = false, fo
     const [error, setError] = useState('');
     const [toastMessage, setToastMessage] = useState('');
     const [toastType, setToastType] = useState<'success' | 'error'>('success');
+
+    // compute dirty status and notify parent when it changes
+    const computeDirty = () => {
+        return (
+            !!title ||
+            !!platform ||
+            !!releaseDate ||
+            !!genre ||
+            !!description ||
+            !!coverUrl ||
+            !!developer ||
+            !!publisher
+        );
+    };
+
+    useEffect(() => {
+        onDirtyChange?.(computeDirty());
+    }, [
+        title,
+        platform,
+        releaseDate,
+        genre,
+        description,
+        coverUrl,
+        developer,
+        publisher,
+        onDirtyChange,
+    ]);
 
     // lookup state is handled by the child component
 
@@ -89,8 +129,25 @@ const GameForm: React.FC<GameFormProps> = ({ onItemAdded, hideSubmit = false, fo
         }
     };
 
+    React.useImperativeHandle(ref, () => ({
+        requestSubmit: () => innerFormRef.current?.requestSubmit(),
+        reset: () => {
+            setTitle('');
+            setPlatform('');
+            setReleaseDate('');
+            setGenre('');
+            setDescription('');
+            setCoverUrl('');
+            setDeveloper('');
+            setPublisher('');
+            setError('');
+            setToastMessage('');
+            setToastType('success');
+        }
+    }));
+
     return (
-        <form onSubmit={handleSubmit} ref={formRef}>
+        <form onSubmit={handleSubmit} ref={innerFormRef}>
             {!hideTitle && (
                 <Typography variant="h5" sx={{ mb: 3 }}>
                     Add a Game
@@ -99,7 +156,7 @@ const GameForm: React.FC<GameFormProps> = ({ onItemAdded, hideSubmit = false, fo
             {error && <Typography color="error">{error}</Typography>}
             {/* UPC lookup / scan section */}
             <BarcodeScanLookup
-                placeholder="Enter UPC"
+                label="Barcode"
                 maxLength={13}
                 onLookup={handleLookup}
             />
@@ -169,6 +226,6 @@ const GameForm: React.FC<GameFormProps> = ({ onItemAdded, hideSubmit = false, fo
             />
         </form>
     );
-};
+});
 
 export default GameForm;

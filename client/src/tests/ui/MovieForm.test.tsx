@@ -123,23 +123,24 @@ describe('MovieForm', () => {
         expect(screen.queryByText('Add a Movie')).not.toBeInTheDocument();
     });
 
-    it('shows UPC lookup field and scan option when camera available', () => {
+    it('shows barcode lookup field and scan option when camera available', () => {
         Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
         render(<MovieForm />);
-        expect(screen.getByPlaceholderText('Enter UPC')).toBeInTheDocument();
+        const field = screen.getByRole('textbox', { name: /Barcode/ });
+        expect(field).toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Lookup' })).toBeInTheDocument();
         expect(screen.getByText('OR')).toBeInTheDocument();
         const scanBtn = screen.getByRole('button', { name: /Scan Barcode/ });
         expect(scanBtn).toBeInTheDocument();
         // scan button should not live in the same container as the title input
-        // the scan button should live next to the UPC input, not with the title field
         expect(scanBtn).toBeInTheDocument();
     });
 
     it('hides OR and scan option when camera unavailable', () => {
         delete (navigator as any).mediaDevices;
         render(<MovieForm />);
-        expect(screen.getByPlaceholderText('Enter UPC')).toBeInTheDocument();
+        const field = screen.getByRole('textbox', { name: /Barcode/ });
+        expect(field).toBeInTheDocument();
         expect(screen.queryByText('OR')).not.toBeInTheDocument();
         expect(screen.queryByRole('button', { name: /Scan Barcode/ })).not.toBeInTheDocument();
     });
@@ -188,7 +189,7 @@ describe('MovieForm', () => {
 
         Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
         render(<MovieForm />);
-        const input = screen.getByPlaceholderText('Enter UPC');
+        const input = screen.getByRole('textbox', { name: /Barcode/ });
         fireEvent.change(input, { target: { value: '  12345  ' } });
         fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
 

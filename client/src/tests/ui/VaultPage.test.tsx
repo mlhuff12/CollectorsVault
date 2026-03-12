@@ -218,6 +218,51 @@ describe('VaultPage', () => {
         expect(alert.className).toMatch(/MuiAlert-standardSuccess/);
     });
 
+    it('shows a reset button in the book modal that clears fields', async () => {
+        renderVaultPage('/');
+        const dial = screen.getByLabelText(/home actions/i);
+        fireEvent.click(dial);
+        fireEvent.click(screen.getByLabelText('Add Book'));
+        const dialog = screen.getByRole('dialog');
+        expect(dialog).toBeInTheDocument();
+
+        // reset button should exist and start disabled
+        const resetBtn = screen.getByRole('button', { name: 'Reset' });
+        expect(resetBtn).toBeInTheDocument();
+        expect(resetBtn).toBeDisabled();
+
+        // enter a title to make it dirty
+        fireEvent.change(screen.getByRole('textbox', { name: /Title/ }), { target: { value: 'Foo' } });
+        expect(resetBtn).toBeEnabled();
+
+        // click reset and verify inputs cleared and button disabled again
+        fireEvent.click(resetBtn);
+        expect(screen.getByRole('textbox', { name: /Title/ })).toHaveValue('');
+        expect(screen.getByRole('textbox', { name: /Authors/ })).toHaveValue('');
+        expect(resetBtn).toBeDisabled();
+    });
+
+    it('shows a reset button in the movie modal and clears fields', async () => {
+        renderVaultPage('/');
+        const dial = screen.getByLabelText(/home actions/i);
+        fireEvent.click(dial);
+        fireEvent.click(screen.getByLabelText('Add Movie'));
+        const dialog = screen.getByRole('dialog');
+        expect(dialog).toBeInTheDocument();
+
+        const resetBtn = screen.getByRole('button', { name: 'Reset' });
+        expect(resetBtn).toBeInTheDocument();
+        expect(resetBtn).toBeDisabled();
+
+        fireEvent.change(screen.getByRole('textbox', { name: /Title/ }), { target: { value: 'Bar' } });
+        expect(resetBtn).toBeEnabled();
+
+        fireEvent.click(resetBtn);
+        expect(screen.getByRole('textbox', { name: /Title/ })).toHaveValue('');
+        expect(screen.getByRole('textbox', { name: /Director/ })).toHaveValue('');
+        expect(resetBtn).toBeDisabled();
+    });
+
     it('shows manual UPC entry and scan button when camera is available, and keeping input visible after opening scanner', async () => {
         // ensure mediaDevices is present before rendering
         Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
@@ -226,7 +271,7 @@ describe('VaultPage', () => {
         fireEvent.click(screen.getByLabelText('Scan barcode'));
         await waitFor(() => screen.getByRole('dialog'));
 
-        const input = screen.getByPlaceholderText('Enter UPC');
+        const input = screen.getByRole('textbox', { name: /Barcode/ });
         expect(input).toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Lookup' })).toBeInTheDocument();
         expect(screen.getByText('OR')).toBeInTheDocument();
@@ -237,7 +282,7 @@ describe('VaultPage', () => {
         await act(async () => {
             fireEvent.click(scanBtn);
         });
-        expect(screen.getByPlaceholderText('Enter UPC')).toBeInTheDocument();
+        expect(screen.getByRole('textbox', { name: /Barcode/ })).toBeInTheDocument();
     });
 
     it('calls lookup callback and closes modal when Lookup pressed', async () => {
@@ -249,7 +294,7 @@ describe('VaultPage', () => {
         // header scan icon replaces home tile
         fireEvent.click(screen.getByLabelText('Scan barcode'));
         await waitFor(() => screen.getByRole('dialog'));
-        fireEvent.change(screen.getByPlaceholderText('Enter UPC'), { target: { value: '555' } });
+        fireEvent.change(screen.getByRole('textbox', { name: /Barcode/ }), { target: { value: '555' } });
         fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
 
         await waitFor(() => {
@@ -308,7 +353,7 @@ describe('VaultPage', () => {
         fireEvent.click(screen.getByLabelText('Scan barcode'));
         await waitFor(() => screen.getByRole('dialog'));
 
-        expect(screen.getByPlaceholderText('Enter UPC')).toBeInTheDocument();
+        expect(screen.getByRole('textbox', { name: /Barcode/ })).toBeInTheDocument();
         expect(screen.queryByText('OR')).not.toBeInTheDocument();
         expect(screen.queryByRole('button', { name: /Scan Barcode/ })).not.toBeInTheDocument();
     });
@@ -407,21 +452,21 @@ describe('VaultPage', () => {
     it('books route has no form or lookup controls', async () => {
         renderVaultPage('/books');
         expect(await screen.findByRole('heading', { name: 'Books' })).toBeInTheDocument();
-        expect(screen.queryByPlaceholderText(/Enter UPC/)).not.toBeInTheDocument();
+        expect(screen.queryByRole('textbox', { name: /Barcode/ })).not.toBeInTheDocument();
         expect(screen.queryByRole('form')).not.toBeInTheDocument();
     });
 
     it('movies route has no form or lookup controls', async () => {
         renderVaultPage('/movies');
         expect(await screen.findByRole('heading', { name: 'Movies' })).toBeInTheDocument();
-        expect(screen.queryByPlaceholderText(/Enter UPC/)).not.toBeInTheDocument();
+        expect(screen.queryByRole('textbox', { name: /Barcode/ })).not.toBeInTheDocument();
         expect(screen.queryByRole('form')).not.toBeInTheDocument();
     });
 
     it('games route has no form or lookup controls', async () => {
         renderVaultPage('/games');
         expect(await screen.findByRole('heading', { name: 'Games' })).toBeInTheDocument();
-        expect(screen.queryByPlaceholderText(/Enter UPC/)).not.toBeInTheDocument();
+        expect(screen.queryByRole('textbox', { name: /Barcode/ })).not.toBeInTheDocument();
         expect(screen.queryByRole('form')).not.toBeInTheDocument();
     });
 
