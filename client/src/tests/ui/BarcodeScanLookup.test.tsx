@@ -78,12 +78,28 @@ describe('BarcodeScanLookup', () => {
     });
 
     it('invokes onLookup with trimmed value when lookup button clicked', async () => {
-        const onLookup = vi.fn();
+        const onLookup = vi.fn().mockResolvedValue(undefined);
+        // make scanner available so scan button renders
+        Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
         render(<BarcodeScanLookup placeholder="p" onLookup={onLookup} />);
 
         const input = screen.getByPlaceholderText('p');
+        const lookupBtn = screen.getByRole('button', { name: 'Lookup' });
+        // initially shows text
+        expect(lookupBtn).toHaveTextContent('Lookup');
+
         fireEvent.change(input, { target: { value: '  abc123  ' } });
-        fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
+        fireEvent.click(lookupBtn);
+
+        // text should disappear once loading begins
+        expect(lookupBtn).toHaveTextContent('');
+
+        // scan button should also be disabled while loading
+        const scanBtn = screen.getByRole('button', { name: 'Scan Barcode' });
+        expect(scanBtn).toBeDisabled();
+
+        // lookup button should show spinner while loading
+        expect(lookupBtn).toContainElement(screen.getByRole('progressbar'));
 
         await waitFor(() => {
             expect(onLookup).toHaveBeenCalledWith('abc123');

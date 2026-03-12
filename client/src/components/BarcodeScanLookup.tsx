@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useId } from 'react';
 import BarcodeScanner from './BarcodeScanner';
 import Toast from './Toast';
-import { Box, Button, InputLabel, TextField, Typography } from '@mui/material';
+import BarcodeIcon from 'mdi-material-ui/Barcode';
+import { Box, Button, ButtonProps, InputLabel, TextField, Typography, CircularProgress } from '@mui/material';
 
 /** Props accepted by {@link BarcodeScanLookup}. */
 interface BarcodeScanLookupProps {
@@ -35,6 +36,19 @@ interface BarcodeScanLookupProps {
  */
 // module-level flag tracks whether we've already determined scanning doesn't work
 let scanUnsupportedPermanently = false;
+
+
+// tiny wrapper that mimics MUI's LoadingButton API without pulling in @mui/lab
+interface LookupButtonProps extends ButtonProps {
+    loading?: boolean;
+}
+
+const LookupButton: React.FC<LookupButtonProps> = ({ loading, children, disabled, ...rest }) => (
+    <Button {...rest} disabled={disabled || !!loading}>
+        {!loading && children}
+        {loading && <CircularProgress size={16} sx={{ ml: 1 }} />}
+    </Button>
+);
 
 const BarcodeScanLookup: React.FC<BarcodeScanLookupProps> = ({
     label,
@@ -164,26 +178,30 @@ const BarcodeScanLookup: React.FC<BarcodeScanLookupProps> = ({
                     fullWidth
                     size="small"
                 />
-                <Button
-                    variant="outlined"
+                <LookupButton
+                    size="small"
+                    variant="contained"
                     onClick={handleManualLookup}
+                    loading={scanLoading}
                     disabled={!input.trim() || scanLoading}
                 >
-                    {scanLoading ? 'Looking up…' : 'Lookup'}
-                </Button>
+                    {scanLoading ? '' : 'Lookup'}
+                </LookupButton>
                 {canScan && (
                     <>
                         <Typography variant="body2">OR</Typography>
                         <Button
-                            variant="outlined"
                             size="small"
+                            variant="contained"
                             onClick={() => {
                                 setScanError('');
                                 attemptScan();
                             }}
                             disabled={scanLoading}
+                            aria-label="Scan Barcode"
+                            sx={{ minWidth: 'auto', p: 1 }}
                         >
-                            {scanLoading ? 'Looking up…' : '📷 Scan Barcode'}
+                            <BarcodeIcon />
                         </Button>
                     </>
                 )}
