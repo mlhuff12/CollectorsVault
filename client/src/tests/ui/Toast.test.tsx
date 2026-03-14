@@ -68,7 +68,7 @@ describe('Toast', () => {
         const alert = screen.getByRole('alert');
         expect(alert).toBeInTheDocument();
         // MUI alert adds a classname indicating severity
-        expect(alert.className).toMatch(/MuiAlert-standardSuccess/);
+        expect(alert.className).toMatch(/MuiAlert-filledSuccess/);
     });
 
     it('renders an error alert when type="error"', () => {
@@ -76,7 +76,7 @@ describe('Toast', () => {
         render(<Toast message="Oops" type="error" onDismiss={onDismiss} />);
 
         const alert = screen.getByRole('alert');
-        expect(alert.className).toMatch(/MuiAlert-standardError/);
+        expect(alert.className).toMatch(/MuiAlert-filledError/);
     });
 
     it('renders a warning alert when type="warning"', () => {
@@ -84,6 +84,6 @@ describe('Toast', () => {
         render(<Toast message="Watch out" type="warning" onDismiss={onDismiss} />);
 
         const alert = screen.getByRole('alert');
-        expect(alert.className).toMatch(/MuiAlert-standardWarning/);
+        expect(alert.className).toMatch(/MuiAlert-filledWarning/);
     });
 });

@@ -43,7 +43,15 @@ const Toast: React.FC<ToastProps> = ({ message, type = 'success', duration = 500
             onClose={handleClose}
             anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
         >
-            <Alert onClose={handleClose} severity={type} sx={{ width: '100%' }}>
+            <Alert
+                onClose={handleClose}
+                severity={type}
+                variant="filled"
+                sx={{
+                    width: '100%',
+                    boxShadow: theme => theme.shadows[6],
+                }}
+            >
                 {message}
             </Alert>
         </Snackbar>

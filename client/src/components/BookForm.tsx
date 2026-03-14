@@ -251,7 +251,16 @@ const BookForm = React.forwardRef<BookFormHandle, BookFormProps>(({
                 return;
             }
 
+            // Keep the normalized ISBN so that adds use a stable 13-digit value.
+            setIsbn(queryIsbn);
             setLookupResult(result);
+            setTitle(result.title);
+            setAuthors(result.authors.join(', '));
+            setPublisher(result.publisher ?? '');
+            setPublishDateString(result.publishDate ?? '');
+            setPageCount(result.pageCount?.toString() ?? '');
+            setDescription(result.description ?? '');
+            setBookUrl(result.providerUrl ?? '');
             if (result.seriesName) setSeriesName(result.seriesName);
             if (result.seriesNumber != null) setSeriesNumber(result.seriesNumber.toString());
             setBookFormat(toBookFormat(result.bookFormat));
@@ -285,53 +294,38 @@ const BookForm = React.forwardRef<BookFormHandle, BookFormProps>(({
         e.preventDefault();
         setErrorMessage('');
 
-        let newBook: Book;
-        if (lookupResult) {
-            newBook = {
-                title: lookupResult.title,
-                authors: lookupResult.authors,
-                isbn: lookupResult.isbn || isbn.trim() || undefined,
-                publisher: lookupResult.publisher || undefined,
-                publishDateString: lookupResult.publishDate || undefined,
-                pageCount: lookupResult.pageCount,
-                description: lookupResult.description || undefined,
-                subjects: lookupResult.subjects.length > 0 ? lookupResult.subjects.map(s => s.key) : undefined,
-                coverSmall: lookupResult.coverSmall || undefined,
-                coverMedium: lookupResult.coverMedium || undefined,
-                coverLarge: lookupResult.coverLarge || undefined,
-                bookUrl: lookupResult.providerUrl || undefined,
-                seriesName: seriesName.trim() || undefined,
-                seriesNumber: seriesNumber.trim() ? parseInt(seriesNumber, 10) : undefined,
-                bookFormat: bookFormat || undefined,
-                needsReplacement: needsReplacement
-            };
-        } else {
-            const parsedAuthors = authors
-                .split(',')
-                .map((a) => a.trim())
-                .filter((a) => a.length > 0);
+        const parsedAuthors = authors
+            .split(',')
+            .map((a) => a.trim())
+            .filter((a) => a.length > 0);
 
-            if (parsedAuthors.length === 0) {
-                setErrorMessage('Please add at least one author.');
-                return;
-            }
-
-            newBook = {
-                title,
-                authors: parsedAuthors,
-                isbn: isbn.trim() || undefined,
-                publisher: publisher.trim() || undefined,
-                publishDateString: publishDateString.trim() || undefined,
-                pageCount: pageCount.trim() ? parseInt(pageCount, 10) : undefined,
-                description: description.trim() || undefined,
-                bookUrl: bookUrl.trim() || undefined,
-                seriesName: seriesName.trim() || undefined,
-                seriesNumber: seriesNumber.trim() ? parseInt(seriesNumber, 10) : undefined,
-                bookFormat: bookFormat || undefined,
-                needsReplacement: needsReplacement
-            };
+        if (parsedAuthors.length === 0) {
+            setErrorMessage('Please add at least one author.');
+            return;
         }
 
+        const subjects = lookupResult?.subjects?.length
+            ? lookupResult.subjects.map((s) => s.key)
+            : undefined;
+
+        const newBook: Book = {
+            title: title.trim(),
+            authors: parsedAuthors,
+            isbn: isbn.trim() || undefined,
+            publisher: publisher.trim() || undefined,
+            publishDateString: publishDateString.trim() || undefined,
+            pageCount: pageCount.trim() ? parseInt(pageCount, 10) : undefined,
+            description: description.trim() || undefined,
+            subjects,
+            coverSmall: lookupResult?.coverSmall || undefined,
+            coverMedium: lookupResult?.coverMedium || undefined,
+            coverLarge: lookupResult?.coverLarge || undefined,
+            bookUrl: bookUrl.trim() || undefined,
+            seriesName: seriesName.trim() || undefined,
+            seriesNumber: seriesNumber.trim() ? parseInt(seriesNumber, 10) : undefined,
+            bookFormat: bookFormat || undefined,
+            needsReplacement: needsReplacement
+        };
         try {
             await addBook(newBook);
             setIsbn('');
@@ -352,22 +346,13 @@ const BookForm = React.forwardRef<BookFormHandle, BookFormProps>(({
             // modal case) can show a more descriptive message.  The toast type is
             // always `success` which yields the green background the design
             // requires.
-            const toastText = `The book ${displayTitle} has successfully been created.`;
+            const toastText = `The book ${title} has successfully been created.`;
             setToastMessage(toastText);
-            onItemAdded?.(displayTitle);
+            onItemAdded?.(title);
         } catch {
             setErrorMessage('Failed to add book. Please try again.');
         }
     };
-
-    // Resolved display values (from lookup or manual entry)
-    const displayTitle = lookupResult ? lookupResult.title : title;
-    const displayAuthors = lookupResult ? lookupResult.authors.join(', ') : authors;
-    const displayPublisher = lookupResult ? lookupResult.publisher : publisher;
-    const displayPublishDate = lookupResult ? lookupResult.publishDate : publishDateString;
-    const displayPageCount = lookupResult ? (lookupResult.pageCount?.toString() ?? '') : pageCount;
-    const displayDescription = lookupResult ? lookupResult.description : description;
-    const displayBookUrl = lookupResult ? lookupResult.providerUrl : bookUrl;
 
     return (
         <div>
@@ -380,7 +365,7 @@ const BookForm = React.forwardRef<BookFormHandle, BookFormProps>(({
                 <Box display="flex" flexDirection="column" gap={2}>
                     {/* ISBN + Lookup + Scan (reuse existing component) */}
                     <BarcodeScanLookup
-                        label="Barcode / ISBN:"
+                        label="Barcode / ISBN (optional):"
                         maxLength={13}
                         value={isbn}
                         onChange={(v: string) => {
@@ -406,61 +391,54 @@ const BookForm = React.forwardRef<BookFormHandle, BookFormProps>(({
                         label="Title:"
                         fullWidth
                         required
-                        value={displayTitle}
-                        onChange={(e) => { if (!isFromLookup) setTitle(e.target.value); }}
-                        InputProps={{ readOnly: isFromLookup }}
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
                     />
 
                     <TextField
                         label="Authors (comma-separated):"
                         fullWidth
-                        required={!isFromLookup}
-                        value={displayAuthors}
-                        onChange={(e) => { if (!isFromLookup) setAuthors(e.target.value); }}
-                        InputProps={{ readOnly: isFromLookup }}
+                        required
+                        value={authors}
+                        onChange={(e) => setAuthors(e.target.value)}
                     />
 
                     <TextField
-                        label="Publisher:"
+                        label="Publisher (optional):"
                         fullWidth
-                        value={displayPublisher}
-                        onChange={(e) => { if (!isFromLookup) setPublisher(e.target.value); }}
-                        InputProps={{ readOnly: isFromLookup }}
+                        value={publisher}
+                        onChange={(e) => setPublisher(e.target.value)}
                     />
 
                     <TextField
-                        label="Publish Date:"
+                        label="Publish Date (optional):"
                         fullWidth
-                        value={displayPublishDate}
-                        onChange={(e) => { if (!isFromLookup) setPublishDateString(e.target.value); }}
-                        InputProps={{ readOnly: isFromLookup }}
+                        value={publishDateString}
+                        onChange={(e) => setPublishDateString(e.target.value)}
                     />
 
                     <TextField
-                        label="Page Count:"
+                        label="Page Count (optional):"
                         type="number"
                         fullWidth
-                        value={displayPageCount}
-                        onChange={(e) => { if (!isFromLookup) setPageCount(e.target.value); }}
-                        InputProps={{ readOnly: isFromLookup }}
+                        value={pageCount}
+                        onChange={(e) => setPageCount(e.target.value)}
                     />
 
                     <TextField
-                        label="Description:"
+                        label="Description (optional):"
                         fullWidth
                         multiline
                         rows={3}
-                        value={displayDescription}
-                        onChange={(e) => { if (!isFromLookup) setDescription(e.target.value); }}
-                        InputProps={{ readOnly: isFromLookup }}
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
                     />
 
                     <TextField
-                        label="Book URL:"
+                        label="Book URL (optional):"
                         fullWidth
-                        value={displayBookUrl}
-                        onChange={(e) => { if (!isFromLookup) setBookUrl(e.target.value); }}
-                        InputProps={{ readOnly: isFromLookup }}
+                        value={bookUrl}
+                        onChange={(e) => setBookUrl(e.target.value)}
                     />
 
                     {lookupResult?.seriesNotFound && (
@@ -515,7 +493,16 @@ const BookForm = React.forwardRef<BookFormHandle, BookFormProps>(({
                         label="Needs Replacement"
                     />
 
-                    {!hideSubmit && <Button variant="contained" color="primary" type="submit">Add Book</Button>}
+                    {!hideSubmit && (
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            type="submit"
+                            disabled={!title.trim() || !authors.trim() || isLooking}
+                        >
+                            Add Book
+                        </Button>
+                    )}
 
                     {errorMessage && <Typography color="error">{errorMessage}</Typography>}
                 </Box>

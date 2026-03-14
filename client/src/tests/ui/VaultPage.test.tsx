@@ -215,7 +215,7 @@ describe('VaultPage', () => {
         // hard-coded string to avoid fragile expectations.
         expect(alert).toHaveTextContent(/The book Test Title has successfully been created\./i);
         // toast severity rendered via MUI Alert class
-        expect(alert.className).toMatch(/MuiAlert-standardSuccess/);
+        expect(alert.className).toMatch(/MuiAlert-filledSuccess/);
     });
 
     it('shows a reset button in the book modal that clears fields', async () => {

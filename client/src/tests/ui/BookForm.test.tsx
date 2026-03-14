@@ -81,7 +81,7 @@ describe('BookForm', () => {
 
         render(<BookForm onItemAdded={onItemAdded} />);
 
-        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN:/), { target: { value: '9780441172719' } });
+        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN/), { target: { value: '9780441172719' } });
         fireEvent.change(screen.getByRole('textbox', { name: /Title/ }), { target: { value: 'Dune' } });
         fireEvent.change(screen.getByRole('textbox', { name: /Authors/ }), {
             target: { value: ' Frank Herbert,  Brian Herbert ' }
@@ -105,7 +105,20 @@ describe('BookForm', () => {
         const alert = await screen.findByRole('alert');
         expect(alert).toHaveTextContent('The book Dune has successfully been created.');
         // with new MUI toast we just assert the severity class from Alert
-        expect(alert.className).toMatch(/MuiAlert-standardSuccess/);
+        expect(alert.className).toMatch(/MuiAlert-filledSuccess/);
+    });
+
+    it('disables Create until required fields are filled', () => {
+        render(<BookForm />);
+
+        const createBtn = screen.getByRole('button', { name: 'Add Book' });
+        expect(createBtn).toBeDisabled();
+
+        fireEvent.change(screen.getByRole('textbox', { name: /Title/ }), { target: { value: 'Dune' } });
+        expect(createBtn).toBeDisabled();
+
+        fireEvent.change(screen.getByRole('textbox', { name: /Authors/ }), { target: { value: 'Frank Herbert' } });
+        expect(createBtn).toBeEnabled();
     });
 
     it('shows validation when no author names provided (manual entry)', async () => {
@@ -127,11 +140,11 @@ describe('BookForm', () => {
 
         expect(screen.getByRole('textbox', { name: /Title/ })).not.toHaveAttribute('readOnly');
         expect(screen.getByRole('textbox', { name: /Authors/ })).not.toHaveAttribute('readOnly');
-        expect(screen.getByLabelText('Publisher:')).not.toHaveAttribute('readOnly');
-        expect(screen.getByLabelText('Publish Date:')).not.toHaveAttribute('readOnly');
-        expect(screen.getByLabelText('Page Count:')).not.toHaveAttribute('readOnly');
-        expect(screen.getByLabelText('Description:')).not.toHaveAttribute('readOnly');
-        expect(screen.getByLabelText('Book URL:')).not.toHaveAttribute('readOnly');
+        expect(screen.getByLabelText('Publisher (optional):')).not.toHaveAttribute('readOnly');
+        expect(screen.getByLabelText('Publish Date (optional):')).not.toHaveAttribute('readOnly');
+        expect(screen.getByLabelText('Page Count (optional):')).not.toHaveAttribute('readOnly');
+        expect(screen.getByLabelText('Description (optional):')).not.toHaveAttribute('readOnly');
+        expect(screen.getByLabelText('Book URL (optional):')).not.toHaveAttribute('readOnly');
     });
 
     // ── Lookup button ─────────────────────────────────────────────────────────
@@ -142,7 +155,7 @@ describe('BookForm', () => {
         expect(field).toBeInTheDocument();
         expect(field.maxLength).toBe(13);
         expect(screen.getByRole('button', { name: 'Lookup' })).toBeInTheDocument();
-        expect(screen.getByLabelText('Barcode / ISBN:')).toBeInTheDocument();
+        expect(screen.getByLabelText('Barcode / ISBN (optional):')).toBeInTheDocument();
     });
 
     it('renders the Scan Barcode button next to the barcode field', () => {
@@ -210,16 +223,19 @@ describe('BookForm', () => {
 
         render(<BookForm />);
 
-        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN:/), { target: { value: '9780547928227' } });
-        fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
+        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN/), { target: { value: '9780547928227' } });
 
-        // while lookup is in flight, both lookup and scan buttons should be disabled
-        const allBtns = screen.getAllByRole('button');
-        const disabledBtns = allBtns.filter(b => b.hasAttribute('disabled'));
-        expect(disabledBtns.length).toBeGreaterThanOrEqual(1);
-        disabledBtns.forEach(btn => {
-            expect(btn).toContainElement(screen.getByRole('progressbar'));
-        });
+        const lookupBtn = screen.getAllByRole('button').find((btn) =>
+            btn.textContent?.trim().toLowerCase() === 'lookup'
+        );
+        if (!lookupBtn) {
+            throw new Error('Lookup button not found');
+        }
+        fireEvent.click(lookupBtn);
+
+        // while lookup is in flight, the lookup button should show a spinner
+        expect(lookupBtn).toBeDisabled();
+        expect(lookupBtn).toContainElement(screen.getByRole('progressbar'));
 
         await waitFor(() => {
             expect(mockLookupBookByIsbn).toHaveBeenCalledWith('9780547928227');
@@ -229,7 +245,7 @@ describe('BookForm', () => {
     it('prefixes a leading 0 for 12-digit UPC values when searching', async () => {
         mockLookupBookByIsbn.mockResolvedValue({ title: 'Dummy', isbn: '0123456789012', authors: [] });
         render(<BookForm />);
-        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN:/), { target: { value: '123456789012' } });
+        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN/), { target: { value: '123456789012' } });
         fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
         await waitFor(() => {
             expect(mockLookupBookByIsbn).toHaveBeenCalledWith('0123456789012');
@@ -260,7 +276,7 @@ describe('BookForm', () => {
         mockLookupBookByIsbn.mockResolvedValue(lookupData);
 
         render(<BookForm />);
-        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN:/), { target: { value: '9780547928227' } });
+        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN/), { target: { value: '9780547928227' } });
         fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
 
         // fields should show the data once lookup completes
@@ -268,17 +284,17 @@ describe('BookForm', () => {
             expect(screen.getByRole('textbox', { name: /Title/ })).toHaveValue('The Hobbit');
         });
         expect(screen.getByRole('textbox', { name: /Authors/ })).toHaveValue('J.R.R. Tolkien');
-        expect(screen.getByLabelText('Publisher:')).toHaveValue('Houghton Mifflin');
-        expect(screen.getByLabelText('Publish Date:')).toHaveValue('1937');
+        expect(screen.getByLabelText('Publisher (optional):')).toHaveValue('Houghton Mifflin');
+        expect(screen.getByLabelText('Publish Date (optional):')).toHaveValue('1937');
         // Page count is rendered as a numeric input, which yields a number value
-        expect(screen.getByLabelText('Page Count:')).toHaveValue(310);
-        expect(screen.getByLabelText('Description:')).toHaveValue('A fantasy novel.');
-        expect(screen.getByLabelText('Book URL:')).toHaveValue('https://openlibrary.org/books/OL123');
+        expect(screen.getByLabelText('Page Count (optional):')).toHaveValue(310);
+        expect(screen.getByLabelText('Description (optional):')).toHaveValue('A fantasy novel.');
+        expect(screen.getByLabelText('Book URL (optional):')).toHaveValue('https://openlibrary.org/books/OL123');
         // cover image should be rendered with medium url
         expect(screen.getByAltText(/Cover for The Hobbit/)).toHaveAttribute('src', lookupData.coverMedium);
     });
 
-    it('marks fields as read-only after a successful ISBN lookup', async () => {
+    it('allows editing fields after a successful ISBN lookup', async () => {
         const lookupData2 = {
             title: 'The Hobbit',
             authors: ['J.R.R. Tolkien'],
@@ -298,18 +314,20 @@ describe('BookForm', () => {
         mockLookupBookByIsbn.mockResolvedValue(lookupData2);
 
         render(<BookForm />);
-        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN:/), { target: { value: '9780547928227' } });
+        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN/), { target: { value: '9780547928227' } });
         fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
 
-        await waitFor(() => {
-            expect(screen.getByRole('textbox', { name: /Title/ })).toHaveAttribute('readOnly');
-        });
-        expect(screen.getByRole('textbox', { name: /Authors/ })).toHaveAttribute('readOnly');
-        expect(screen.getByLabelText('Publisher:')).toHaveAttribute('readOnly');
-        expect(screen.getByLabelText('Publish Date:')).toHaveAttribute('readOnly');
-        expect(screen.getByLabelText('Page Count:')).toHaveAttribute('readOnly');
-        expect(screen.getByLabelText('Description:')).toHaveAttribute('readOnly');
-        expect(screen.getByLabelText('Book URL:')).toHaveAttribute('readOnly');
+        // The lookup should populate the form fields, and users should still be able to edit them.
+        const titleField = await screen.findByRole('textbox', { name: /Title/ });
+        expect(titleField).toHaveValue('The Hobbit');
+        expect(titleField).not.toHaveAttribute('readOnly');
+
+        fireEvent.change(titleField, { target: { value: 'The Hobbit (Edited)' } });
+        expect(titleField).toHaveValue('The Hobbit (Edited)');
+
+        const authorsField = screen.getByRole('textbox', { name: /Authors/ });
+        expect(authorsField).toHaveValue('J.R.R. Tolkien');
+        expect(authorsField).not.toHaveAttribute('readOnly');
     });
 
     // ── Lookup error ──────────────────────────────────────────────────────────
@@ -318,7 +336,7 @@ describe('BookForm', () => {
         mockLookupBookByIsbn.mockRejectedValue(new Error('Not found'));
 
         render(<BookForm />);
-        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN:/), { target: { value: '0000000000' } });
+        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN/), { target: { value: '0000000000' } });
         fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
 
         // badge should render and show tooltip with the error
@@ -352,7 +370,7 @@ describe('BookForm', () => {
         const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
         render(<BookForm />);
-        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN:/), { target: { value: '0000000000' } });
+        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN/), { target: { value: '0000000000' } });
         fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
 
         // badge should render and show tooltip with the error
@@ -400,7 +418,7 @@ describe('BookForm', () => {
         mockLookupBookByIsbn.mockResolvedValue(lookupData);
 
         render(<BookForm />);
-        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN:/), { target: { value: '0590629778' } });
+        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN/), { target: { value: '0590629778' } });
         fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
 
         await waitFor(() => {
@@ -430,7 +448,7 @@ describe('BookForm', () => {
         mockLookupBookByIsbn.mockResolvedValue(lookupData);
 
         render(<BookForm />);
-        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN:/), { target: { value: '0590629778' } });
+        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN/), { target: { value: '0590629778' } });
         fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
 
         await waitFor(() => {
@@ -506,7 +524,7 @@ describe('BookForm', () => {
         mockLookupBookByIsbn.mockResolvedValue(lookupData);
 
         render(<BookForm />);
-        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN:/), { target: { value: '9780547928227' } });
+        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN/), { target: { value: '9780547928227' } });
         fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
 
         await waitFor(() => {
@@ -535,7 +553,7 @@ describe('BookForm', () => {
         mockLookupBookByIsbn.mockResolvedValue(lookupData as never);
 
         render(<BookForm />);
-        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN:/), { target: { value: '9780547928227' } });
+        fireEvent.change(screen.getByLabelText(/Barcode.*ISBN/), { target: { value: '9780547928227' } });
         fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
 
         await waitFor(() => {
