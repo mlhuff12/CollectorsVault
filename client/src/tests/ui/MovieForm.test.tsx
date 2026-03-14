@@ -111,7 +111,10 @@ describe('MovieForm', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Add Movie' }));
 
         // wait for the error message to appear after async rejection
-        expect(await screen.findByText('Failed to add movie')).toBeInTheDocument();
+        await waitFor(() => {
+            const matches = screen.getAllByText(/Failed to add movie/);
+            expect(matches.length).toBeGreaterThan(0);
+        });
     });
 
     it('does not render submit button when hideSubmit prop provided', () => {
@@ -196,6 +199,21 @@ describe('MovieForm', () => {
         await waitFor(() => {
             expect(mockLookup).toHaveBeenCalledWith('12345');
         });
+    });
+
+    it('renders warning badge when lookup fails', async () => {
+        const mockLookup = api.lookupMovieByUpc as jest.MockedFunction<typeof api.lookupMovieByUpc>;
+        mockLookup.mockRejectedValue(new Error('none'));
+
+        render(<MovieForm />);
+        const input = screen.getByRole('textbox', { name: /Barcode/ });
+        fireEvent.change(input, { target: { value: '555' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
+
+        // badge should render and show tooltip with the error
+        const badgeIcon = await screen.findByTestId('lookup-error-badge');
+        fireEvent.mouseOver(badgeIcon);
+        expect(await screen.findByRole('tooltip')).toHaveTextContent(/Movie not found for barcode 555/i);
     });
 
 });

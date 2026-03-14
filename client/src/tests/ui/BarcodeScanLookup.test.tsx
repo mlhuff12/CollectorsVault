@@ -120,6 +120,22 @@ describe('BarcodeScanLookup', () => {
         expect(screen.getByRole('button', { name: /Scan Barcode/ })).toBeInTheDocument();
     });
 
+    it('renders a warning badge inside the text field when an error is provided', async () => {
+        render(<BarcodeScanLookup onLookup={() => {}} error="Test failure message" />);
+        const badgeIcon = screen.getByTestId('lookup-error-badge');
+        expect(badgeIcon).toBeInTheDocument();
+
+        // tooltip should appear on hover
+        fireEvent.mouseOver(badgeIcon);
+        const tooltip = await screen.findByRole('tooltip');
+        expect(tooltip).toHaveTextContent('Test failure message');
+    });
+
+    it('does not render a warning badge when no error is passed', () => {
+        render(<BarcodeScanLookup onLookup={() => {}} />);
+        expect(screen.queryByTestId('lookup-error-badge')).not.toBeInTheDocument();
+    });
+
     it('opens scanner when Scan Barcode is clicked', async () => {
         Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
         render(<BarcodeScanLookup onLookup={() => {}} />);

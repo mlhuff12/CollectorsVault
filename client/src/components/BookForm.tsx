@@ -229,32 +229,36 @@ const BookForm = React.forwardRef<BookFormHandle, BookFormProps>(({
         setSeriesName('');
         setSeriesNumber('');
 
-        try {
-            // some barcodes are 12‑digit UPC-A codes that really represent an
+        // some barcodes are 12‑digit UPC-A codes that really represent an
         // ISBN-13 with a leading zero. the OpenLibrary service expects the
         // 13‑digit form, so normalize before hitting the API. we still trim the
         // input above so whitespace can't sneak in.
         let queryIsbn = trimmedIsbn;
-        if (/^\d{12}$/.test(queryIsbn)) {
-            queryIsbn = `0${queryIsbn}`;
-        }
+        try {
+            if (/^\d{12}$/.test(queryIsbn)) {
+                queryIsbn = `0${queryIsbn}`;
+            }
 
-        const result = await lookupBookByIsbn(queryIsbn);
-        // the backend returns a non-null object even when nothing can be found.
-        // treat an empty title as a failed lookup by logging and showing the
-        // regular "not found" message instead of throwing.
-        if (!result || !result.title?.trim()) {
-            console.log('ISBN lookup returned no title, treating as miss', result);
-            setLookupError('Book not found for the given ISBN. You may enter details manually.');
-            return;
-        }
+            const result = await lookupBookByIsbn(queryIsbn);
+            // the backend returns a non-null object even when nothing can be found.
+            // treat an empty title as a failed lookup by logging and showing the
+            // regular "not found" message instead of throwing.
+            if (!result || !result.title?.trim()) {
+                console.log('ISBN lookup returned no title, treating as miss', result);
+                setLookupError(
+                    `Book not found for ISBN ${queryIsbn}. You may enter details manually.`
+                );
+                return;
+            }
 
-        setLookupResult(result);
-        if (result.seriesName) setSeriesName(result.seriesName);
-        if (result.seriesNumber != null) setSeriesNumber(result.seriesNumber.toString());
+            setLookupResult(result);
+            if (result.seriesName) setSeriesName(result.seriesName);
+            if (result.seriesNumber != null) setSeriesNumber(result.seriesNumber.toString());
             setBookFormat(toBookFormat(result.bookFormat));
         } catch {
-            setLookupError('Book not found for the given ISBN. You may enter details manually.');
+            setLookupError(
+                `Book not found for ISBN ${queryIsbn}. You may enter details manually.`
+            );
         } finally {
             setIsLooking(false);
         }

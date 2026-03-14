@@ -139,7 +139,9 @@ const MovieForm = React.forwardRef<MovieFormHandle, MovieFormProps>(({
             setRuntime(result.runtime || '');
             setCast(result.cast || '');
         } catch {
-            setError('Could not find movie for this barcode. Fill in manually.');
+            setError(
+                `Movie not found for barcode ${barcode}. You may enter details manually.`
+            );
         }
     };
 
@@ -175,6 +177,7 @@ const MovieForm = React.forwardRef<MovieFormHandle, MovieFormProps>(({
                 label="Barcode"
                 maxLength={13}
                 onLookup={handleLookup}
+                error={error}
             />
 
             <Box display="flex" flexDirection="column" gap={2}>

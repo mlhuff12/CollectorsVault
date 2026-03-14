@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback, useId } from 'react';
 import BarcodeScanner from './BarcodeScanner';
 import Toast from './Toast';
 import BarcodeIcon from 'mdi-material-ui/Barcode';
-import { Box, Button, ButtonProps, InputLabel, TextField, Typography, CircularProgress } from '@mui/material';
+import WarningIcon from '@mui/icons-material/Warning';
+import { Box, Button, ButtonProps, InputLabel, TextField, Typography, CircularProgress, InputAdornment, Tooltip, Badge } from '@mui/material';
 
 /** Props accepted by {@link BarcodeScanLookup}. */
 interface BarcodeScanLookupProps {
@@ -169,6 +170,21 @@ const BarcodeScanLookup: React.FC<BarcodeScanLookupProps> = ({
                     }}
                     fullWidth
                     size="small"
+                    slotProps={{
+                        input: {
+                            endAdornment: error ? (
+                                <InputAdornment position="end">
+                                    <Tooltip title={error} arrow>
+                                        <WarningIcon
+                                            sx={{ color: 'warning.main' }}
+                                            data-testid="lookup-error-badge"
+                                            fontSize="medium"
+                                        />
+                                    </Tooltip>
+                                </InputAdornment>
+                            ) : undefined,
+                        },
+                    }}
                 />
                 <LookupButton
                     size="small"
@@ -206,11 +222,6 @@ const BarcodeScanLookup: React.FC<BarcodeScanLookupProps> = ({
             {scanError && !scanUnsupportedPermanently && (
                 <Typography color="warning.main" variant="body2" mt={1}>
                     {scanError}
-                </Typography>
-            )}
-            {error && (
-                <Typography color="warning.main" variant="body2" mt={1}>
-                    {error}
                 </Typography>
             )}
             {showScanner && (

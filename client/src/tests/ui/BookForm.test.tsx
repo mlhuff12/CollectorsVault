@@ -321,7 +321,11 @@ describe('BookForm', () => {
         fireEvent.change(screen.getByLabelText(/Barcode.*ISBN:/), { target: { value: '0000000000' } });
         fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
 
-        expect(await screen.findByText(/Book not found for the given ISBN/i)).toBeInTheDocument();
+        // badge should render and show tooltip with the error
+        const badgeIcon = await screen.findByTestId('lookup-error-badge');
+        fireEvent.mouseOver(badgeIcon);
+        expect(await screen.findByRole('tooltip')).toHaveTextContent(/Book not found for ISBN/i);
+
         // Fields should remain editable after a failed lookup
         expect(screen.getByRole('textbox', { name: /Title/ })).not.toHaveAttribute('readOnly');
     });
@@ -351,7 +355,11 @@ describe('BookForm', () => {
         fireEvent.change(screen.getByLabelText(/Barcode.*ISBN:/), { target: { value: '0000000000' } });
         fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
 
-        expect(await screen.findByText(/Book not found for the given ISBN/i)).toBeInTheDocument();
+        // badge should render and show tooltip with the error
+        const badgeIcon = await screen.findByTestId('lookup-error-badge');
+        fireEvent.mouseOver(badgeIcon);
+        expect(await screen.findByRole('tooltip')).toHaveTextContent(/Book not found for ISBN/i);
+
         // input should remain editable because lookupResult should not be set
         expect(screen.getByRole('textbox', { name: /Title/ })).not.toHaveAttribute('readOnly');
         // no "found" message should appear

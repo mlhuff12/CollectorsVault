@@ -104,6 +104,13 @@ describe('GameForm', () => {
         fireEvent.change(screen.getByRole('textbox', { name: /Platform/ }), { target: { value: 'Xbox' } });
         // date input; rely on label instead of role
         fireEvent.change(screen.getByLabelText(/Release Date/), { target: { value: '2021-12-08' } });
+
+        fireEvent.click(screen.getByRole('button', { name: 'Add Game' }));
+        // message may appear twice (body1 and body2); accept at least one
+        await waitFor(() => {
+            const matches = screen.getAllByText(/Failed to add game/i);
+            expect(matches.length).toBeGreaterThan(0);
+        });
     });
 
     it('does not render submit button when hideSubmit prop is set', () => {
@@ -189,6 +196,21 @@ describe('GameForm', () => {
         await waitFor(() => {
             expect(mockLookup).toHaveBeenCalledWith('7890');
         });
+    });
+
+    it('shows badge and tooltip when lookup fails', async () => {
+        const mockLookup = api.lookupGameByUpc as jest.MockedFunction<typeof api.lookupGameByUpc>;
+        mockLookup.mockRejectedValue(new Error('nope'));
+
+        render(<GameForm />);
+        const input = screen.getByRole('textbox', { name: /Barcode/ });
+        fireEvent.change(input, { target: { value: '777' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Lookup' }));
+
+        // badge should render and show tooltip with the error
+        const badgeIcon = await screen.findByTestId('lookup-error-badge');
+        fireEvent.mouseOver(badgeIcon);
+        expect(await screen.findByRole('tooltip')).toHaveTextContent(/Game not found for barcode 777/i);
     });
 
 

@@ -125,7 +125,9 @@ const GameForm = React.forwardRef<GameFormHandle, GameFormProps>(({
             setDeveloper(result.developer || '');
             setPublisher(result.publisher || '');
         } catch {
-            setError('Could not find game for this barcode. Fill in manually.');
+            setError(
+                `Game not found for barcode ${barcode}. You may enter details manually.`
+            );
         }
     };
 
@@ -159,6 +161,7 @@ const GameForm = React.forwardRef<GameFormHandle, GameFormProps>(({
                 label="Barcode"
                 maxLength={13}
                 onLookup={handleLookup}
+                error={error}
             />
             <Box display="flex" flexDirection="column" gap={2}>
                 <TextField
